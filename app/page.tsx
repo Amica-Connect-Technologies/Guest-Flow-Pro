@@ -51,7 +51,7 @@ const testimonials = [
     name: "Marco Bianchi",
     origin: "Rome, Italy",
     quote:
-      "Amica Concierge made our London trip absolutely magical. We felt at home from the moment we landed.",
+      "Guest Flow Pro made our London trip absolutely magical. We felt at home from the moment we landed.",
     initials: "MB",
   },
   {
@@ -91,7 +91,7 @@ export default function HomePage() {
         <div className="relative z-10 text-center px-6 max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-blue-600/20 border border-blue-500/30 text-blue-300 text-xs font-semibold tracking-widest uppercase px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
             <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-            Benvenuti — Welcome to Amica Concierge
+            Benvenuti — Welcome to Guest Flow Pro
           </div>
           <h1 className="text-5xl md:text-7xl font-serif font-bold text-white leading-tight mb-6">
             Italian Hospitality
@@ -101,7 +101,7 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="text-slate-300 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-            Amica Concierge brings the warmth, elegance, and passion of Italy to
+            Guest Flow Pro brings the warmth, elegance, and passion of Italy to
             your United Kingdom experience — tailored for travellers from around
             the world.
           </p>

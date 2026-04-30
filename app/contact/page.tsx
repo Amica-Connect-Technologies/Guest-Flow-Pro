@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import ContactForm from "@/components/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact Us | Amica Concierge",
+  title: "Contact Us | Guest Flow Pro",
   description:
-    "Reach out to Amica International Services for hotel bookings, concierge enquiries, and personalised UK travel planning.",
+    "Reach out to Guest Flow Pro for hotel bookings, concierge enquiries, and personalised UK travel planning.",
 };
 
 const contactDetails = [
@@ -49,7 +49,7 @@ export default function ContactPage() {
             Contattaci — Get in Touch
           </span>
           <h1 className="text-4xl md:text-6xl font-serif font-bold mb-5">
-            Contact Amica Concierge
+            Contact Guest Flow Pro
           </h1>
           <div className="w-16 h-1 bg-blue-400 mx-auto mb-5 rounded-full" />
           <p className="text-slate-300 max-w-xl mx-auto text-lg leading-relaxed">
@@ -132,7 +132,7 @@ export default function ContactPage() {
           </h2>
           <p className="text-slate-300 max-w-xl mx-auto mb-10">
             From the Scottish Highlands to the Cornish coast — wherever your UK
-            adventure takes you, Amica Concierge is by your side.
+            adventure takes you, Guest Flow Pro is by your side.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
             {["London", "Edinburgh", "Manchester", "Bath", "Oxford", "Cornwall", "Lake District", "York"].map((city) => (

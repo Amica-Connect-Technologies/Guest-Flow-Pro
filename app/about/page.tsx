@@ -2,16 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "About Us | Amica Concierge",
+  title: "About Us | Guest Flow Pro",
   description:
-    "Learn about Amica International Services — an Italian-founded concierge team bringing authentic hospitality to UK-bound travellers worldwide.",
+    "Learn about Guest Flow Pro — an Italian-founded concierge team bringing authentic hospitality to UK-bound travellers worldwide.",
 };
 
 const team = [
   {
     name: "Giulia Romano",
     role: "Founder & Head Concierge",
-    bio: "Born in Florence, Giulia has 15 years of luxury hospitality experience across Italy and the UK. She founded Amica to bring true Italian warmth to international visitors.",
+    bio: "Born in Florence, Giulia has 15 years of luxury hospitality experience across Italy and the UK. She founded Guest Flow Pro to bring true Italian warmth to international visitors.",
     initials: "GR",
     color: "bg-blue-600",
   },
@@ -48,7 +48,7 @@ const values = [
     icon: "🌿",
     title: "Autenticità — Authenticity",
     description:
-      "Authentic experiences, honest advice, and real connections — this is the Amica promise to every guest.",
+      "Authentic experiences, honest advice, and real connections — this is the Guest Flow Pro promise to every guest.",
   },
   {
     icon: "🌍",
@@ -73,10 +73,10 @@ export default function AboutPage() {
         <div className="absolute top-10 left-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl" />
         <div className="relative z-10">
           <span className="inline-block bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-semibold tracking-widest uppercase px-4 py-2 rounded-full mb-4">
-            Chi Siamo — Who We Are
+            Who We Are
           </span>
           <h1 className="text-4xl md:text-6xl font-serif font-bold mb-5">
-            About Amica Concierge
+            About Guest Flow Pro
           </h1>
           <div className="w-16 h-1 bg-blue-400 mx-auto mb-5 rounded-full" />
           <p className="text-slate-300 max-w-2xl mx-auto text-lg leading-relaxed">
@@ -95,7 +95,7 @@ export default function AboutPage() {
             <div className="w-12 h-1 bg-blue-600 rounded-full mb-6" />
             <div className="space-y-4 text-slate-500 leading-relaxed text-sm md:text-base">
               <p>
-                Amica International Services was born out of a simple
+                Guest Flow Pro was born out of a simple
                 frustration: tourists visiting the UK were missing out on the
                 best the country had to offer, simply because they lacked a
                 trusted local guide who understood their culture, language, and
@@ -108,7 +108,7 @@ export default function AboutPage() {
                 while travelling abroad. So she set out to create it.
               </p>
               <p>
-                Today, Amica Concierge is a trusted partner for hundreds of
+                Today, Guest Flow Pro is a trusted partner for hundreds of
                 international visitors each year — from first-time travellers
                 to seasoned jet-setters — offering a seamless, Italian-style
                 welcome to the United Kingdom.
@@ -210,7 +210,7 @@ export default function AboutPage() {
         />
         <div className="relative z-10">
           <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">
-            Ready to Experience the Amica Difference?
+            Ready to Experience the Guest Flow Pro Difference?
           </h2>
           <p className="text-slate-300 max-w-xl mx-auto mb-8 leading-relaxed">
             Get in touch with our team today and let us create a personalised UK

@@ -13,10 +13,10 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-base">A</span>
+                <span className="text-white font-bold text-base">G</span>
               </div>
               <span className="font-serif text-white text-xl font-bold tracking-tight">
-                Amica Concierge
+                Guest Flow Pro
               </span>
             </div>
             <p className="text-sm leading-relaxed text-slate-400 max-w-xs">
@@ -91,7 +91,7 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-8 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Amica International Services. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Guest Flow Pro. All rights reserved.</p>
           <p className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
             London, UK · Est. 2012

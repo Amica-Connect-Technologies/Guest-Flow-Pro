@@ -21,14 +21,14 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md group-hover:bg-blue-700 transition-colors">
-            <span className="text-white text-sm font-bold">A</span>
+            <span className="text-white text-sm font-bold">G</span>
           </div>
           <div className="leading-none">
             <span className="font-serif text-xl font-bold text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">
-              Amica
+              Guest Flow
             </span>
             <span className="hidden sm:inline text-blue-600 font-semibold text-sm ml-1">
-              Concierge
+              Pro
             </span>
           </div>
         </Link>
