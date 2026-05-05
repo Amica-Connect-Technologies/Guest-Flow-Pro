@@ -12,6 +12,15 @@
   }
 }
 
+/* Hide scrollbar for horizontal scroll sections */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @layer components {
   .btn-primary {
     @apply inline-block bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:shadow-blue-200 hover:shadow-lg transition-all duration-200 tracking-wide;
