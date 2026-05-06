@@ -26,7 +26,7 @@ export default function AdminPlaces() {
   const [editing, setEditing] = useState<Place | null>(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState({ msg: "", error: false });
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -51,10 +51,12 @@ export default function AdminPlaces() {
   async function handleSave() {
     setSaving(true);
     if (editing) {
-      await supabase.from("places").update(form).eq("id", editing.id);
+      const { error } = await supabase.from("places").update(form).eq("id", editing.id);
+      if (error) { showToast(`Save failed: ${error.message}`, true); setSaving(false); return; }
       showToast("Place updated");
     } else {
-      await supabase.from("places").insert(form);
+      const { error } = await supabase.from("places").insert(form);
+      if (error) { showToast(`Save failed: ${error.message}`, true); setSaving(false); return; }
       showToast("Place added");
     }
     setShowModal(false);
@@ -69,7 +71,7 @@ export default function AdminPlaces() {
     fetchPlaces();
   }
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(""), 3000); }
+  function showToast(msg: string, error = false) { setToast({ msg, error }); setTimeout(() => setToast({ msg: "", error: false }), 3000); }
 
   const filtered = filter === "all" ? places : places.filter((p) => p.type === filter);
 
@@ -77,7 +79,7 @@ export default function AdminPlaces() {
 
   return (
     <div className="p-8">
-      {toast && <div className="fixed top-6 right-6 bg-slate-900 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50">{toast}</div>}
+      {toast.msg && <div className={`fixed top-6 right-6 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50 ${toast.error ? "bg-red-600" : "bg-slate-900"}`}>{toast.msg}</div>}
 
       <div className="flex items-center justify-between mb-6">
         <div>
