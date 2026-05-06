@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
 
-type Hotel = { id: string; name: string; city: string; whatsapp_number: string; language_default: string };
-type Tour = { id: string; title: string; price: number; provider: string; affiliate_link: string; description: string };
+type Hotel = { id: string; name: string; city: string; whatsapp_number: string; language_default: string; logo_url: string };
+type Tour = { id: string; title: string; price: number; provider: string; affiliate_link: string; description: string; image: string };
 type Place = { id: string; name: string; type: string; address: string; google_maps_link: string; description: string };
 
 const typeColors: Record<string, string> = {
@@ -81,11 +82,13 @@ export default function HotelDashboard() {
       {/* Top bar */}
       <header className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-            </svg>
-          </div>
+          {hotel.logo_url ? (
+            <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover border border-slate-100" />
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-md text-white font-bold text-sm">
+              {hotel.name.slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="font-bold text-slate-900 text-sm leading-none">{hotel.name}</p>
             <p className="text-slate-400 text-xs mt-0.5">{hotel.city}</p>
@@ -158,26 +161,27 @@ export default function HotelDashboard() {
               </div>
             )}
             {tours.map((tour) => (
-              <div key={tour.id} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-slate-900 text-sm leading-snug flex-1 pr-2">{tour.title}</h3>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-lg flex-shrink-0 ${tour.provider === "GYG" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
-                    {tour.provider}
-                  </span>
-                </div>
-                {tour.description && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{tour.description}</p>}
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="text-base font-bold text-slate-900">{tour.price ? `$${tour.price}` : "Free"}</span>
-                  {tour.affiliate_link && (
-                    <a
-                      href={tour.affiliate_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      Book Now
-                    </a>
-                  )}
+              <div key={tour.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                {tour.image && (
+                  <Image unoptimized src={tour.image} alt={tour.title} width={400} height={160} className="w-full h-40 object-cover" />
+                )}
+                <div className="p-5 flex flex-col flex-1">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-bold text-slate-900 text-sm leading-snug flex-1 pr-2">{tour.title}</h3>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg flex-shrink-0 ${tour.provider === "GYG" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
+                      {tour.provider}
+                    </span>
+                  </div>
+                  {tour.description && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{tour.description}</p>}
+                  <div className="flex items-center justify-between mt-auto">
+                    <span className="text-base font-bold text-slate-900">{tour.price ? `$${tour.price}` : "Free"}</span>
+                    {tour.affiliate_link && (
+                      <a href={tour.affiliate_link} target="_blank" rel="noopener noreferrer"
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
+                        Book Now
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
