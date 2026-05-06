@@ -44,6 +44,8 @@ export default function Footer() {
               {[
                 { href: "/", label: "Home" },
                 { href: "/hotels", label: "Hotels" },
+                { href: "/tours", label: "Tours" },
+                { href: "/places", label: "Places" },
                 { href: "/about", label: "About Us" },
                 { href: "/contact", label: "Contact" },
               ].map(({ href, label }) => (
