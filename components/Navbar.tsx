@@ -5,12 +5,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const links = [
-  { href: "/", label: "Home" },
   { href: "/hotels", label: "Hotels" },
   { href: "/tours", label: "Tours" },
   { href: "/places", label: "Places" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
 ];
 
 export default function Navbar() {
@@ -52,11 +49,6 @@ export default function Navbar() {
               </Link>
             </li>
           ))}
-          <li>
-            <Link href="/contact" className="btn-primary text-sm py-2 px-6">
-              Book Now
-            </Link>
-          </li>
         </ul>
 
         {/* Mobile hamburger */}
@@ -92,15 +84,6 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
-            <li className="pt-1">
-              <Link
-                href="/contact"
-                onClick={() => setMenuOpen(false)}
-                className="btn-primary text-sm py-2 px-6 w-fit"
-              >
-                Book Now
-              </Link>
-            </li>
           </ul>
         </div>
       )}

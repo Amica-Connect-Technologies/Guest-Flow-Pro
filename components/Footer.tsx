@@ -42,12 +42,9 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3 text-sm">
               {[
-                { href: "/", label: "Home" },
                 { href: "/hotels", label: "Hotels" },
                 { href: "/tours", label: "Tours" },
                 { href: "/places", label: "Places" },
-                { href: "/about", label: "About Us" },
-                { href: "/contact", label: "Contact" },
               ].map(({ href, label }) => (
                 <li key={href}>
                   <Link

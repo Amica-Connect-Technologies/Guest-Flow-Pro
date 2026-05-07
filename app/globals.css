@@ -10,6 +10,15 @@
   body {
     @apply bg-white text-slate-900 font-sans antialiased;
   }
+
+  /* Eliminate 300ms tap delay on all interactive elements */
+  button,
+  a,
+  input,
+  select,
+  label {
+    touch-action: manipulation;
+  }
 }
 
 /* Hide scrollbar for horizontal scroll sections */
