@@ -1,91 +1,213 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import {
+  auth, hotelsApi, servicesApi, bookingsApi,
+  type Hotel, type HotelService, type ServiceBooking,
+} from "@/lib/api";
 import Image from "next/image";
+import QRCode from "react-qr-code";
 
-type Hotel = { id: string; name: string; city: string; whatsapp_number: string; language_default: string; logo_url: string };
-type Tour = { id: string; title: string; price: number; provider: string; affiliate_link: string; description: string; image: string };
-type Place = { id: string; name: string; type: string; address: string; google_maps_link: string; description: string };
-
-const typeColors: Record<string, string> = {
-  restaurant: "bg-orange-100 text-orange-700",
-  museum: "bg-violet-100 text-violet-700",
-  cafe: "bg-amber-100 text-amber-700",
-  attraction: "bg-blue-100 text-blue-700",
-  shop: "bg-emerald-100 text-emerald-700",
-  other: "bg-slate-100 text-slate-600",
+// ── helpers ───────────────────────────────────────────────────────────────────
+const CAT_LABEL: Record<string, string> = {
+  food: "Food & Drinks", room: "Room Service", tour: "Tour", activity: "Activity", other: "Other",
 };
+const CAT_ICON: Record<string, string> = {
+  food: "🍽️", room: "🛏️", tour: "🗺️", activity: "🎯", other: "✨",
+};
+
+const BOOKING_STATUS_COLORS: Record<string, string> = {
+  pending:   "bg-amber-100 text-amber-700",
+  confirmed: "bg-blue-100 text-blue-700",
+  completed: "bg-emerald-100 text-emerald-700",
+  cancelled: "bg-red-100 text-red-600",
+};
+const PAY_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-slate-100 text-slate-500",
+  paid:    "bg-emerald-100 text-emerald-700",
+};
+
+// ── Service form ──────────────────────────────────────────────────────────────
+type SvcForm = {
+  name: string; description: string; category: string;
+  price: string; is_available: boolean; imageFile: File | null; previewUrl: string;
+};
+const blankForm = (): SvcForm => ({
+  name: "", description: "", category: "food", price: "", is_available: true, imageFile: null, previewUrl: "",
+});
 
 export default function HotelDashboard() {
   const router = useRouter();
-  const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [tours, setTours] = useState<Tour[]>([]);
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [hotel, setHotel]     = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
-  const [activeTab, setActiveTab] = useState<"tours" | "places">("tours");
 
+  // ── active section
+  const [section, setSection] = useState<"qr" | "services" | "bookings">("qr");
+
+  // ── services
+  const [services, setServices]   = useState<HotelService[]>([]);
+  const [svcLoading, setSvcLoading] = useState(false);
+  const [svcForm, setSvcForm]     = useState<SvcForm>(blankForm());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showSvcForm, setShowSvcForm] = useState(false);
+  const [svcSaving, setSvcSaving] = useState(false);
+  const [svcError, setSvcError]   = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
+
+  // ── bookings
+  const [bookings, setBookings]     = useState<ServiceBooking[]>([]);
+  const [bookLoading, setBookLoading] = useState(false);
+  const [bookFilter, setBookFilter] = useState("all");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const [toast, setToast] = useState({ msg: "", ok: true });
+
+  // ── init ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push("/login"); return; }
-      setUserEmail(user.email ?? "");
+      let userInfo;
+      try { userInfo = await auth.me(); } catch { router.push("/login"); return; }
+      setUserEmail(userInfo.email);
+      if (userInfo.role === "admin") { router.push("/admin"); return; }
+      if (!userInfo.hotel_id) { setLoading(false); return; }
 
-      const { data: hotelUser } = await supabase
-        .from("hotel_users")
-        .select("hotel_id, role")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!hotelUser) { router.push("/login"); return; }
-      if (hotelUser.role === "admin") { router.push("/admin"); return; }
-
-      const { data: hotelData } = await supabase
-        .from("hotels")
-        .select("*")
-        .eq("id", hotelUser.hotel_id)
-        .single();
-
-      if (!hotelData) { setLoading(false); return; }
-      setHotel(hotelData);
-
-      const [toursRes, placesRes] = await Promise.all([
-        supabase.from("tours").select("*").eq("city", hotelData.city).order("created_at", { ascending: false }),
-        supabase.from("places").select("*").eq("city", hotelData.city).order("created_at", { ascending: false }),
-      ]);
-
-      setTours(toursRes.data ?? []);
-      setPlaces(placesRes.data ?? []);
+      try {
+        const h = await hotelsApi.get(userInfo.hotel_id);
+        setHotel(h);
+      } catch { /* fall through */ }
       setLoading(false);
     }
     load();
   }, [router]);
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    router.push("/login");
+  // ── load services / bookings when section changes
+  useEffect(() => {
+    if (!hotel) return;
+    if (section === "services") fetchServices();
+    if (section === "bookings") fetchBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section, hotel]);
+
+  async function fetchServices() {
+    setSvcLoading(true);
+    try { setServices(await servicesApi.myList()); } catch { /* stay */ }
+    setSvcLoading(false);
   }
 
-  if (loading) return <div className="flex items-center justify-center h-screen text-slate-400">Loading...</div>;
+  async function fetchBookings() {
+    setBookLoading(true);
+    try { setBookings(await bookingsApi.list()); } catch { /* stay */ }
+    setBookLoading(false);
+  }
 
+  // ── toast ─────────────────────────────────────────────────────────────────
+  function showToast(msg: string, ok = true) {
+    setToast({ msg, ok });
+    setTimeout(() => setToast({ msg: "", ok: true }), 3000);
+  }
+
+  // ── service CRUD ──────────────────────────────────────────────────────────
+  function openAddService() {
+    setSvcForm(blankForm());
+    setEditingId(null);
+    setSvcError("");
+    setShowSvcForm(true);
+  }
+  function openEditService(svc: HotelService) {
+    setSvcForm({
+      name: svc.name, description: svc.description, category: svc.category,
+      price: String(svc.price), is_available: svc.is_available,
+      imageFile: null, previewUrl: svc.image_url ?? "",
+    });
+    setEditingId(svc.id);
+    setSvcError("");
+    setShowSvcForm(true);
+  }
+
+  async function saveService() {
+    if (!svcForm.name.trim() || !svcForm.price) { setSvcError("Name and price are required."); return; }
+    setSvcSaving(true); setSvcError("");
+    const fd = new FormData();
+    fd.append("name",         svcForm.name.trim());
+    fd.append("description",  svcForm.description.trim());
+    fd.append("category",     svcForm.category);
+    fd.append("price",        svcForm.price);
+    fd.append("is_available", svcForm.is_available ? "true" : "false");
+    if (svcForm.imageFile) fd.append("image", svcForm.imageFile);
+    try {
+      if (editingId) {
+        await servicesApi.update(editingId, fd);
+        showToast("Service updated.");
+      } else {
+        await servicesApi.create(fd);
+        showToast("Service added.");
+      }
+      setShowSvcForm(false);
+      fetchServices();
+    } catch (e) {
+      setSvcError(e instanceof Error ? e.message : "Save failed");
+    }
+    setSvcSaving(false);
+  }
+
+  async function deleteService(id: string) {
+    if (!confirm("Delete this service?")) return;
+    setDeletingId(id);
+    try {
+      await servicesApi.delete(id);
+      setServices(s => s.filter(x => x.id !== id));
+      showToast("Service deleted.");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Delete failed", false);
+    }
+    setDeletingId(null);
+  }
+
+  // ── booking status update ─────────────────────────────────────────────────
+  async function updateBooking(id: string, data: { status?: string; payment_status?: string }) {
+    setUpdatingId(id);
+    try {
+      const updated = await bookingsApi.updateStatus(id, data);
+      setBookings(b => b.map(x => x.id === id ? updated : x));
+      showToast("Updated.");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Update failed", false);
+    }
+    setUpdatingId(null);
+  }
+
+  // ── guards ────────────────────────────────────────────────────────────────
+  if (loading) return <div className="flex items-center justify-center h-screen text-slate-400 text-sm">Loading…</div>;
   if (!hotel) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">
       <p className="text-slate-500">No hotel linked to your account.</p>
-      <button onClick={handleLogout} className="text-sm text-blue-600 hover:underline">Sign out</button>
+      <button onClick={() => { auth.logout(); router.push("/login"); }} className="text-sm text-blue-600 hover:underline">Sign out</button>
     </div>
   );
 
+  const guestUrl = typeof window !== "undefined" ? `${window.location.origin}/h/${hotel.id}` : `/h/${hotel.id}`;
+  const filteredBookings = bookFilter === "all" ? bookings : bookings.filter(b => b.status === bookFilter);
+
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Top bar */}
-      <header className="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+
+      {/* ── Toast ─────────────────────────────────────────────────────────── */}
+      {toast.msg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 text-white text-sm px-5 py-3 rounded-2xl shadow-xl z-[300] whitespace-nowrap transition-all ${toast.ok ? "bg-slate-900" : "bg-red-500"}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <header className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">
           {hotel.logo_url ? (
             <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover border border-slate-100" />
           ) : (
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-md text-white font-bold text-sm">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
               {hotel.name.slice(0, 2).toUpperCase()}
             </div>
           )}
@@ -94,141 +216,349 @@ export default function HotelDashboard() {
             <p className="text-slate-400 text-xs mt-0.5">{hotel.city}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <span className="text-xs text-slate-400 hidden sm:block">{userEmail}</span>
-          <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-red-500 font-semibold transition-colors">Sign out</button>
+          <button onClick={() => { auth.logout(); router.push("/login"); }}
+            className="text-xs text-slate-500 hover:text-red-500 font-semibold transition-colors">Sign out</button>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Hotel info card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">{hotel.name}</h1>
-              <p className="text-slate-500 text-sm mt-1">{hotel.city}</p>
-            </div>
-            <div className="flex gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{tours.length}</p>
-                <p className="text-xs text-slate-500 mt-0.5">Tours in {hotel.city}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-violet-600">{places.length}</p>
-                <p className="text-xs text-slate-500 mt-0.5">Places in {hotel.city}</p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-100 flex gap-6 flex-wrap">
-            {hotel.whatsapp_number && (
-              <div className="flex items-center gap-2">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-emerald-500">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                <span className="text-sm text-slate-600">{hotel.whatsapp_number}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-slate-400">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
-              </svg>
-              <span className="text-sm text-slate-600 uppercase">{hotel.language_default}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 bg-white rounded-xl border border-slate-100 p-1 mb-6 w-fit shadow-sm">
-          {(["tours", "places"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors capitalize ${
-                activeTab === tab ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              {tab} ({tab === "tours" ? tours.length : places.length})
+      {/* ── Section Nav ───────────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-slate-100 px-4">
+        <div className="flex gap-1 py-2 max-w-xl">
+          {([
+            { key: "qr",       label: "QR Code"  },
+            { key: "services", label: "Services" },
+            { key: "bookings", label: "Bookings" },
+          ] as const).map(({ key, label }) => (
+            <button key={key} onClick={() => setSection(key)}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${section === key ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
+              {label}
+              {key === "bookings" && bookings.filter(b => b.status === "pending").length > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                  {bookings.filter(b => b.status === "pending").length}
+                </span>
+              )}
             </button>
           ))}
         </div>
+      </div>
 
-        {/* Tours tab */}
-        {activeTab === "tours" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {tours.length === 0 && (
-              <div className="col-span-2 bg-white rounded-2xl border border-slate-100 p-10 text-center text-slate-400 text-sm">
-                No tours available in {hotel.city} yet.
+      <div className="max-w-2xl mx-auto px-4 py-6 pb-16">
+
+        {/* ════ QR CODE SECTION ══════════════════════════════════════════════ */}
+        {section === "qr" && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h2 className="font-bold text-slate-900 text-sm mb-1">Guest QR Code</h2>
+            <p className="text-xs text-slate-400 mb-5">Guests scan this to access your services, tours, and attractions.</p>
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex-shrink-0">
+                <QRCode value={guestUrl} size={140} />
               </div>
-            )}
-            {tours.map((tour) => (
-              <div key={tour.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
-                {tour.image && (
-                  <Image unoptimized src={tour.image} alt={tour.title} width={400} height={160} className="w-full h-40 object-cover" />
-                )}
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-slate-900 text-sm leading-snug flex-1 pr-2">{tour.title}</h3>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg flex-shrink-0 ${tour.provider === "GYG" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
-                      {tour.provider}
-                    </span>
-                  </div>
-                  {tour.description && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{tour.description}</p>}
-                  <div className="flex items-center justify-between mt-auto">
-                    <span className="text-base font-bold text-slate-900">{tour.price ? `$${tour.price}` : "Free"}</span>
-                    {tour.affiliate_link && (
-                      <a href={tour.affiliate_link} target="_blank" rel="noopener noreferrer"
-                        className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">
-                        Book Now
-                      </a>
-                    )}
-                  </div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <p className="text-xs text-slate-500 mb-2">Concierge link</p>
+                <a href={guestUrl} target="_blank" rel="noopener noreferrer"
+                  className="text-sm font-semibold text-blue-600 break-all hover:underline">{guestUrl}</a>
+                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                  <button onClick={() => navigator.clipboard.writeText(guestUrl)}
+                    className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors">
+                    Copy link
+                  </button>
+                  <a href={guestUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors text-center">
+                    Preview as guest
+                  </a>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         )}
 
-        {/* Places tab */}
-        {activeTab === "places" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {places.length === 0 && (
-              <div className="col-span-2 bg-white rounded-2xl border border-slate-100 p-10 text-center text-slate-400 text-sm">
-                No places available in {hotel.city} yet.
+        {/* ════ SERVICES SECTION ════════════════════════════════════════════ */}
+        {section === "services" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-bold text-slate-900 text-sm">Your Services <span className="text-slate-400 font-normal">({services.length})</span></p>
+              <button onClick={openAddService}
+                className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Service
+              </button>
+            </div>
+
+            {svcLoading ? (
+              <div className="bg-white rounded-2xl p-10 border border-slate-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+              </div>
+            ) : services.length === 0 ? (
+              <div className="bg-white rounded-2xl p-10 border border-slate-100 text-center">
+                <p className="text-4xl mb-3">🛎️</p>
+                <p className="font-bold text-slate-700 text-sm">No services yet</p>
+                <p className="text-slate-400 text-xs mt-1">Add food, room service, tours, and more.</p>
+                <button onClick={openAddService}
+                  className="mt-4 bg-blue-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
+                  Add First Service
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {services.map(svc => (
+                  <div key={svc.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${svc.is_available ? "border-slate-100" : "border-slate-200 opacity-60"}`}>
+                    <div className="flex items-start gap-3 p-4">
+                      {svc.image_url ? (
+                        <Image unoptimized src={svc.image_url} alt={svc.name} width={56} height={56}
+                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-2xl">
+                          {CAT_ICON[svc.category] ?? "✨"}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-1">
+                          <p className="font-bold text-slate-900 text-sm leading-snug">{svc.name}</p>
+                          {!svc.is_available && (
+                            <span className="text-[9px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full flex-shrink-0">Hidden</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 capitalize mt-0.5">{CAT_LABEL[svc.category] ?? svc.category}</p>
+                        <p className="font-bold text-emerald-600 text-sm mt-1">£{Number(svc.price).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div className="flex border-t border-slate-100">
+                      <button onClick={() => openEditService(svc)}
+                        className="flex-1 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">Edit</button>
+                      <button onClick={() => deleteService(svc.id)} disabled={deletingId === svc.id}
+                        className="flex-1 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border-l border-slate-100 disabled:opacity-50">
+                        {deletingId === svc.id ? "Deleting…" : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-            {places.map((place) => (
-              <div key={place.id} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-bold text-slate-900 text-sm leading-snug flex-1 pr-2">{place.name}</h3>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-lg flex-shrink-0 capitalize ${typeColors[place.type] ?? typeColors.other}`}>
-                    {place.type}
-                  </span>
-                </div>
-                {place.description && <p className="text-xs text-slate-500 mb-2 line-clamp-2">{place.description}</p>}
-                {place.address && (
-                  <p className="text-xs text-slate-400 flex items-center gap-1">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3 h-3 flex-shrink-0">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                    </svg>
-                    {place.address}
-                  </p>
-                )}
-                {place.google_maps_link && (
-                  <a
-                    href={place.google_maps_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block mt-3 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    View on Maps
-                  </a>
-                )}
+          </div>
+        )}
+
+        {/* ════ BOOKINGS SECTION ════════════════════════════════════════════ */}
+        {section === "bookings" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-bold text-slate-900 text-sm">Bookings <span className="text-slate-400 font-normal">({bookings.length})</span></p>
+              <button onClick={fetchBookings} className="text-xs text-blue-600 font-semibold hover:underline">Refresh</button>
+            </div>
+
+            {/* Filter chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+              {[
+                { k: "all", label: "All" },
+                { k: "pending", label: "Pending" },
+                { k: "confirmed", label: "Confirmed" },
+                { k: "completed", label: "Completed" },
+                { k: "cancelled", label: "Cancelled" },
+              ].map(({ k, label }) => (
+                <button key={k} onClick={() => setBookFilter(k)}
+                  className={`flex-shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-colors ${bookFilter === k ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-500"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {bookLoading ? (
+              <div className="bg-white rounded-2xl p-10 border border-slate-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
               </div>
-            ))}
+            ) : filteredBookings.length === 0 ? (
+              <div className="bg-white rounded-2xl p-10 border border-slate-100 text-center">
+                <p className="text-4xl mb-3">📋</p>
+                <p className="font-bold text-slate-700 text-sm">No bookings yet</p>
+                <p className="text-slate-400 text-xs mt-1">Guest bookings will appear here.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredBookings.map(b => (
+                  <div key={b.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-slate-900 text-sm">{b.service_name}</p>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg capitalize ${BOOKING_STATUS_COLORS[b.status] ?? ""}`}>
+                              {b.status}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${PAY_STATUS_COLORS[b.payment_status] ?? ""}`}>
+                              {b.payment_status === "paid" ? "Paid" : b.payment_method === "cod" ? "COD" : "Unpaid"}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">{b.guest_name}
+                            {b.guest_room && <span className="text-slate-400"> · Room {b.guest_room}</span>}
+                            {b.guest_phone && <span className="text-slate-400"> · {b.guest_phone}</span>}
+                          </p>
+                          {b.notes && <p className="text-xs text-slate-400 mt-1 italic">"{b.notes}"</p>}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-emerald-600 text-sm">£{Number(b.total_price).toFixed(2)}</p>
+                          <p className="text-[10px] text-slate-300 mt-0.5">×{b.quantity}</p>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-300 mt-2">
+                        {new Date(b.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+
+                    {/* Action buttons */}
+                    {b.status !== "completed" && b.status !== "cancelled" && (
+                      <div className="flex border-t border-slate-100 divide-x divide-slate-100">
+                        {b.status === "pending" && (
+                          <button onClick={() => updateBooking(b.id, { status: "confirmed" })}
+                            disabled={updatingId === b.id}
+                            className="flex-1 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-colors">
+                            Confirm
+                          </button>
+                        )}
+                        {b.status === "confirmed" && (
+                          <button onClick={() => updateBooking(b.id, { status: "completed" })}
+                            disabled={updatingId === b.id}
+                            className="flex-1 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
+                            Mark Done
+                          </button>
+                        )}
+                        {b.payment_status === "pending" && b.payment_method !== "stripe" && (
+                          <button onClick={() => updateBooking(b.id, { payment_status: "paid" })}
+                            disabled={updatingId === b.id}
+                            className="flex-1 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
+                            Mark Paid
+                          </button>
+                        )}
+                        <button onClick={() => updateBooking(b.id, { status: "cancelled" })}
+                          disabled={updatingId === b.id}
+                          className="flex-1 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* ════ SERVICE FORM SHEET ══════════════════════════════════════════════ */}
+      {showSvcForm && (
+        <>
+          <div onClick={() => !svcSaving && setShowSvcForm(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }} />
+          <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 210, background: "white",
+            borderRadius: "24px 24px 0 0", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+            maxHeight: "92vh", overflowY: "auto" }}>
+            <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
+            <div className="px-5 pb-2">
+              <h3 className="font-bold text-slate-900 text-base mb-4">{editingId ? "Edit Service" : "Add Service"}</h3>
+
+              <div className="space-y-3">
+                {/* Image upload */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">Photo</label>
+                  <div className="flex items-center gap-3">
+                    <div onClick={() => imgRef.current?.click()}
+                      className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-400 transition-colors flex-shrink-0">
+                      {svcForm.previewUrl ? (
+                        <Image unoptimized src={svcForm.previewUrl} alt="" width={64} height={64} className="w-16 h-16 object-cover" />
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6 text-slate-300">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v13.5A1.5 1.5 0 003.75 21zM12.75 6.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+                        </svg>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => imgRef.current?.click()}
+                      className="text-xs font-semibold text-blue-600 hover:underline">
+                      {svcForm.previewUrl ? "Change photo" : "Upload photo"}
+                    </button>
+                    <input ref={imgRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => {
+                        const f = e.target.files?.[0];
+                        if (f) setSvcForm(s => ({ ...s, imageFile: f, previewUrl: URL.createObjectURL(f) }));
+                      }} />
+                  </div>
+                </div>
+
+                {/* Name */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Name <span className="text-red-400">*</span></label>
+                  <input value={svcForm.name} onChange={e => setSvcForm(s => ({ ...s, name: e.target.value }))}
+                    placeholder="e.g. Club Sandwich, Airport Transfer…"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Description</label>
+                  <textarea value={svcForm.description} onChange={e => setSvcForm(s => ({ ...s, description: e.target.value }))}
+                    rows={2} placeholder="Brief description…"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all resize-none" />
+                </div>
+
+                {/* Category + Price row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Category</label>
+                    <select value={svcForm.category} onChange={e => setSvcForm(s => ({ ...s, category: e.target.value }))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all">
+                      {Object.entries(CAT_LABEL).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Price (£) <span className="text-red-400">*</span></label>
+                    <input type="number" min="0" step="0.01" value={svcForm.price}
+                      onChange={e => setSvcForm(s => ({ ...s, price: e.target.value }))}
+                      placeholder="9.99"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                </div>
+
+                {/* Payment hint for food */}
+                {svcForm.category === "food" && (
+                  <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
+                    <span className="text-sm">💵</span>
+                    <p className="text-xs text-orange-700 font-medium">Food items use <strong>Cash on Delivery</strong> automatically.</p>
+                  </div>
+                )}
+
+                {/* Available toggle */}
+                <button type="button" onClick={() => setSvcForm(s => ({ ...s, is_available: !s.is_available }))}
+                  className="flex items-center gap-3 w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  <div className={`w-10 h-5 rounded-full transition-colors relative ${svcForm.is_available ? "bg-blue-600" : "bg-slate-200"}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform shadow ${svcForm.is_available ? "translate-x-5" : "translate-x-0.5"}`} />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700">Available to guests</span>
+                </button>
+              </div>
+
+              {svcError && (
+                <div className="mt-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                  <p className="text-xs text-red-600">{svcError}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => setShowSvcForm(false)} disabled={svcSaving}
+                  className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl text-sm">
+                  Cancel
+                </button>
+                <button onClick={saveService} disabled={svcSaving}
+                  className="flex-1 bg-blue-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl text-sm">
+                  {svcSaving ? "Saving…" : editingId ? "Save Changes" : "Add Service"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

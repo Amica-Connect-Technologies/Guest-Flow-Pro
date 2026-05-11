@@ -2,17 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { auth, toursApi, type Tour } from "@/lib/api";
 import Image from "next/image";
 
-type Tour = { id: string; city: string; title: string; description: string; image: string; price: number; provider: string; affiliate_link: string; created_at: string };
-const empty = { city: "", title: "", description: "", image: "", price: "", provider: "GYG", affiliate_link: "" };
+const empty = { city: "", title: "", description: "", price: "", provider: "GYG", affiliate_link: "" };
 
 export default function AdminTours() {
   const router = useRouter();
   const [tours, setTours] = useState<Tour[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showSheet, setShowSheet] = useState(false);
   const [editing, setEditing] = useState<Tour | null>(null);
   const [form, setForm] = useState(empty);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -22,32 +22,24 @@ export default function AdminTours() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.push("/login");
-    });
+    auth.me().catch(() => router.push("/login"));
     fetchTours();
   }, [router]);
 
   async function fetchTours() {
-    const { data } = await supabase.from("tours").select("*").order("created_at", { ascending: false });
-    setTours(data ?? []);
+    try { setTours(await toursApi.list()); } catch { /* stay */ }
     setLoading(false);
   }
 
   function openAdd() {
-    setEditing(null);
-    setForm(empty);
-    setImageFile(null);
-    setImagePreview("");
-    setShowModal(true);
+    setEditing(null); setForm(empty);
+    setImageFile(null); setImagePreview(""); setShowSheet(true);
   }
 
   function openEdit(t: Tour) {
     setEditing(t);
-    setForm({ city: t.city, title: t.title, description: t.description ?? "", image: t.image ?? "", price: String(t.price ?? ""), provider: t.provider ?? "GYG", affiliate_link: t.affiliate_link ?? "" });
-    setImageFile(null);
-    setImagePreview(t.image ?? "");
-    setShowModal(true);
+    setForm({ city: t.city, title: t.title, description: t.description ?? "", price: t.price ? String(t.price) : "", provider: t.provider ?? "GYG", affiliate_link: t.affiliate_link ?? "" });
+    setImageFile(null); setImagePreview(t.image_url ?? ""); setShowSheet(true);
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -59,218 +51,188 @@ export default function AdminTours() {
 
   async function handleSave() {
     setSaving(true);
-    let image = form.image;
-    let imageWarning = "";
+    try {
+      const fd = new FormData();
+      fd.append("city", form.city);
+      fd.append("title", form.title);
+      fd.append("description", form.description);
+      fd.append("provider", form.provider);
+      fd.append("affiliate_link", form.affiliate_link);
+      if (form.price) fd.append("price", form.price);
+      if (imageFile) fd.append("image", imageFile);
 
-    if (imageFile) {
-      try {
-        const ext = imageFile.name.split(".").pop();
-        const path = `${editing?.id ?? `new-${Date.now()}`}.${ext}`;
+      if (editing) { await toursApi.update(editing.id, fd); }
+      else { await toursApi.create(fd); }
 
-        const uploadPromise = supabase.storage
-          .from("tour-images")
-          .upload(path, imageFile, { upsert: true });
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Upload timed out after 10s")), 10000)
-        );
-
-        const { data: uploadData, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as Awaited<typeof uploadPromise>;
-
-        if (uploadError) {
-          imageWarning = `Image not saved: ${uploadError.message}`;
-        } else if (uploadData) {
-          const { data: { publicUrl } } = supabase.storage.from("tour-images").getPublicUrl(uploadData.path);
-          image = publicUrl;
-        }
-      } catch (e: unknown) {
-        imageWarning = e instanceof Error ? `Image not saved: ${e.message}` : "Image upload failed";
-      }
+      setShowSheet(false); setImageFile(null); setImagePreview(""); fetchTours();
+      showToast(editing ? "Tour updated" : "Tour added");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Save failed", true);
     }
-
-    const payload = { ...form, image, price: form.price ? parseFloat(form.price) : null };
-
-    if (editing) {
-      const { error } = await supabase.from("tours").update(payload).eq("id", editing.id);
-      if (error) { showToast(`Save failed: ${error.message}`, true); setSaving(false); return; }
-    } else {
-      const { error } = await supabase.from("tours").insert(payload);
-      if (error) { showToast(`Save failed: ${error.message}`, true); setSaving(false); return; }
-    }
-
-    setShowModal(false);
     setSaving(false);
-    setImageFile(null);
-    setImagePreview("");
-    fetchTours();
-
-    if (imageWarning) showToast(imageWarning, true);
-    else showToast(editing ? "Tour updated" : "Tour added");
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this tour?")) return;
-    await supabase.from("tours").delete().eq("id", id);
-    showToast("Tour deleted");
-    fetchTours();
+    try { await toursApi.delete(id); showToast("Tour deleted"); fetchTours(); }
+    catch (err) { showToast(err instanceof Error ? err.message : "Delete failed", true); }
   }
 
-  function showToast(msg: string, error = false) { setToast({ msg, error }); setTimeout(() => setToast({ msg: "", error: false }), 3000); }
+  function showToast(msg: string, error = false) {
+    setToast({ msg, error });
+    setTimeout(() => setToast({ msg: "", error: false }), 3000);
+  }
 
-  if (loading) return <div className="flex items-center justify-center h-screen text-slate-400">Loading...</div>;
+  const filtered = tours.filter((t) =>
+    t.title.toLowerCase().includes(search.toLowerCase()) ||
+    t.city.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />
+          <p className="text-sm text-slate-400">Loading tours…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-8">
+    <div className="min-h-screen bg-slate-50">
       {toast.msg && (
-        <div className={`fixed top-6 right-6 text-white text-sm px-5 py-3 rounded-xl shadow-xl z-50 ${toast.error ? "bg-red-600" : "bg-slate-900"}`}>
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 text-white text-sm px-5 py-3 rounded-2xl shadow-xl z-[300] whitespace-nowrap ${toast.error ? "bg-red-500" : "bg-slate-900"}`}>
           {toast.msg}
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tours</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{tours.length} tour package{tours.length !== 1 ? "s" : ""}</p>
+      <div className="sticky top-0 z-40 bg-white border-b border-slate-100" style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.06)" }}>
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="leading-none">
+            <p className="font-bold text-slate-900 text-sm">Tours</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{tours.length} package{tours.length !== 1 ? "s" : ""}</p>
+          </div>
+          <button onClick={openAdd} className="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform" style={{ touchAction: "manipulation" }}>
+            + Add Tour
+          </button>
         </div>
-        <button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-md shadow-blue-100">
-          + Add Tour
-        </button>
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tours or city…"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all" />
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-slate-50 text-left border-b border-slate-100">
-              <th className="px-6 py-3.5 font-semibold text-slate-600">Tour</th>
-              <th className="px-6 py-3.5 font-semibold text-slate-600">City</th>
-              <th className="px-6 py-3.5 font-semibold text-slate-600">Price</th>
-              <th className="px-6 py-3.5 font-semibold text-slate-600">Provider</th>
-              <th className="px-6 py-3.5 font-semibold text-slate-600">Added</th>
-              <th className="px-6 py-3.5 font-semibold text-slate-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {tours.length === 0 && (
-              <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">No tours yet.</td></tr>
-            )}
-            {tours.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    {t.image ? (
-                      <Image unoptimized src={t.image} alt={t.title} width={40} height={40} className="w-10 h-10 rounded-lg object-cover border border-slate-100 flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5 text-emerald-600">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
-                        </svg>
-                      </div>
-                    )}
-                    <div>
-                      <p className="font-semibold text-slate-900">{t.title}</p>
-                      <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{t.description}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-slate-600">{t.city}</td>
-                <td className="px-6 py-4 font-semibold text-slate-900">{t.price ? `$${t.price}` : "—"}</td>
-                <td className="px-6 py-4">
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg ${t.provider === "GYG" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
-                    {t.provider ?? "—"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-slate-400">{new Date(t.created_at).toLocaleDateString()}</td>
-                <td className="px-6 py-4">
-                  <div className="flex gap-2">
-                    <button onClick={() => openEdit(t)} className="text-blue-600 hover:bg-blue-50 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Edit</button>
-                    <button onClick={() => handleDelete(t.id)} className="text-red-500 hover:bg-red-50 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Delete</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold text-slate-900 text-lg mb-5">{editing ? "Edit Tour" : "Add New Tour"}</h3>
-            <div className="space-y-4">
-
-              {/* Image upload */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tour Image</label>
-                <div className="flex items-center gap-4">
-                  {imagePreview ? (
-                    <Image unoptimized src={imagePreview} alt="Preview" width={80} height={56} className="w-20 h-14 rounded-xl object-cover border border-slate-200" />
-                  ) : (
-                    <div className="w-20 h-14 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <button type="button" onClick={() => fileInputRef.current?.click()}
-                      className="text-xs font-semibold text-blue-600 border border-blue-200 px-3 py-2 rounded-lg hover:bg-blue-50 transition-colors">
-                      {imagePreview ? "Change Image" : "Upload Image"}
-                    </button>
-                    {imagePreview && (
-                      <button type="button" onClick={() => { setImagePreview(""); setImageFile(null); setForm({ ...form, image: "" }); }}
-                        className="ml-2 text-xs font-semibold text-red-500 border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors">
-                        Remove
-                      </button>
-                    )}
-                    <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
-                  </div>
+      <div className="px-4 pt-4 pb-28 space-y-3">
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 shadow-sm border border-slate-100 text-center">
+            <p className="text-slate-400 text-sm">{search ? "No tours match your search." : "No tours added yet."}</p>
+            {!search && <button onClick={openAdd} className="inline-block mt-3 text-xs font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-xl" style={{ touchAction: "manipulation" }}>Add First Tour</button>}
+          </div>
+        ) : filtered.map((t) => (
+          <div key={t.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="flex items-center gap-3 p-4">
+              {t.image_url ? (
+                <Image unoptimized src={t.image_url} alt={t.title} width={52} height={52} className="rounded-xl object-cover flex-shrink-0" style={{ width: 52, height: 52 }} />
+              ) : (
+                <div className="w-[52px] h-[52px] rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-6 h-6 text-emerald-600">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c-.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+                  </svg>
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-              </div>
-
-              {[
-                { label: "Tour Title", key: "title", placeholder: "Burj Khalifa Guided Tour" },
-                { label: "City", key: "city", placeholder: "Dubai" },
-                { label: "Affiliate Link", key: "affiliate_link", placeholder: "https://www.getyourguide.com/..." },
-              ].map(({ label, key, placeholder }) => (
-                <div key={key}>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">{label}</label>
-                  <input value={form[key as keyof typeof form]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} placeholder={placeholder}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all" />
-                </div>
-              ))}
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Description</label>
-                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Brief tour description..."
-                  className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all resize-none" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Price (USD)</label>
-                  <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="150"
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Provider</label>
-                  <select value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-all">
-                    <option value="GYG">GetYourGuide</option>
-                    <option value="Viator">Viator</option>
-                  </select>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-slate-900 text-sm truncate">{t.title}</p>
+                <p className="text-xs text-slate-400 mt-0.5 truncate">{t.description || "No description"}</p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">{t.city}</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${t.provider === "GYG" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>{t.provider ?? "—"}</span>
+                  {t.price ? <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg">${t.price}</span> : null}
                 </div>
               </div>
+              <p className="text-[10px] text-slate-300 flex-shrink-0 self-start mt-1">{new Date(t.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</p>
             </div>
-
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl hover:bg-slate-50 transition-colors text-sm">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
-                {saving ? "Saving..." : "Save Tour"}
+            <div className="flex border-t border-slate-100">
+              {t.affiliate_link && (
+                <a href={t.affiliate_link} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-slate-500 active:bg-slate-50">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                  Link
+                </a>
+              )}
+              <button onClick={() => openEdit(t)} className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-blue-600 active:bg-blue-50 border-l border-slate-100" style={{ touchAction: "manipulation" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
+                Edit
+              </button>
+              <button onClick={() => handleDelete(t.id)} className="flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold text-red-500 active:bg-red-50 border-l border-slate-100" style={{ touchAction: "manipulation" }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                Delete
               </button>
             </div>
           </div>
-        </div>
+        ))}
+      </div>
+
+      {showSheet && (
+        <>
+          <div onClick={() => setShowSheet(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 210 }} />
+          <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 220, background: "white", borderRadius: "24px 24px 0 0", maxHeight: "92vh", overflowY: "auto", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+            <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
+            <div className="px-5 pb-2">
+              <h3 className="font-bold text-slate-900 text-base mb-5">{editing ? "Edit Tour" : "Add Tour"}</h3>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-bold text-slate-600 mb-2">Tour Image</p>
+                  <div className="flex items-center gap-3">
+                    {imagePreview ? (
+                      <Image unoptimized src={imagePreview} alt="Preview" width={72} height={52} className="rounded-xl object-cover border border-slate-200 flex-shrink-0" style={{ width: 72, height: 52 }} />
+                    ) : (
+                      <div className="w-[72px] h-[52px] rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0 text-slate-400">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => fileInputRef.current?.click()} style={{ touchAction: "manipulation" }} className="text-xs font-bold text-emerald-600 border border-emerald-200 bg-emerald-50 px-3 py-2 rounded-xl active:scale-95 transition-transform">{imagePreview ? "Change" : "Upload"}</button>
+                      {imagePreview && <button type="button" onClick={() => { setImagePreview(""); setImageFile(null); }} style={{ touchAction: "manipulation" }} className="text-xs font-bold text-red-500 border border-red-200 bg-red-50 px-3 py-2 rounded-xl active:scale-95 transition-transform">Remove</button>}
+                    </div>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                </div>
+                {([["Tour Title", "title", "Colosseum Guided Tour"], ["City", "city", "Rome"], ["Affiliate Link", "affiliate_link", "https://www.getyourguide.com/…"]] as const).map(([label, key, placeholder]) => (
+                  <div key={key}>
+                    <label className="text-xs font-bold text-slate-600 mb-1.5 block">{label}</label>
+                    <input value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} placeholder={placeholder} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all" />
+                  </div>
+                ))}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1.5 block">Description</label>
+                  <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Brief tour description…" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 mb-1.5 block">Price (USD)</label>
+                    <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="75" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 mb-1.5 block">Provider</label>
+                    <select value={form.provider} onChange={(e) => setForm({ ...form, provider: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400 transition-all">
+                      <option value="GYG">GetYourGuide</option>
+                      <option value="Viator">Viator</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setShowSheet(false)} style={{ touchAction: "manipulation" }} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl active:scale-95 transition-transform text-sm">Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ touchAction: "manipulation" }} className="flex-1 bg-emerald-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl active:scale-95 transition-transform text-sm">{saving ? "Saving…" : "Save Tour"}</button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -19,7 +19,9 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   const isPrivate =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/login");
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/h/");
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeLang, setActiveLang] = useState<Lang>(languages[0]);
