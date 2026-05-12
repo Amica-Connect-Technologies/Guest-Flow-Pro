@@ -194,6 +194,21 @@ export const registrationsApi = {
     req<{ count: number }>("/api/subscriptions/pending-count/"),
 };
 
+// ── Admin Users ───────────────────────────────────────────────────────────────
+export type AdminUser = {
+  id: number; username: string; email: string; role: string;
+  hotel_name: string | null; hotel_id: string | null;
+  is_active: boolean; date_joined: string; last_login: string | null;
+};
+export const usersApi = {
+  list: () => req<AdminUser[]>("/api/auth/users/"),
+  create: (data: { email: string; password: string; role: string }) =>
+    req<AdminUser>("/api/auth/users/", { method: "POST", body: JSON.stringify(data) }),
+  updateRole: (id: number, role: string) =>
+    req<AdminUser>(`/api/auth/users/${id}/`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  delete: (id: number) => req<void>(`/api/auth/users/${id}/`, { method: "DELETE" }),
+};
+
 // ── Services ─────────────────────────────────────────────────────────────────
 export const servicesApi = {
   list: (hotelId: string) =>
