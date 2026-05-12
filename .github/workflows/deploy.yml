@@ -6,22 +6,29 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - name: Pull latest code
-        run: |
-          cd /root/Guest-Flow-Pro
-          git pull origin main
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /root/Guest-Flow-Pro
+            git pull origin main
 
-      - name: Install dependencies
-        run: |
-          cd /root/Guest-Flow-Pro
-          npm install
+            # Backend
+            cd /root/Guest-Flow-Pro/backend
+            source venv/bin/activate
+            pip install -r requirements.txt --quiet
+            python manage.py migrate --noinput
+            python manage.py collectstatic --noinput
+            systemctl restart concierge
 
-      - name: Build
-        run: |
-          cd /root/Guest-Flow-Pro
-          npm run build
-
-      - name: Restart app
-        run: pm2 reload guestflowpro
+            # Frontend
+            cd /root/Guest-Flow-Pro
+            npm install
+            NEXT_PUBLIC_API_URL=https://api.guestflowpro.com npm run build
+            pm2 reload guestflowpro
