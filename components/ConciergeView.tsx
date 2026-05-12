@@ -5,7 +5,8 @@ import Image from "next/image";
 import {
   Utensils, BedDouble, Map, Target, Sparkles,
   Bell, MapPin, Info, SearchX, Clock, Wifi, Globe,
-  Banknote, Landmark, CreditCard, type LucideIcon,
+  Banknote, Landmark, CreditCard, Search,
+  Coffee, ShoppingBag, Star, UtensilsCrossed, type LucideIcon,
 } from "lucide-react";
 import {
   hotelsApi, toursApi, placesApi, servicesApi, bookingsApi,
@@ -14,18 +15,16 @@ import {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const CAT_META: Record<string, { label: string; Icon: LucideIcon; color: string; light: string }> = {
-  food:     { label: "Food & Drinks", Icon: Utensils,  color: "#F97316", light: "#FFF7ED" },
-  room:     { label: "Room Service",  Icon: BedDouble,  color: "#8B5CF6", light: "#F5F3FF" },
-  tour:     { label: "Tours",         Icon: Map,        color: "#3B82F6", light: "#EFF6FF" },
-  activity: { label: "Activities",    Icon: Target,     color: "#10B981", light: "#ECFDF5" },
-  other:    { label: "Other",         Icon: Sparkles,   color: "#6B7280", light: "#F9FAFB" },
+  food:     { label: "Food & Drinks", Icon: Utensils,       color: "#F97316", light: "#FFF7ED" },
+  room:     { label: "Room Service",  Icon: BedDouble,       color: "#8B5CF6", light: "#F5F3FF" },
+  tour:     { label: "Tours",         Icon: Map,             color: "#3B82F6", light: "#EFF6FF" },
+  activity: { label: "Activities",    Icon: Target,          color: "#10B981", light: "#ECFDF5" },
+  other:    { label: "Other",         Icon: Sparkles,        color: "#6B7280", light: "#F9FAFB" },
 };
 
-const TABS: Record<string, { label: string; Icon: LucideIcon }> = {
-  services: { label: "Services", Icon: Bell    },
-  tours:    { label: "Tours",    Icon: Map     },
-  places:   { label: "Places",   Icon: MapPin  },
-  info:     { label: "Info",     Icon: Info    },
+const PLACE_ICON: Record<string, LucideIcon> = {
+  restaurant: UtensilsCrossed, cafe: Coffee, museum: Landmark,
+  attraction: Star, shop: ShoppingBag, other: Sparkles,
 };
 
 const PLACE_TYPES = ["all", "restaurant", "cafe", "attraction", "museum", "shop", "other"];
@@ -33,7 +32,7 @@ const PLACE_TYPES = ["all", "restaurant", "cafe", "attraction", "museum", "shop"
 const placeColors: Record<string, [string, string]> = {
   restaurant: ["#FEF3C7", "#92400E"], museum: ["#EDE9FE", "#5B21B6"],
   cafe:       ["#FEF9C3", "#78350F"], attraction: ["#DBEAFE", "#1E40AF"],
-  shop:       ["#D1FAE5", "#065F46"], other: ["#F1F5F9", "#475569"],
+  shop:       ["#D1FAE5", "#065F46"], other:      ["#F1F5F9", "#475569"],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,6 +59,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [services, setServices] = useState<HotelService[]>([]);
   const [tab,      setTab]      = useState<"services"|"tours"|"places"|"info">("services");
   const [svcCat,   setSvcCat]   = useState("all");
+  const [svcQ,     setSvcQ]     = useState("");
   const [tourQ,    setTourQ]    = useState("");
   const [placeQ,   setPlaceQ]   = useState("");
   const [placeT,   setPlaceT]   = useState("all");
@@ -110,13 +110,13 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
   // ── Loading / not found ──────────────────────────────────────────────────
   if (loading) return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3">
+    <div className="min-h-screen bg-[#F0F2F5] flex flex-col items-center justify-center gap-3">
       <div className="w-10 h-10 rounded-full border-[3px] border-blue-600 border-t-transparent animate-spin" />
       <p className="text-sm text-slate-400 font-medium">Loading…</p>
     </div>
   );
   if (notFound || !hotel) return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3 px-6 text-center">
+    <div className="min-h-screen bg-[#F0F2F5] flex flex-col items-center justify-center gap-3 px-6 text-center">
       <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-sm mb-2">
         <SearchX className="w-10 h-10 text-slate-300" />
       </div>
@@ -125,65 +125,168 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     </div>
   );
 
-  const filteredSvcs   = services.filter(s => svcCat === "all" || s.category === svcCat);
-  const filteredTours  = tours.filter(t => t.title.toLowerCase().includes(tourQ.toLowerCase()) || (t.description ?? "").toLowerCase().includes(tourQ.toLowerCase()));
-  const filteredPlaces = places.filter(p => (placeT === "all" || p.type === placeT) && p.name.toLowerCase().includes(placeQ.toLowerCase()));
+  // ── Filtered data ────────────────────────────────────────────────────────
+  const availableCategories = [...new Set(services.map(s => s.category))];
+
+  const filteredSvcs = services.filter(s =>
+    (svcCat === "all" || s.category === svcCat) &&
+    (svcQ === "" || s.name.toLowerCase().includes(svcQ.toLowerCase()) ||
+     (s.description ?? "").toLowerCase().includes(svcQ.toLowerCase()))
+  );
+
+  const filteredTours  = tours.filter(t =>
+    t.title.toLowerCase().includes(tourQ.toLowerCase()) ||
+    (t.description ?? "").toLowerCase().includes(tourQ.toLowerCase())
+  );
+  const filteredPlaces = places.filter(p =>
+    (placeT === "all" || p.type === placeT) &&
+    p.name.toLowerCase().includes(placeQ.toLowerCase())
+  );
+
+  // ── Grouped services (when "all" is selected) ────────────────────────────
+  const groupedSvcs = filteredSvcs.reduce((acc, svc) => {
+    if (!acc[svc.category]) acc[svc.category] = [];
+    acc[svc.category].push(svc);
+    return acc;
+  }, {} as Record<string, HotelService[]>);
+
+  // ── Service card ─────────────────────────────────────────────────────────
+  function ServiceCard({ svc }: { svc: HotelService }) {
+    const m = CAT_META[svc.category] ?? CAT_META.other;
+    return (
+      <div className="bg-white rounded-3xl overflow-hidden border border-slate-100/60"
+        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+        <div className="flex items-stretch gap-0">
+          {/* Left image / icon */}
+          <div className="w-28 flex-shrink-0">
+            {svc.image_url ? (
+              <div className="relative w-full h-full min-h-[108px]">
+                <Image unoptimized src={svc.image_url} alt={svc.name} fill className="object-cover" />
+              </div>
+            ) : (
+              <div className="w-full min-h-[108px] flex flex-col items-center justify-center gap-1.5"
+                style={{ background: m.light }}>
+                <m.Icon className="w-8 h-8" style={{ color: m.color }} />
+              </div>
+            )}
+          </div>
+
+          {/* Right info */}
+          <div className="flex-1 min-w-0 p-3.5 flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+                style={{ background: m.light, color: m.color }}>
+                <m.Icon className="w-2.5 h-2.5" />{m.label}
+              </span>
+              <p className="font-bold text-slate-900 text-sm mt-1.5 leading-snug">{svc.name}</p>
+              {svc.description && (
+                <p className="text-xs text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{svc.description}</p>
+              )}
+            </div>
+            <div className="flex items-center justify-between mt-2.5">
+              <div className="flex items-baseline gap-1">
+                <span className="font-black text-xl text-slate-900">£{Number(svc.price).toFixed(2)}</span>
+                {svc.category === "food" && (
+                  <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full">COD</span>
+                )}
+              </div>
+              <button onClick={() => setSheet(mkSheet(svc))}
+                className="flex items-center gap-1.5 text-white text-xs font-black px-4 py-2.5 rounded-2xl active:scale-95 transition-transform"
+                style={{ touchAction: "manipulation", background: m.color, boxShadow: `0 4px 14px ${m.color}45` }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Book
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── Main render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-24" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div className="min-h-screen bg-[#F0F2F5] pb-28"
+      style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
 
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
-      <div className="relative bg-gradient-to-br from-[#1A1F3A] via-[#1E3A8A] to-[#2563EB] px-5 pt-14 pb-8 overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/4" />
+      <div className="relative bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#2563EB] px-5 pt-14 pb-6 overflow-hidden">
+        {/* Decorative blobs */}
+        <div className="absolute top-0 right-0 w-56 h-56 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-blue-400/10 translate-y-1/3 -translate-x-1/4" />
+        <div className="absolute top-1/2 right-8 w-24 h-24 rounded-full bg-white/5" />
 
+        {/* Hotel identity */}
         <div className="relative z-10 flex items-center gap-4">
           {hotel.logo_url ? (
-            <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={60} height={60}
-              className="w-[60px] h-[60px] rounded-2xl object-cover border-2 border-white/30 shadow-lg" />
+            <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={64} height={64}
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shadow-lg flex-shrink-0" />
           ) : (
-            <div className="w-[60px] h-[60px] rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center shadow-lg flex-shrink-0">
               <span className="text-white font-black text-xl">{hotel.name.slice(0, 2).toUpperCase()}</span>
             </div>
           )}
-          <div>
-            <p className="text-blue-200 text-xs font-semibold tracking-wide uppercase">Welcome to</p>
-            <p className="text-white font-black text-2xl leading-tight">{hotel.name}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-blue-200/80 text-xs font-semibold tracking-wider uppercase">Welcome to</p>
+            <p className="text-white font-black text-2xl leading-tight truncate">{hotel.name}</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <MapPin className="w-3 h-3 text-blue-300" />
-              <span className="text-blue-200 text-xs font-medium">{hotel.city}</span>
+              <MapPin className="w-3 h-3 text-blue-300 flex-shrink-0" />
+              <span className="text-blue-200 text-xs font-semibold">{hotel.city}</span>
             </div>
           </div>
         </div>
 
         {/* Stats strip */}
-        <div className="relative z-10 flex gap-3 mt-5">
+        <div className="relative z-10 grid grid-cols-3 gap-2.5 mt-5">
           {[
-            { n: services.length, label: "Services" },
-            { n: tours.length,    label: "Tours"    },
-            { n: places.length,   label: "Places"   },
-          ].map(({ n, label }) => (
-            <div key={label} className="flex-1 bg-white/10 rounded-2xl px-3 py-2.5 text-center backdrop-blur-sm border border-white/10">
-              <p className="text-white font-black text-lg leading-none">{n}</p>
-              <p className="text-blue-200 text-[10px] font-semibold mt-0.5">{label}</p>
-            </div>
+            { n: services.length, label: "Services", onClick: () => setTab("services") },
+            { n: tours.length,    label: "Tours",    onClick: () => setTab("tours")    },
+            { n: places.length,   label: "Places",   onClick: () => setTab("places")   },
+          ].map(({ n, label, onClick }) => (
+            <button key={label} onClick={onClick}
+              className="bg-white/12 backdrop-blur-sm rounded-2xl px-2 py-3 text-center border border-white/10 active:scale-95 transition-transform"
+              style={{ touchAction: "manipulation" }}>
+              <p className="text-white font-black text-2xl leading-none">{n}</p>
+              <p className="text-blue-200 text-[11px] font-bold mt-0.5">{label}</p>
+            </button>
           ))}
         </div>
+
+        {/* Quick-access category pills */}
+        {availableCategories.length > 0 && (
+          <div className="relative z-10 mt-4 -mx-1 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+            {availableCategories.map(cat => {
+              const m = CAT_META[cat] ?? CAT_META.other;
+              const count = services.filter(s => s.category === cat).length;
+              return (
+                <button key={cat}
+                  onClick={() => { setTab("services"); setSvcCat(cat); setSvcQ(""); }}
+                  className="flex-shrink-0 flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl px-3.5 py-2.5 active:scale-95 transition-transform"
+                  style={{ touchAction: "manipulation" }}>
+                  <m.Icon className="w-4 h-4 text-white" />
+                  <span className="text-white text-xs font-bold whitespace-nowrap">{m.label}</span>
+                  <span className="bg-white/25 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100/80">
+      <div className="sticky top-0 z-30 bg-white/96 backdrop-blur-md border-b border-slate-100/80"
+        style={{ boxShadow: "0 1px 0 rgba(0,0,0,0.06)" }}>
         <div className="flex px-2">
           {(["services","tours","places","info"] as const).map(t => {
-            const { label, Icon } = TABS[t];
             const active = tab === t;
+            const { label, Icon } = { services: { label: "Services", Icon: Bell }, tours: { label: "Tours", Icon: Map }, places: { label: "Places", Icon: MapPin }, info: { label: "Info", Icon: Info } }[t];
             return (
               <button key={t} onClick={() => setTab(t)} style={{ touchAction: "manipulation" }}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 relative transition-all ${active ? "opacity-100" : "opacity-40"}`}>
-                <Icon className={`w-5 h-5 ${active ? "text-blue-600" : "text-slate-500"}`} />
-                <span className={`text-[10px] font-bold ${active ? "text-blue-600" : "text-slate-500"}`}>{label}</span>
-                {active && <span className="absolute bottom-0 inset-x-3 h-0.5 bg-blue-600 rounded-t-full" />}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-3 relative transition-all ${active ? "opacity-100" : "opacity-35"}`}>
+                <Icon className={`w-[18px] h-[18px] ${active ? "text-blue-600" : "text-slate-600"}`} />
+                <span className={`text-[10px] font-black ${active ? "text-blue-600" : "text-slate-500"}`}>{label}</span>
+                {active && <span className="absolute bottom-0 inset-x-4 h-[2.5px] bg-blue-600 rounded-t-full" />}
               </button>
             );
           })}
@@ -195,82 +298,91 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* ══ SERVICES ═══════════════════════════════════════════════════ */}
         {tab === "services" && (
           <>
-            {services.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-                <button onClick={() => setSvcCat("all")} style={{ touchAction: "manipulation" }}
-                  className={`flex-shrink-0 text-xs font-bold px-4 py-2 rounded-full transition-all ${svcCat === "all" ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-white text-slate-500 border border-slate-200"}`}>
-                  All
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input value={svcQ} onChange={e => setSvcQ(e.target.value)} placeholder="Search services…"
+                className="w-full bg-white rounded-2xl pl-10 pr-10 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
+                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
+              {svcQ && (
+                <button onClick={() => setSvcQ("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">
+                  ×
                 </button>
-                {[...new Set(services.map(s => s.category))].map(cat => {
+              )}
+            </div>
+
+            {/* Category filter chips */}
+            {services.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
+                <button onClick={() => setSvcCat("all")} style={{ touchAction: "manipulation" }}
+                  className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all ${svcCat === "all" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 border border-slate-200"}`}>
+                  All
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${svcCat === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"}`}>{services.length}</span>
+                </button>
+                {availableCategories.map(cat => {
                   const m = CAT_META[cat] ?? CAT_META.other;
+                  const count = services.filter(s => s.category === cat).length;
                   const active = svcCat === cat;
                   return (
                     <button key={cat} onClick={() => setSvcCat(cat)}
-                      className="flex-shrink-0 flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full transition-all border"
+                      className="flex-shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all border"
                       style={active
-                        ? { touchAction: "manipulation", background: m.color, color: "#fff", borderColor: m.color, boxShadow: `0 4px 12px ${m.color}40` }
+                        ? { touchAction: "manipulation", background: m.color, color: "#fff", borderColor: m.color, boxShadow: `0 4px 14px ${m.color}45` }
                         : { touchAction: "manipulation", background: "#fff", color: "#64748B", borderColor: "#E2E8F0" }}>
-                      <m.Icon className="w-3.5 h-3.5" />{m.label}
+                      <m.Icon className="w-3.5 h-3.5" />
+                      {m.label}
+                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${active ? "bg-white/25 text-white" : "bg-slate-100 text-slate-400"}`}>{count}</span>
                     </button>
                   );
                 })}
               </div>
             )}
 
+            {/* Service list */}
             {filteredSvcs.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
-                <Bell className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="font-bold text-slate-700">No services available yet</p>
+              <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+                {svcQ ? (
+                  <>
+                    <Search className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <p className="font-bold text-slate-700">No results for &quot;{svcQ}&quot;</p>
+                    <button onClick={() => setSvcQ("")} className="mt-3 text-xs font-bold text-blue-600">Clear search</button>
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <p className="font-bold text-slate-700">No services available yet</p>
+                  </>
+                )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredSvcs.map(svc => {
-                  const m = CAT_META[svc.category] ?? CAT_META.other;
+            ) : svcCat === "all" && !svcQ ? (
+              /* Grouped by category */
+              <div className="space-y-1">
+                {Object.entries(groupedSvcs).map(([cat, svcs]) => {
+                  const m = CAT_META[cat] ?? CAT_META.other;
                   return (
-                    <div key={svc.id} className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100/60"
-                      style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
-                      <div className="flex items-center gap-4 p-4">
-                        <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden">
-                          {svc.image_url ? (
-                            <Image unoptimized src={svc.image_url} alt={svc.name} width={80} height={80}
-                              className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center"
-                              style={{ background: m.light }}>
-                              <m.Icon className="w-9 h-9" style={{ color: m.color }} />
-                            </div>
-                          )}
+                    <div key={cat}>
+                      {/* Category header */}
+                      <div className="flex items-center gap-2.5 py-3">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: m.light }}>
+                          <m.Icon className="w-4 h-4" style={{ color: m.color }} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full inline-flex items-center gap-1"
-                            style={{ background: m.light, color: m.color }}>
-                            {m.label}
-                          </span>
-                          <p className="font-bold text-slate-900 text-base mt-1 leading-snug">{svc.name}</p>
-                          {svc.description && (
-                            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{svc.description}</p>
-                          )}
-                          <div className="flex items-center justify-between mt-2">
-                            <div>
-                              <span className="font-black text-lg text-slate-900">£{Number(svc.price).toFixed(2)}</span>
-                              {svc.category === "food" && (
-                                <span className="ml-2 text-[10px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full">COD</span>
-                              )}
-                            </div>
-                            <button onClick={() => setSheet(mkSheet(svc))}
-                              className="flex items-center gap-1.5 text-white text-xs font-bold px-4 py-2.5 rounded-2xl active:scale-95 transition-transform"
-                              style={{ touchAction: "manipulation", background: m.color, boxShadow: `0 4px 12px ${m.color}40` }}>
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                              </svg>
-                              Book
-                            </button>
-                          </div>
-                        </div>
+                        <p className="font-black text-slate-800 text-sm">{m.label}</p>
+                        <div className="flex-1 h-px bg-slate-100" />
+                        <span className="text-xs font-bold text-slate-300">{svcs.length}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {svcs.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            ) : (
+              /* Flat list (filtered category or search) */
+              <div className="space-y-3">
+                {filteredSvcs.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
               </div>
             )}
           </>
@@ -280,47 +392,52 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {tab === "tours" && (
           <>
             <div className="relative">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+              <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={tourQ} onChange={e => setTourQ(e.target.value)} placeholder="Search tours…"
-                className="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm font-medium text-slate-800 placeholder:text-slate-300 border-0 outline-none shadow-sm"
+                className="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
                 style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
             </div>
             {filteredTours.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
+              <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                 <Map className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="font-bold text-slate-700">No tours available yet</p>
+                <p className="font-bold text-slate-700">No tours available</p>
               </div>
             ) : filteredTours.map(t => (
-              <div key={t.id} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100/60"
-                style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
-                {t.image_url && (
+              <div key={t.id} className="bg-white rounded-3xl overflow-hidden"
+                style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+                {t.image_url ? (
                   <div className="relative w-full h-44">
                     <Image unoptimized src={t.image_url} alt={t.title} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     {t.provider && (
-                      <span className={`absolute top-3 left-3 text-[10px] font-black px-2.5 py-1 rounded-xl ${t.provider === "GYG" ? "bg-orange-500" : "bg-blue-600"} text-white`}>
+                      <span className={`absolute top-3 left-3 text-[10px] font-black px-2.5 py-1 rounded-xl shadow ${t.provider === "GYG" ? "bg-orange-500" : "bg-blue-600"} text-white`}>
                         {t.provider === "GYG" ? "GetYourGuide" : "Viator"}
                       </span>
                     )}
                   </div>
+                ) : (
+                  <div className="w-full h-24 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                    <Map className="w-10 h-10 text-white/40" />
+                  </div>
                 )}
                 <div className="p-4">
-                  <p className="font-bold text-slate-900 text-base">{t.title}</p>
-                  {t.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{t.description}</p>}
-                  <div className="flex items-center justify-between mt-3">
+                  <p className="font-black text-slate-900 text-base leading-snug">{t.title}</p>
+                  {t.description && <p className="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">{t.description}</p>}
+                  <div className="flex items-center justify-between mt-4">
                     <div>
                       {t.price ? (
-                        <span className="font-black text-lg text-slate-900">from ${t.price}</span>
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">From</span>
+                          <p className="font-black text-xl text-slate-900">${t.price}</p>
+                        </div>
                       ) : (
-                        <span className="text-sm text-slate-400 font-medium">Price on request</span>
+                        <span className="text-sm text-slate-400 font-semibold">Price on request</span>
                       )}
                     </div>
                     {t.affiliate_link && (
                       <a href={t.affiliate_link} target="_blank" rel="noopener noreferrer"
-                        style={{ touchAction: "manipulation" }}
-                        className="bg-blue-600 text-white text-xs font-bold px-5 py-2.5 rounded-2xl active:scale-95 transition-transform shadow-md shadow-blue-200">
+                        style={{ touchAction: "manipulation", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
+                        className="bg-blue-600 text-white text-sm font-black px-5 py-3 rounded-2xl active:scale-95 transition-transform">
                         Book Now
                       </a>
                     )}
@@ -335,57 +452,71 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {tab === "places" && (
           <>
             <div className="relative">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+              <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={placeQ} onChange={e => setPlaceQ(e.target.value)} placeholder="Search places…"
-                className="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm font-medium text-slate-800 placeholder:text-slate-300 border-0 outline-none"
+                className="w-full bg-white rounded-2xl pl-10 pr-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
                 style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-              {PLACE_TYPES.map(pt => (
-                <button key={pt} onClick={() => setPlaceT(pt)} style={{ touchAction: "manipulation" }}
-                  className={`flex-shrink-0 text-xs font-bold px-4 py-2 rounded-full capitalize transition-all ${placeT === pt ? "bg-blue-600 text-white shadow-md shadow-blue-200" : "bg-white text-slate-500 border border-slate-200"}`}>
-                  {pt}
-                </button>
-              ))}
+
+            {/* Type filter chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
+              {PLACE_TYPES.map(pt => {
+                const active = placeT === pt;
+                const PlaceIco = PLACE_ICON[pt];
+                return (
+                  <button key={pt} onClick={() => setPlaceT(pt)} style={{ touchAction: "manipulation" }}
+                    className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full capitalize transition-all border ${active ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200" : "bg-white text-slate-500 border-slate-200"}`}>
+                    {PlaceIco && <PlaceIco className="w-3.5 h-3.5" />}
+                    {pt === "all" ? "All" : pt}
+                  </button>
+                );
+              })}
             </div>
+
             {filteredPlaces.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
+              <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                 <MapPin className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                 <p className="font-bold text-slate-700">No places listed yet</p>
               </div>
             ) : filteredPlaces.map(p => {
               const [bg, fg] = placeColors[p.type] ?? placeColors.other;
+              const PlaceIco = PLACE_ICON[p.type] ?? Sparkles;
               return (
-                <div key={p.id} className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100/60"
-                  style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
-                  <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
-                      <span className="text-sm font-black" style={{ color: fg }}>{p.type.slice(0,2).toUpperCase()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-bold text-slate-900 text-sm">{p.name}</p>
-                        <span className="text-[10px] font-bold capitalize px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: bg, color: fg }}>{p.type}</span>
+                <div key={p.id} className="bg-white rounded-3xl overflow-hidden"
+                  style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+                  <div className="p-4">
+                    <div className="flex items-start gap-3.5">
+                      {/* Icon */}
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: bg }}>
+                        <PlaceIco className="w-5 h-5" style={{ color: fg }} />
                       </div>
-                      {p.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</p>}
-                      {p.address && (
-                        <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 flex-shrink-0 text-slate-300" />
-                          {p.address}
-                        </p>
-                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-black text-slate-900 text-sm leading-snug">{p.name}</p>
+                          <span className="text-[10px] font-bold capitalize px-2.5 py-1 rounded-full flex-shrink-0"
+                            style={{ background: bg, color: fg }}>{p.type}</span>
+                        </div>
+                        {p.description && (
+                          <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</p>
+                        )}
+                        {p.address && (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <MapPin className="w-3 h-3 flex-shrink-0 text-slate-300" />
+                            <p className="text-xs text-slate-400 truncate">{p.address}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {p.google_maps_link && (
                     <a href={p.google_maps_link} target="_blank" rel="noopener noreferrer"
                       style={{ touchAction: "manipulation" }}
-                      className="mt-3 flex items-center justify-center gap-2 bg-slate-50 rounded-2xl py-3 text-xs font-bold text-slate-600 active:scale-95 transition-transform">
+                      className="flex items-center justify-center gap-2 py-3 border-t border-slate-100 text-xs font-bold text-slate-500 active:bg-slate-50 transition-colors">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
                       </svg>
-                      Open in Maps
+                      Open in Google Maps
                     </a>
                   )}
                 </div>
@@ -399,7 +530,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             {hotel.whatsapp_number && (
               <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                style={{ touchAction: "manipulation", boxShadow: "0 4px 20px rgba(16,185,129,0.2)" }}
+                style={{ touchAction: "manipulation", boxShadow: "0 4px 24px rgba(16,185,129,0.25)" }}
                 className="flex items-center gap-4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-3xl px-5 py-4 active:scale-[0.98] transition-transform">
                 <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
                   <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
@@ -407,30 +538,49 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-black text-base">WhatsApp Reception</p>
-                  <p className="text-emerald-100 text-sm mt-0.5">{hotel.whatsapp_number}</p>
+                  <p className="text-white font-black text-base">Chat on WhatsApp</p>
+                  <p className="text-emerald-100 text-xs mt-0.5">{hotel.whatsapp_number} · Reception</p>
                 </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-5 h-5 opacity-70">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-5 h-5 opacity-60">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </a>
             )}
+
+            {/* Info grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { Icon: Clock, label: "Check-in",  val: "14:00" },
-                { Icon: Clock, label: "Check-out", val: "11:00" },
-                { Icon: Wifi,  label: "WiFi",      val: "Ask Reception" },
-                { Icon: Globe, label: "Language",  val: hotel.language_default?.toUpperCase() || "EN" },
-              ].map(({ Icon, label, val }) => (
-                <div key={label} className="bg-white rounded-3xl p-4 shadow-sm" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                  <Icon className="w-6 h-6 text-blue-500" />
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{label}</p>
-                  <p className="font-bold text-slate-900 text-sm mt-0.5">{val}</p>
+                { Icon: Clock, label: "Check-in",  val: "14:00",             color: "#3B82F6", bg: "#EFF6FF" },
+                { Icon: Clock, label: "Check-out", val: "11:00",             color: "#8B5CF6", bg: "#F5F3FF" },
+                { Icon: Wifi,  label: "WiFi",      val: "Ask Reception",      color: "#10B981", bg: "#ECFDF5" },
+                { Icon: Globe, label: "Language",  val: hotel.language_default?.toUpperCase() || "EN", color: "#F97316", bg: "#FFF7ED" },
+              ].map(({ Icon, label, val, color, bg }) => (
+                <div key={label} className="bg-white rounded-3xl p-4" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: bg }}>
+                    <Icon className="w-5 h-5" style={{ color }} />
+                  </div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+                  <p className="font-black text-slate-900 text-sm mt-0.5">{val}</p>
                 </div>
               ))}
             </div>
-            <div className="text-center py-4">
-              <p className="text-xs text-slate-300 font-medium">Powered by <span className="font-bold text-slate-400">Amica International</span></p>
+
+            {/* Hotel location */}
+            {hotel.city && (
+              <div className="bg-white rounded-3xl p-4 flex items-center gap-4"
+                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+                <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-6 h-6 text-red-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</p>
+                  <p className="font-black text-slate-900 text-sm mt-0.5">{hotel.city}, United Kingdom</p>
+                </div>
+              </div>
+            )}
+
+            <div className="text-center py-3">
+              <p className="text-xs text-slate-300 font-semibold">Powered by <span className="font-black text-slate-400">Amica International</span></p>
             </div>
           </>
         )}
@@ -438,12 +588,13 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
       {/* ── Booking Sheet ─────────────────────────────────────────────────── */}
       {sheet && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+        <div className="fixed inset-0 z-50 flex flex-col justify-end"
+          style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}>
           <div ref={sheetRef}
-            className="bg-[#F8F9FA] rounded-t-[32px] overflow-hidden"
+            className="bg-[#F0F2F5] rounded-t-[32px] overflow-hidden"
             style={{ maxHeight: "94vh", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
 
-            <div className="flex justify-center pt-3 pb-1 sticky top-0 bg-[#F8F9FA] z-10">
+            <div className="flex justify-center pt-3 pb-1 sticky top-0 bg-[#F0F2F5] z-10">
               <div className="w-10 h-1 bg-slate-300 rounded-full" />
             </div>
 
@@ -545,43 +696,33 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">
                       Full Name <span className="text-red-400">*</span>
                     </label>
-                    <input
-                      value={sheet.name}
+                    <input value={sheet.name}
                       onChange={e => setSheet(s => s ? { ...s, name: e.target.value, error: "" } : s)}
                       placeholder="e.g. John Smith"
-                      className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 transition-all focus:ring-2 focus:ring-blue-200"
-                    />
+                      className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 focus:ring-2 focus:ring-blue-200 transition-all" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Phone</label>
-                      <input
-                        type="tel" inputMode="numeric" pattern="[0-9]*"
-                        value={sheet.phone}
+                      <input type="tel" inputMode="numeric" pattern="[0-9]*" value={sheet.phone}
                         onChange={e => { const v = e.target.value.replace(/\D/g, ""); setSheet(s => s ? { ...s, phone: v } : s); }}
                         placeholder="07700 000000"
-                        className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 transition-all focus:ring-2 focus:ring-blue-200"
-                      />
+                        className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 focus:ring-2 focus:ring-blue-200 transition-all" />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Room No.</label>
-                      <input
-                        inputMode="numeric"
-                        value={sheet.room}
+                      <input inputMode="numeric" value={sheet.room}
                         onChange={e => { const v = e.target.value.replace(/\D/g, ""); setSheet(s => s ? { ...s, room: v } : s); }}
                         placeholder="204"
-                        className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 transition-all focus:ring-2 focus:ring-blue-200"
-                      />
+                        className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 focus:ring-2 focus:ring-blue-200 transition-all" />
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Special Requests</label>
-                    <textarea
-                      value={sheet.notes}
+                    <textarea value={sheet.notes}
                       onChange={e => setSheet(s => s ? { ...s, notes: e.target.value } : s)}
                       rows={2} placeholder="Any special requests or allergies…"
-                      className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 resize-none transition-all focus:ring-2 focus:ring-blue-200"
-                    />
+                      className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 resize-none focus:ring-2 focus:ring-blue-200 transition-all" />
                   </div>
                 </div>
 
@@ -589,7 +730,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 <div className="bg-white rounded-3xl px-5 py-4 mb-3"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                   <p className="font-bold text-slate-800 text-sm mb-3">Payment</p>
-
                   {sheet.svc.category === "food" ? (
                     <div className="flex items-center gap-4 p-3 rounded-2xl" style={{ background: "#FFF7ED", border: "2px solid #F97316" }}>
                       <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -599,7 +739,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                         <p className="font-black text-orange-800 text-sm">Cash on Delivery</p>
                         <p className="text-orange-500 text-xs mt-0.5">Pay when your food arrives at your room</p>
                       </div>
-                      <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} className="w-3 h-3">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                         </svg>
@@ -629,7 +769,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                           )}
                         </div>
                       </button>
-
                       <div className="flex items-center gap-4 p-3 rounded-2xl opacity-40 cursor-not-allowed"
                         style={{ border: "2px solid #F1F5F9", background: "#F8F9FA" }}>
                         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
@@ -639,7 +778,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                           <p className="font-black text-slate-500 text-sm">Card / Stripe</p>
                           <p className="text-slate-400 text-xs mt-0.5">Online card payment</p>
                         </div>
-                        <span className="text-[10px] font-black bg-slate-200 text-slate-400 px-2 py-1 rounded-full flex-shrink-0">SOON</span>
+                        <span className="text-[10px] font-black bg-slate-200 text-slate-400 px-2 py-1 rounded-full">SOON</span>
                       </div>
                     </div>
                   )}
@@ -655,9 +794,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 )}
 
                 <button onClick={confirmBooking} disabled={sheet.submitting}
-                  style={{ touchAction: "manipulation",
+                  style={{
+                    touchAction: "manipulation",
                     background: sheet.submitting ? "#94A3B8" : `linear-gradient(135deg, ${CAT_META[sheet.svc.category]?.color ?? "#2563EB"}, ${CAT_META[sheet.svc.category]?.color ?? "#3B82F6"})`,
-                    boxShadow: sheet.submitting ? "none" : `0 8px 24px ${CAT_META[sheet.svc.category]?.color ?? "#2563EB"}40`
+                    boxShadow: sheet.submitting ? "none" : `0 8px 24px ${CAT_META[sheet.svc.category]?.color ?? "#2563EB"}40`,
                   }}
                   className="w-full py-4 rounded-3xl text-white font-black text-base flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-60">
                   {sheet.submitting ? (
@@ -677,7 +817,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     </>
                   )}
                 </button>
-
                 <button onClick={() => setSheet(null)} disabled={sheet.submitting}
                   style={{ touchAction: "manipulation" }}
                   className="w-full py-3 mt-2 text-slate-400 font-semibold text-sm active:opacity-60">
