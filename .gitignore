@@ -53,6 +53,12 @@ logs/
 coverage/
 .nyc_output/
 
+# ── Django ────────────────────────────────────────────────────────
+*.sqlite3
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+
 # ── Misc ──────────────────────────────────────────────────────────
 .vercel
 .turbo
