@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Utensils, BedDouble, Map, Target, Sparkles, Bell, ClipboardList, Banknote, type LucideIcon } from "lucide-react";
 import {
   auth, hotelsApi, servicesApi, bookingsApi,
   type Hotel, type HotelService, type ServiceBooking,
@@ -13,8 +14,8 @@ import QRCode from "react-qr-code";
 const CAT_LABEL: Record<string, string> = {
   food: "Food & Drinks", room: "Room Service", tour: "Tour", activity: "Activity", other: "Other",
 };
-const CAT_ICON: Record<string, string> = {
-  food: "🍽️", room: "🛏️", tour: "🗺️", activity: "🎯", other: "✨",
+const CAT_ICON: Record<string, LucideIcon> = {
+  food: Utensils, room: BedDouble, tour: Map, activity: Target, other: Sparkles,
 };
 
 const BOOKING_STATUS_COLORS: Record<string, string> = {
@@ -260,7 +261,7 @@ export default function HotelDashboard() {
                 <a href={guestUrl} target="_blank" rel="noopener noreferrer"
                   className="text-sm font-semibold text-blue-600 break-all hover:underline">{guestUrl}</a>
                 <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                  <button onClick={() => navigator.clipboard.writeText(guestUrl)}
+                  <button onClick={() => { navigator.clipboard.writeText(guestUrl); showToast("Link copied to clipboard!"); }}
                     className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors">
                     Copy link
                   </button>
@@ -294,7 +295,7 @@ export default function HotelDashboard() {
               </div>
             ) : services.length === 0 ? (
               <div className="bg-white rounded-2xl p-10 border border-slate-100 text-center">
-                <p className="text-4xl mb-3">🛎️</p>
+                <Bell className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <p className="font-bold text-slate-700 text-sm">No services yet</p>
                 <p className="text-slate-400 text-xs mt-1">Add food, room service, tours, and more.</p>
                 <button onClick={openAddService}
@@ -304,15 +305,17 @@ export default function HotelDashboard() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {services.map(svc => (
+                {services.map(svc => {
+                  const CatIcon = CAT_ICON[svc.category] ?? Sparkles;
+                  return (
                   <div key={svc.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${svc.is_available ? "border-slate-100" : "border-slate-200 opacity-60"}`}>
                     <div className="flex items-start gap-3 p-4">
                       {svc.image_url ? (
                         <Image unoptimized src={svc.image_url} alt={svc.name} width={56} height={56}
                           className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-2xl">
-                          {CAT_ICON[svc.category] ?? "✨"}
+                        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          <CatIcon className="w-6 h-6 text-slate-400" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -335,7 +338,8 @@ export default function HotelDashboard() {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -371,7 +375,7 @@ export default function HotelDashboard() {
               </div>
             ) : filteredBookings.length === 0 ? (
               <div className="bg-white rounded-2xl p-10 border border-slate-100 text-center">
-                <p className="text-4xl mb-3">📋</p>
+                <ClipboardList className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <p className="font-bold text-slate-700 text-sm">No bookings yet</p>
                 <p className="text-slate-400 text-xs mt-1">Guest bookings will appear here.</p>
               </div>
@@ -524,7 +528,7 @@ export default function HotelDashboard() {
                 {/* Payment hint for food */}
                 {svcForm.category === "food" && (
                   <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
-                    <span className="text-sm">💵</span>
+                    <Banknote className="w-4 h-4 text-orange-500 flex-shrink-0" />
                     <p className="text-xs text-orange-700 font-medium">Food items use <strong>Cash on Delivery</strong> automatically.</p>
                   </div>
                 )}

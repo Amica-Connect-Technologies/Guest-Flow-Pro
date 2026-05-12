@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CheckCircle, Lock } from "lucide-react";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -48,8 +49,8 @@ export default function ContactForm() {
   if (status === "success") {
     return (
       <div className="flex flex-col items-center justify-center bg-white rounded-2xl p-12 border border-slate-100 shadow-sm text-center min-h-[400px]">
-        <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-3xl mb-5 shadow-inner">
-          ✅
+        <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mb-5 shadow-inner">
+          <CheckCircle className="w-8 h-8 text-blue-600" />
         </div>
         <h3 className="text-2xl font-serif font-bold text-slate-900 mb-2">
           Grazie! Thank You!
@@ -171,7 +172,7 @@ export default function ContactForm() {
       </button>
 
       <p className="text-xs text-slate-400 text-center">
-        🔒 Your details are kept private and secure
+        <Lock className="w-3 h-3 inline-block mr-1" /> Your details are kept private and secure
       </p>
     </form>
   );

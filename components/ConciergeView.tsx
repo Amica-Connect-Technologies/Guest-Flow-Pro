@@ -3,17 +3,29 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
+  Utensils, BedDouble, Map, Target, Sparkles,
+  Bell, MapPin, Info, SearchX, Clock, Wifi, Globe,
+  Banknote, Landmark, CreditCard, type LucideIcon,
+} from "lucide-react";
+import {
   hotelsApi, toursApi, placesApi, servicesApi, bookingsApi,
   type Hotel, type Tour, type Place, type HotelService,
 } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
-const CAT_META: Record<string, { label: string; icon: string; color: string; light: string }> = {
-  food:     { label: "Food & Drinks", icon: "🍽️", color: "#F97316", light: "#FFF7ED" },
-  room:     { label: "Room Service",  icon: "🛏️", color: "#8B5CF6", light: "#F5F3FF" },
-  tour:     { label: "Tours",         icon: "🗺️", color: "#3B82F6", light: "#EFF6FF" },
-  activity: { label: "Activities",    icon: "🎯", color: "#10B981", light: "#ECFDF5" },
-  other:    { label: "Other",         icon: "✨", color: "#6B7280", light: "#F9FAFB" },
+const CAT_META: Record<string, { label: string; Icon: LucideIcon; color: string; light: string }> = {
+  food:     { label: "Food & Drinks", Icon: Utensils,  color: "#F97316", light: "#FFF7ED" },
+  room:     { label: "Room Service",  Icon: BedDouble,  color: "#8B5CF6", light: "#F5F3FF" },
+  tour:     { label: "Tours",         Icon: Map,        color: "#3B82F6", light: "#EFF6FF" },
+  activity: { label: "Activities",    Icon: Target,     color: "#10B981", light: "#ECFDF5" },
+  other:    { label: "Other",         Icon: Sparkles,   color: "#6B7280", light: "#F9FAFB" },
+};
+
+const TABS: Record<string, { label: string; Icon: LucideIcon }> = {
+  services: { label: "Services", Icon: Bell    },
+  tours:    { label: "Tours",    Icon: Map     },
+  places:   { label: "Places",   Icon: MapPin  },
+  info:     { label: "Info",     Icon: Info    },
 };
 
 const PLACE_TYPES = ["all", "restaurant", "cafe", "attraction", "museum", "shop", "other"];
@@ -70,7 +82,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     })();
   }, [hotelId]);
 
-  // close sheet on outside tap
   useEffect(() => {
     if (!sheet) return;
     const fn = (e: TouchEvent) => {
@@ -107,7 +118,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   if (notFound || !hotel) return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3 px-6 text-center">
       <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-sm mb-2">
-        <span className="text-4xl">🔍</span>
+        <SearchX className="w-10 h-10 text-slate-300" />
       </div>
       <p className="font-bold text-slate-800 text-xl">Hotel Not Found</p>
       <p className="text-slate-400 text-sm">This link may be invalid or expired.</p>
@@ -124,7 +135,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
       <div className="relative bg-gradient-to-br from-[#1A1F3A] via-[#1E3A8A] to-[#2563EB] px-5 pt-14 pb-8 overflow-hidden">
-        {/* decorative circles */}
         <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-white/5 translate-y-1/3 -translate-x-1/4" />
 
@@ -141,9 +151,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             <p className="text-blue-200 text-xs font-semibold tracking-wide uppercase">Welcome to</p>
             <p className="text-white font-black text-2xl leading-tight">{hotel.name}</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 text-blue-300">
-                <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.079 3.699-5.079 3.699-9.327 0-4.963-3.92-9-8.75-9s-8.75 4.037-8.75 9c0 4.248 1.755 7.248 3.699 9.327a19.577 19.577 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clipRule="evenodd" />
-              </svg>
+              <MapPin className="w-3 h-3 text-blue-300" />
               <span className="text-blue-200 text-xs font-medium">{hotel.city}</span>
             </div>
           </div>
@@ -168,14 +176,13 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-100/80">
         <div className="flex px-2">
           {(["services","tours","places","info"] as const).map(t => {
-            const labels = { services: "Services", tours: "Tours", places: "Places", info: "Info" };
-            const icons  = { services: "🛎️", tours: "🗺️", places: "📍", info: "ℹ️" };
+            const { label, Icon } = TABS[t];
             const active = tab === t;
             return (
               <button key={t} onClick={() => setTab(t)} style={{ touchAction: "manipulation" }}
                 className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 relative transition-all ${active ? "opacity-100" : "opacity-40"}`}>
-                <span className="text-base leading-none">{icons[t]}</span>
-                <span className={`text-[10px] font-bold ${active ? "text-blue-600" : "text-slate-500"}`}>{labels[t]}</span>
+                <Icon className={`w-5 h-5 ${active ? "text-blue-600" : "text-slate-500"}`} />
+                <span className={`text-[10px] font-bold ${active ? "text-blue-600" : "text-slate-500"}`}>{label}</span>
                 {active && <span className="absolute bottom-0 inset-x-3 h-0.5 bg-blue-600 rounded-t-full" />}
               </button>
             );
@@ -188,7 +195,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* ══ SERVICES ═══════════════════════════════════════════════════ */}
         {tab === "services" && (
           <>
-            {/* Category pills */}
             {services.length > 0 && (
               <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
                 <button onClick={() => setSvcCat("all")} style={{ touchAction: "manipulation" }}
@@ -204,7 +210,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                       style={active
                         ? { touchAction: "manipulation", background: m.color, color: "#fff", borderColor: m.color, boxShadow: `0 4px 12px ${m.color}40` }
                         : { touchAction: "manipulation", background: "#fff", color: "#64748B", borderColor: "#E2E8F0" }}>
-                      <span>{m.icon}</span>{m.label}
+                      <m.Icon className="w-3.5 h-3.5" />{m.label}
                     </button>
                   );
                 })}
@@ -213,7 +219,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
             {filteredSvcs.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
-                <p className="text-4xl mb-3">🛎️</p>
+                <Bell className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                 <p className="font-bold text-slate-700">No services available yet</p>
               </div>
             ) : (
@@ -224,21 +230,19 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     <div key={svc.id} className="bg-white rounded-3xl shadow-sm overflow-hidden border border-slate-100/60"
                       style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
                       <div className="flex items-center gap-4 p-4">
-                        {/* image / icon */}
                         <div className="flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden">
                           {svc.image_url ? (
                             <Image unoptimized src={svc.image_url} alt={svc.name} width={80} height={80}
                               className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-3xl"
+                            <div className="w-full h-full flex items-center justify-center"
                               style={{ background: m.light }}>
-                              {m.icon}
+                              <m.Icon className="w-9 h-9" style={{ color: m.color }} />
                             </div>
                           )}
                         </div>
-                        {/* info */}
                         <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full"
+                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full inline-flex items-center gap-1"
                             style={{ background: m.light, color: m.color }}>
                             {m.label}
                           </span>
@@ -285,7 +289,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             </div>
             {filteredTours.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
-                <p className="text-4xl mb-3">🗺️</p>
+                <Map className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                 <p className="font-bold text-slate-700">No tours available yet</p>
               </div>
             ) : filteredTours.map(t => (
@@ -348,7 +352,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             </div>
             {filteredPlaces.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center shadow-sm">
-                <p className="text-4xl mb-3">📍</p>
+                <MapPin className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                 <p className="font-bold text-slate-700">No places listed yet</p>
               </div>
             ) : filteredPlaces.map(p => {
@@ -368,9 +372,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                       {p.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</p>}
                       {p.address && (
                         <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-3 h-3 flex-shrink-0 text-slate-300">
-                            <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.079 3.699-5.079 3.699-9.327 0-4.963-3.92-9-8.75-9s-8.75 4.037-8.75 9c0 4.248 1.755 7.248 3.699 9.327a19.577 19.577 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clipRule="evenodd" />
-                          </svg>
+                          <MapPin className="w-3 h-3 flex-shrink-0 text-slate-300" />
                           {p.address}
                         </p>
                       )}
@@ -415,13 +417,13 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             )}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: "🕑", label: "Check-in",  val: "14:00" },
-                { icon: "🕙", label: "Check-out", val: "11:00" },
-                { icon: "📶", label: "WiFi",       val: "Ask Reception" },
-                { icon: "🌐", label: "Language",   val: hotel.language_default?.toUpperCase() || "EN" },
-              ].map(({ icon, label, val }) => (
+                { Icon: Clock, label: "Check-in",  val: "14:00" },
+                { Icon: Clock, label: "Check-out", val: "11:00" },
+                { Icon: Wifi,  label: "WiFi",      val: "Ask Reception" },
+                { Icon: Globe, label: "Language",  val: hotel.language_default?.toUpperCase() || "EN" },
+              ].map(({ Icon, label, val }) => (
                 <div key={label} className="bg-white rounded-3xl p-4 shadow-sm" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                  <span className="text-2xl">{icon}</span>
+                  <Icon className="w-6 h-6 text-blue-500" />
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{label}</p>
                   <p className="font-bold text-slate-900 text-sm mt-0.5">{val}</p>
                 </div>
@@ -441,13 +443,11 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             className="bg-[#F8F9FA] rounded-t-[32px] overflow-hidden"
             style={{ maxHeight: "94vh", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}>
 
-            {/* drag handle */}
             <div className="flex justify-center pt-3 pb-1 sticky top-0 bg-[#F8F9FA] z-10">
               <div className="w-10 h-1 bg-slate-300 rounded-full" />
             </div>
 
             {sheet.done ? (
-              /* ── Success ── */
               <div className="px-6 py-8 flex flex-col items-center text-center gap-4">
                 <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center"
                   style={{ boxShadow: "0 8px 32px rgba(16,185,129,0.25)" }}>
@@ -461,7 +461,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 </div>
                 <div className="w-full bg-white rounded-3xl p-4 text-left" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl">{CAT_META[sheet.svc.category]?.icon ?? "✨"}</span>
+                    {(() => {
+                      const m = CAT_META[sheet.svc.category] ?? CAT_META.other;
+                      return <m.Icon className="w-6 h-6" style={{ color: m.color }} />;
+                    })()}
                     <div>
                       <p className="font-bold text-slate-900">{sheet.svc.name}</p>
                       <p className="text-xs text-slate-400">Qty: {sheet.qty} · Total: <strong>£{(Number(sheet.svc.price)*sheet.qty).toFixed(2)}</strong></p>
@@ -470,12 +473,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   <div className="pt-3 border-t border-slate-100">
                     {sheet.payMethod === "cod" ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">💵</span>
+                        <Banknote className="w-5 h-5 text-orange-500" />
                         <p className="text-sm font-semibold text-orange-600">Pay cash when order arrives</p>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">🏦</span>
+                        <Landmark className="w-5 h-5 text-blue-500" />
                         <p className="text-sm font-semibold text-blue-600">Our team will contact you for payment</p>
                       </div>
                     )}
@@ -488,7 +491,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 </button>
               </div>
             ) : (
-              /* ── Form ── */
               <div className="px-5 pb-6">
                 {/* Service header */}
                 <div className="bg-white rounded-3xl p-4 mb-4 flex items-center gap-4"
@@ -497,10 +499,14 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     {sheet.svc.image_url ? (
                       <Image unoptimized src={sheet.svc.image_url} alt={sheet.svc.name} width={64} height={64} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-3xl"
-                        style={{ background: CAT_META[sheet.svc.category]?.light ?? "#F9FAFB" }}>
-                        {CAT_META[sheet.svc.category]?.icon ?? "✨"}
-                      </div>
+                      (() => {
+                        const m = CAT_META[sheet.svc.category] ?? CAT_META.other;
+                        return (
+                          <div className="w-full h-full flex items-center justify-center" style={{ background: m.light }}>
+                            <m.Icon className="w-8 h-8" style={{ color: m.color }} />
+                          </div>
+                        );
+                      })()
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -535,7 +541,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 <div className="bg-white rounded-3xl px-5 py-4 mb-3 space-y-4"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                   <p className="font-bold text-slate-800 text-sm">Your Details</p>
-
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">
                       Full Name <span className="text-red-400">*</span>
@@ -547,19 +552,13 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                       className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 transition-all focus:ring-2 focus:ring-blue-200"
                     />
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Phone</label>
                       <input
-                        type="tel"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                        type="tel" inputMode="numeric" pattern="[0-9]*"
                         value={sheet.phone}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, "");
-                          setSheet(s => s ? { ...s, phone: v } : s);
-                        }}
+                        onChange={e => { const v = e.target.value.replace(/\D/g, ""); setSheet(s => s ? { ...s, phone: v } : s); }}
                         placeholder="07700 000000"
                         className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 transition-all focus:ring-2 focus:ring-blue-200"
                       />
@@ -569,23 +568,18 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                       <input
                         inputMode="numeric"
                         value={sheet.room}
-                        onChange={e => {
-                          const v = e.target.value.replace(/\D/g, "");
-                          setSheet(s => s ? { ...s, room: v } : s);
-                        }}
+                        onChange={e => { const v = e.target.value.replace(/\D/g, ""); setSheet(s => s ? { ...s, room: v } : s); }}
                         placeholder="204"
                         className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 transition-all focus:ring-2 focus:ring-blue-200"
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wide block mb-1.5">Special Requests</label>
                     <textarea
                       value={sheet.notes}
                       onChange={e => setSheet(s => s ? { ...s, notes: e.target.value } : s)}
-                      rows={2}
-                      placeholder="Any special requests or allergies…"
+                      rows={2} placeholder="Any special requests or allergies…"
                       className="w-full bg-[#F8F9FA] rounded-2xl px-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 resize-none transition-all focus:ring-2 focus:ring-blue-200"
                     />
                   </div>
@@ -599,7 +593,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   {sheet.svc.category === "food" ? (
                     <div className="flex items-center gap-4 p-3 rounded-2xl" style={{ background: "#FFF7ED", border: "2px solid #F97316" }}>
                       <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xl">💵</span>
+                        <Banknote className="w-5 h-5 text-orange-500" />
                       </div>
                       <div className="flex-1">
                         <p className="font-black text-orange-800 text-sm">Cash on Delivery</p>
@@ -613,7 +607,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {/* Manual */}
                       <button onClick={() => setSheet(s => s ? { ...s, payMethod: "bank_transfer" } : s)}
                         className="w-full flex items-center gap-4 p-3 rounded-2xl transition-all"
                         style={{
@@ -622,7 +615,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                           background: sheet.payMethod === "bank_transfer" ? "#EFF6FF" : "#F8F9FA",
                         }}>
                         <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xl">🏦</span>
+                          <Landmark className="w-5 h-5 text-blue-500" />
                         </div>
                         <div className="flex-1 text-left">
                           <p className="font-black text-slate-800 text-sm">Manual Payment</p>
@@ -637,11 +630,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                         </div>
                       </button>
 
-                      {/* Stripe – coming soon */}
                       <div className="flex items-center gap-4 p-3 rounded-2xl opacity-40 cursor-not-allowed"
                         style={{ border: "2px solid #F1F5F9", background: "#F8F9FA" }}>
                         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xl">💳</span>
+                          <CreditCard className="w-5 h-5 text-slate-400" />
                         </div>
                         <div className="flex-1 text-left">
                           <p className="font-black text-slate-500 text-sm">Card / Stripe</p>
@@ -653,7 +645,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   )}
                 </div>
 
-                {/* Error */}
                 {sheet.error && (
                   <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 mb-3">
                     <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2} className="w-4 h-4 flex-shrink-0">
@@ -663,7 +654,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   </div>
                 )}
 
-                {/* CTA */}
                 <button onClick={confirmBooking} disabled={sheet.submitting}
                   style={{ touchAction: "manipulation",
                     background: sheet.submitting ? "#94A3B8" : `linear-gradient(135deg, ${CAT_META[sheet.svc.category]?.color ?? "#2563EB"}, ${CAT_META[sheet.svc.category]?.color ?? "#3B82F6"})`,

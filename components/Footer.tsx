@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MapPin, Mail, Clock, Globe } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -66,11 +67,11 @@ export default function Footer() {
             </h4>
             <ul className="space-y-3 text-sm text-slate-400">
               <li className="flex items-start gap-3">
-                <span className="text-blue-500 mt-0.5">📍</span>
+                <MapPin className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                 <span>London, United Kingdom</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-blue-500 mt-0.5">📧</span>
+                <Mail className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                 <a
                   href="mailto:amicainternationalservices@gmail.com"
                   className="hover:text-blue-400 transition-colors break-all"
@@ -79,11 +80,11 @@ export default function Footer() {
                 </a>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-blue-500 mt-0.5">🕐</span>
+                <Clock className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                 <span>24 / 7 Concierge Service</span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-blue-500 mt-0.5">🌍</span>
+                <Globe className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
                 <span>Serving Worldwide Guests</span>
               </li>
             </ul>

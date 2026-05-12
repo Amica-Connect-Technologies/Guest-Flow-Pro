@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Handshake, Sparkles, Leaf, Globe, type LucideIcon } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us | Guest Flow Pro",
@@ -31,27 +32,27 @@ const team = [
   },
 ];
 
-const values = [
+const values: { Icon: LucideIcon; title: string; description: string }[] = [
   {
-    icon: "🤝",
+    Icon: Handshake,
     title: "Calore — Warmth",
     description:
       "Every interaction is guided by the Italian spirit of genuine human warmth. You are never just a booking number to us.",
   },
   {
-    icon: "✨",
+    Icon: Sparkles,
     title: "Eccellenza — Excellence",
     description:
       "We hold ourselves to the highest standards in every detail — from the hotels we recommend to the drivers we trust.",
   },
   {
-    icon: "🌿",
+    Icon: Leaf,
     title: "Autenticità — Authenticity",
     description:
       "Authentic experiences, honest advice, and real connections — this is the Guest Flow Pro promise to every guest.",
   },
   {
-    icon: "🌍",
+    Icon: Globe,
     title: "Accoglienza — Welcome",
     description:
       "No matter where you come from, you will feel welcomed, respected, and celebrated in equal measure.",
@@ -160,8 +161,8 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((v) => (
               <div key={v.title} className="card text-center group">
-                <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl mx-auto mb-4 group-hover:bg-blue-600 transition-colors duration-300">
-                  {v.icon}
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-600 transition-colors duration-300">
+                  <v.Icon className="w-7 h-7 text-blue-600 group-hover:text-white transition-colors duration-300" />
                 </div>
                 <h3 className="font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
                   {v.title}

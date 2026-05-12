@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ContactForm from "@/components/ContactForm";
+import { MapPin, Mail, Clock, Globe, type LucideIcon } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact Us | Guest Flow Pro",
@@ -7,25 +8,25 @@ export const metadata: Metadata = {
     "Reach out to Guest Flow Pro for hotel bookings, concierge enquiries, and personalised UK travel planning.",
 };
 
-const contactDetails = [
+const contactDetails: { Icon: LucideIcon; title: string; lines: string[]; href?: string }[] = [
   {
-    icon: "📍",
+    Icon: MapPin,
     title: "Location",
     lines: ["London, United Kingdom", "Serving guests across the UK"],
   },
   {
-    icon: "📧",
+    Icon: Mail,
     title: "Email",
     lines: ["amicainternationalservices@gmail.com"],
     href: "mailto:amicainternationalservices@gmail.com",
   },
   {
-    icon: "🕐",
+    Icon: Clock,
     title: "Availability",
     lines: ["24 hours a day, 7 days a week", "No request too small"],
   },
   {
-    icon: "🌍",
+    Icon: Globe,
     title: "Languages",
     lines: ["Italian · English · French", "Spanish · German & more"],
   },
@@ -72,8 +73,8 @@ export default function ContactPage() {
             <div className="space-y-5">
               {contactDetails.map((item) => (
                 <div key={item.title} className="flex gap-4 items-start bg-white rounded-xl p-5 border border-slate-100 shadow-sm">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-xl flex-shrink-0">
-                    {item.icon}
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <item.Icon className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm mb-1">{item.title}</h3>
@@ -98,7 +99,7 @@ export default function ContactPage() {
             {/* Italian note */}
             <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-xl">🇮🇹</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-blue-700 text-white text-[10px] font-bold tracking-wide">IT</span>
                 <p className="text-blue-800 font-semibold text-sm">Parlate Italiano?</p>
               </div>
               <p className="text-blue-700 text-sm leading-relaxed">
