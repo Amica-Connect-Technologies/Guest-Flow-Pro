@@ -221,6 +221,19 @@ class RegistrationListView(APIView):
         return Response(RegistrationSerializer(qs, many=True, context={"request": request}).data)
 
 
+class RegistrationDetailView(APIView):
+    """Admin: delete a registration."""
+    permission_classes = [IsAdminUser]
+
+    def delete(self, request, pk):
+        try:
+            reg = Registration.objects.get(id=pk)
+        except Registration.DoesNotExist:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        reg.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ApproveRegistrationView(APIView):
     """Admin: approve → create Hotel, activate User."""
     permission_classes = [IsAdminUser]
@@ -231,11 +244,8 @@ class ApproveRegistrationView(APIView):
         except Registration.DoesNotExist:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        if reg.status not in ("pending_review", "pending_payment"):
-            return Response(
-                {"detail": f"Cannot approve a registration with status '{reg.status}'."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if reg.status == "approved":
+            return Response({"status": "approved", "hotel_id": str(reg.hotel_id) if reg.hotel_id else ""})
 
         hotel = Hotel.objects.create(
             name=reg.business_name,
@@ -268,12 +278,6 @@ class RejectRegistrationView(APIView):
             reg = Registration.objects.get(id=pk)
         except Registration.DoesNotExist:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        if reg.status not in ("pending_review", "pending_payment"):
-            return Response(
-                {"detail": f"Cannot reject a registration with status '{reg.status}'."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         reg.status = "rejected"
         reg.rejection_reason = request.data.get("reason", "")

@@ -192,6 +192,9 @@ export const registrationsApi = {
 
   pendingCount: () =>
     req<{ count: number }>("/api/subscriptions/pending-count/"),
+
+  delete: (id: string) =>
+    req<void>(`/api/subscriptions/registrations/${id}/`, { method: "DELETE" }),
 };
 
 // ── Admin Users ───────────────────────────────────────────────────────────────
