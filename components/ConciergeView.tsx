@@ -274,19 +274,41 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         )}
       </div>
 
-      {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-white/96 backdrop-blur-md border-b border-slate-100/80"
-        style={{ boxShadow: "0 1px 0 rgba(0,0,0,0.06)" }}>
-        <div className="flex px-2">
-          {(["services","tours","places","info"] as const).map(t => {
-            const active = tab === t;
-            const { label, Icon } = { services: { label: "Services", Icon: Bell }, tours: { label: "Tours", Icon: Map }, places: { label: "Places", Icon: MapPin }, info: { label: "Info", Icon: Info } }[t];
+      {/* ── Tab Grid ─────────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 bg-[#F0F2F5] px-4 pt-3 pb-3"
+        style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+        <div className="grid grid-cols-2 gap-2.5">
+          {([
+            { key: "services" as const, label: "Services", Icon: Bell,   sub: `${services.length} available` },
+            { key: "tours"    as const, label: "Tours",    Icon: Map,    sub: `${tours.length} available`    },
+            { key: "places"   as const, label: "Places",   Icon: MapPin, sub: `${places.length} nearby`      },
+            { key: "info"     as const, label: "Hotel Info", Icon: Info, sub: "Check-in · WiFi · More"       },
+          ]).map(({ key, label, Icon, sub }) => {
+            const active = tab === key;
             return (
-              <button key={t} onClick={() => setTab(t)} style={{ touchAction: "manipulation" }}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-3 relative transition-all ${active ? "opacity-100" : "opacity-35"}`}>
-                <Icon className={`w-[18px] h-[18px] ${active ? "text-blue-600" : "text-slate-600"}`} />
-                <span className={`text-[10px] font-black ${active ? "text-blue-600" : "text-slate-500"}`}>{label}</span>
-                {active && <span className="absolute bottom-0 inset-x-4 h-[2.5px] bg-blue-600 rounded-t-full" />}
+              <button key={key} onClick={() => setTab(key)}
+                style={{
+                  touchAction: "manipulation",
+                  boxShadow: active
+                    ? "0 6px 20px rgba(37,99,235,0.35)"
+                    : "0 2px 8px rgba(0,0,0,0.07)",
+                }}
+                className={`flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.96] ${
+                  active ? "bg-blue-600" : "bg-white"
+                }`}>
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  active ? "bg-white/20" : "bg-blue-50"
+                }`}>
+                  <Icon className={`w-6 h-6 ${active ? "text-white" : "text-blue-600"}`} />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className={`font-black text-[15px] leading-tight ${active ? "text-white" : "text-slate-800"}`}>
+                    {label}
+                  </p>
+                  <p className={`text-[11px] font-semibold leading-tight mt-0.5 truncate ${active ? "text-blue-100" : "text-slate-400"}`}>
+                    {sub}
+                  </p>
+                </div>
               </button>
             );
           })}
