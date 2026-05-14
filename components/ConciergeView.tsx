@@ -154,53 +154,58 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   function ServiceCard({ svc }: { svc: HotelService }) {
     const m = CAT_META[svc.category] ?? CAT_META.other;
     return (
-      <div className="bg-white rounded-3xl overflow-hidden border border-slate-100/60"
-        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
-        <div className="flex items-stretch gap-0">
-          {/* Left image / icon */}
+      <div className="bg-white rounded-3xl overflow-hidden"
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+
+        {/* Top: image + info */}
+        <div className="flex items-stretch">
           <div className="w-28 flex-shrink-0">
             {svc.image_url ? (
-              <div className="relative w-full h-full min-h-[108px]">
+              <div className="relative w-full h-full min-h-[116px]">
                 <Image unoptimized src={svc.image_url} alt={svc.name} fill className="object-cover" />
               </div>
             ) : (
-              <div className="w-full min-h-[108px] flex flex-col items-center justify-center gap-1.5"
+              <div className="w-full min-h-[116px] flex items-center justify-center"
                 style={{ background: m.light }}>
-                <m.Icon className="w-8 h-8" style={{ color: m.color }} />
+                <m.Icon className="w-10 h-10" style={{ color: m.color }} />
               </div>
             )}
           </div>
 
-          {/* Right info */}
-          <div className="flex-1 min-w-0 p-3.5 flex flex-col justify-between">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full inline-flex items-center gap-1"
-                style={{ background: m.light, color: m.color }}>
-                <m.Icon className="w-2.5 h-2.5" />{m.label}
-              </span>
-              <p className="font-bold text-slate-900 text-sm mt-1.5 leading-snug">{svc.name}</p>
-              {svc.description && (
-                <p className="text-xs text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{svc.description}</p>
+          <div className="flex-1 min-w-0 p-4">
+            <span className="text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+              style={{ background: m.light, color: m.color }}>
+              <m.Icon className="w-2.5 h-2.5" />{m.label}
+            </span>
+            <p className="font-black text-slate-900 text-base mt-1.5 leading-snug">{svc.name}</p>
+            {svc.description && (
+              <p className="text-xs text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">{svc.description}</p>
+            )}
+            <div className="flex items-center gap-2 mt-2">
+              <span className="font-black text-2xl text-slate-900">£{Number(svc.price).toFixed(2)}</span>
+              {svc.category === "food" && (
+                <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">Cash on delivery</span>
               )}
-            </div>
-            <div className="flex items-center justify-between mt-2.5">
-              <div className="flex items-baseline gap-1">
-                <span className="font-black text-xl text-slate-900">£{Number(svc.price).toFixed(2)}</span>
-                {svc.category === "food" && (
-                  <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full">COD</span>
-                )}
-              </div>
-              <button onClick={() => setSheet(mkSheet(svc))}
-                className="flex items-center gap-1.5 text-white text-xs font-black px-4 py-2.5 rounded-2xl active:scale-95 transition-transform"
-                style={{ touchAction: "manipulation", background: m.color, boxShadow: `0 4px 14px ${m.color}45` }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Book
-              </button>
             </div>
           </div>
         </div>
+
+        {/* Full-width Book button */}
+        <button onClick={() => setSheet(mkSheet(svc))}
+          className="w-full flex items-center justify-center gap-2.5 py-4 font-black text-[15px] text-white active:opacity-85 transition-opacity"
+          style={{
+            touchAction: "manipulation",
+            background: `linear-gradient(135deg, ${m.color}ee, ${m.color})`,
+            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.15)`,
+          }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Book Now &nbsp;·&nbsp; £{Number(svc.price).toFixed(2)}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4 opacity-70">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
       </div>
     );
   }
