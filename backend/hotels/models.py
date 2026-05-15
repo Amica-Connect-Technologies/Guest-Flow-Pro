@@ -22,6 +22,9 @@ class Hotel(models.Model):
     check_out_time = models.CharField(max_length=10, blank=True, default="11:00")
     wifi_info     = models.CharField(max_length=100, blank=True)
     amenities     = models.JSONField(default=list, blank=True)
+    is_24_7       = models.BooleanField(default=False)
+    open_time     = models.CharField(max_length=10, blank=True, default="09:00")
+    close_time    = models.CharField(max_length=10, blank=True, default="22:00")
 
     class Meta:
         ordering = ["-created_at"]

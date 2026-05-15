@@ -12,6 +12,7 @@ class HotelSerializer(serializers.ModelSerializer):
             "logo", "logo_url", "created_at",
             "description", "address", "phone", "email",
             "check_in_time", "check_out_time", "wifi_info", "amenities",
+            "is_24_7", "open_time", "close_time",
         ]
         extra_kwargs = {"logo": {"write_only": True, "required": False}}
 

@@ -739,9 +739,14 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             {/* Info grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { Icon: Clock,  label: "Check-in",   val: "14:00",                                      color: "#3B82F6", bg: "#EFF6FF" },
-                { Icon: Clock,  label: "Check-out",  val: "11:00",                                      color: "#8B5CF6", bg: "#F5F3FF" },
-                { Icon: Wifi,   label: "WiFi",        val: "Ask Reception",                              color: "#10B981", bg: "#ECFDF5" },
+                { Icon: Clock,  label: "Check-in",   val: hotel.check_in_time  || "14:00",              color: "#3B82F6", bg: "#EFF6FF" },
+                { Icon: Clock,  label: "Check-out",  val: hotel.check_out_time || "11:00",              color: "#8B5CF6", bg: "#F5F3FF" },
+                { Icon: Clock,  label: "Hours", val: (() => {
+                    if (hotel.is_24_7) return "24/7 Open";
+                    const fmt = (t: string) => { if (!t) return ""; const [h,m] = t.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+                    return `${fmt(hotel.open_time||"09:00")} – ${fmt(hotel.close_time||"22:00")}`;
+                  })(),                                                                                  color: "#059669", bg: "#ECFDF5" },
+                { Icon: Wifi,   label: "WiFi",        val: hotel.wifi_info  || "Ask Reception",         color: "#10B981", bg: "#D1FAE5" },
                 { Icon: Globe,  label: "Language",   val: hotel.language_default?.toUpperCase() || "EN", color: "#F97316", bg: "#FFF7ED" },
                 { Icon: Car,    label: "Parking",    val: parkingPlaces.length > 0 ? `${parkingPlaces.length} nearby` : "Ask Reception", color: "#075985", bg: "#E0F2FE" },
                 { Icon: Moon,   label: "Night Life", val: nightPlaces.length > 0 ? `${nightPlaces.length} spots` : "Ask Reception",      color: "#6B21A8", bg: "#F3E8FF" },

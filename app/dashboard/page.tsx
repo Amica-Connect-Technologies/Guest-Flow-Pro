@@ -90,13 +90,15 @@ export default function HotelDashboard() {
     whatsapp_number: string; address: string; description: string;
     check_in_time: string; check_out_time: string; wifi_info: string;
     language_default: string; amenities: string[];
+    is_24_7: boolean; open_time: string; close_time: string;
     logoFile: File | null; logoPreview: string;
   };
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>({
     name: "", city: "", phone: "", email: "", whatsapp_number: "", address: "",
     description: "", check_in_time: "14:00", check_out_time: "11:00", wifi_info: "",
-    language_default: "en", amenities: [], logoFile: null, logoPreview: "",
+    language_default: "en", amenities: [], is_24_7: false,
+    open_time: "09:00", close_time: "22:00", logoFile: null, logoPreview: "",
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -215,7 +217,9 @@ export default function HotelDashboard() {
       check_in_time: hotel.check_in_time || "14:00",
       check_out_time: hotel.check_out_time || "11:00",
       wifi_info: hotel.wifi_info ?? "", language_default: hotel.language_default || "en",
-      amenities: hotel.amenities ?? [], logoFile: null, logoPreview: hotel.logo_url ?? "",
+      amenities: hotel.amenities ?? [], is_24_7: hotel.is_24_7 ?? false,
+      open_time: hotel.open_time || "09:00", close_time: hotel.close_time || "22:00",
+      logoFile: null, logoPreview: hotel.logo_url ?? "",
     });
     setProfileError("");
     setShowProfileForm(true);
@@ -238,6 +242,9 @@ export default function HotelDashboard() {
       fd.append("wifi_info",      profileForm.wifi_info.trim());
       fd.append("language_default", profileForm.language_default);
       fd.append("amenities",      JSON.stringify(profileForm.amenities));
+      fd.append("is_24_7",        profileForm.is_24_7 ? "true" : "false");
+      fd.append("open_time",      profileForm.is_24_7 ? "" : profileForm.open_time);
+      fd.append("close_time",     profileForm.is_24_7 ? "" : profileForm.close_time);
       if (profileForm.logoFile) fd.append("logo", profileForm.logoFile);
       const updated = await hotelsApi.updateProfile(fd);
       setHotel(updated);
@@ -577,6 +584,7 @@ export default function HotelDashboard() {
                   { label: "Address",    val: hotel.address    || "—" },
                   { label: "Check-in",   val: hotel.check_in_time  || "14:00" },
                   { label: "Check-out",  val: hotel.check_out_time || "11:00" },
+                  { label: "Hours",      val: hotel.is_24_7 ? "24/7 Always Open" : `${hotel.open_time || "09:00"} – ${hotel.close_time || "22:00"}` },
                   { label: "WiFi",       val: hotel.wifi_info  || "Ask Reception" },
                 ].map(({ label, val }) => (
                   <div key={label} className="flex items-center justify-between px-5 py-3">
@@ -734,6 +742,82 @@ export default function HotelDashboard() {
                       placeholder="Password123"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
+                </div>
+
+                {/* Opening Hours */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">Opening Hours</label>
+                  {/* 24/7 toggle */}
+                  <button type="button"
+                    onClick={() => setProfileForm(s => ({ ...s, is_24_7: !s.is_24_7 }))}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all mb-3 ${
+                      profileForm.is_24_7
+                        ? "bg-emerald-50 border-emerald-400"
+                        : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                    }`}
+                    style={{ touchAction: "manipulation" }}>
+                    <div className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${profileForm.is_24_7 ? "bg-emerald-500" : "bg-slate-300"}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform shadow ${profileForm.is_24_7 ? "translate-x-5" : "translate-x-0.5"}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`text-sm font-bold ${profileForm.is_24_7 ? "text-emerald-700" : "text-slate-600"}`}>
+                        Open 24 / 7
+                      </p>
+                      <p className="text-[11px] text-slate-400">Always open — no closing time</p>
+                    </div>
+                    {profileForm.is_24_7 && (
+                      <span className="ml-auto text-[10px] font-black bg-emerald-500 text-white px-2.5 py-1 rounded-full">Active</span>
+                    )}
+                  </button>
+
+                  {/* Open / Close time pickers — hidden when 24/7 */}
+                  {!profileForm.is_24_7 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 block mb-1">Opens at</label>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={profileForm.open_time}
+                            onChange={e => setProfileForm(s => ({ ...s, open_time: e.target.value }))}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-400 transition-all"
+                          />
+                        </div>
+                        {/* AM/PM hint */}
+                        {profileForm.open_time && (
+                          <p className="text-[10px] text-slate-400 mt-1 font-semibold">
+                            {(() => {
+                              const [h, m] = profileForm.open_time.split(":").map(Number);
+                              const ampm = h < 12 ? "AM" : "PM";
+                              const h12 = h % 12 || 12;
+                              return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
+                            })()}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 block mb-1">Closes at</label>
+                        <div className="relative">
+                          <input
+                            type="time"
+                            value={profileForm.close_time}
+                            onChange={e => setProfileForm(s => ({ ...s, close_time: e.target.value }))}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-400 transition-all"
+                          />
+                        </div>
+                        {profileForm.close_time && (
+                          <p className="text-[10px] text-slate-400 mt-1 font-semibold">
+                            {(() => {
+                              const [h, m] = profileForm.close_time.split(":").map(Number);
+                              const ampm = h < 12 ? "AM" : "PM";
+                              const h12 = h % 12 || 12;
+                              return `${h12}:${String(m).padStart(2,"0")} ${ampm}`;
+                            })()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Services & Benefits */}

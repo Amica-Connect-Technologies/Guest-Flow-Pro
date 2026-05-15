@@ -6,7 +6,7 @@ export type Hotel = {
   // extended profile fields
   description: string; address: string; phone: string; email: string;
   check_in_time: string; check_out_time: string; wifi_info: string;
-  amenities: string[];
+  amenities: string[]; is_24_7: boolean; open_time: string; close_time: string;
 };
 export type Tour = {
   id: string; city: string; title: string; description: string;

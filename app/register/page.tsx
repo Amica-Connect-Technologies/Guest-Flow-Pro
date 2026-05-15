@@ -4,6 +4,30 @@ import { useState } from "react";
 import Link from "next/link";
 import { registrationsApi } from "@/lib/api";
 
+// ── Country config ───────────────────────────────────────────────────────────
+const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: string[] }> = {
+  Italy: {
+    code: "+39",
+    flag: "🇮🇹",
+    cities: [
+      "Rome", "Milan", "Florence", "Venice", "Naples", "Turin",
+      "Bologna", "Verona", "Genoa", "Palermo", "Bari", "Catania",
+      "Pisa", "Siena", "Amalfi", "Ravenna", "Trieste", "Perugia",
+    ],
+  },
+  "United States": {
+    code: "+1",
+    flag: "🇺🇸",
+    cities: [
+      "New York", "Los Angeles", "Chicago", "Houston", "Miami",
+      "San Francisco", "Las Vegas", "Seattle", "Boston", "Atlanta",
+      "Dallas", "Phoenix", "Orlando", "Denver", "Nashville",
+      "New Orleans", "Washington DC", "San Diego", "Austin", "Portland",
+    ],
+  },
+  Other: { code: "", flag: "🌍", cities: [] },
+};
+
 // ── Plans ────────────────────────────────────────────────────────────────────
 const PLANS = [
   {
@@ -69,6 +93,13 @@ const empty: Form = {
   plan: "basic",
   payment_method: "bank_transfer",
 };
+
+function getCode(country: string) {
+  return COUNTRY_CONFIG[country]?.code ?? "";
+}
+function getCities(country: string) {
+  return COUNTRY_CONFIG[country]?.cities ?? [];
+}
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 function FieldError({ msg }: { msg?: string }) {
@@ -465,30 +496,85 @@ export default function RegisterPage() {
                   error={errors.business_name}
                 />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input
-                    label="City *"
-                    value={form.city}
-                    onChange={(v) => set("city", v)}
-                    placeholder="Rome"
-                    error={errors.city}
-                  />
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Country</label>
-                    <select
-                      value={form.country}
-                      onChange={(e) => set("country", e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all"
-                    >
-                      <option value="">Select country…</option>
-                      {["United Kingdom","Italy","France","Spain","Germany","Portugal","Greece","United States","UAE","Australia","Other"].map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                {/* Country */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Country</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["Italy", "United States", "Other"] as const).map((c) => {
+                      const cfg = COUNTRY_CONFIG[c];
+                      const active = form.country === c;
+                      return (
+                        <button key={c} type="button"
+                          onClick={() => {
+                            set("country", c);
+                            set("city", "");
+                            // prepend country code to phone if not already set
+                            const code = COUNTRY_CONFIG[c].code;
+                            if (code && !form.phone.startsWith(code)) {
+                              set("phone", code + " ");
+                            }
+                          }}
+                          className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center ${
+                            active ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
+                          }`}>
+                          <span className="text-xl">{cfg.flag}</span>
+                          <span className={`text-xs font-bold leading-tight ${active ? "text-blue-700" : "text-slate-600"}`}>{c}</span>
+                          {cfg.code && <span className={`text-[10px] font-semibold ${active ? "text-blue-500" : "text-slate-400"}`}>{cfg.code}</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
+                {/* City */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">City *</label>
+                  {getCities(form.country).length > 0 ? (
+                    <select
+                      value={form.city}
+                      onChange={(e) => set("city", e.target.value)}
+                      className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                        errors.city ? "border-red-300" : "border-slate-200"
+                      }`}>
+                      <option value="">Select city…</option>
+                      {getCities(form.country).map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={form.city}
+                      onChange={(e) => set("city", e.target.value)}
+                      placeholder="Enter your city"
+                      className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                        errors.city ? "border-red-300" : "border-slate-200"
+                      }`}
+                    />
+                  )}
+                  <FieldError msg={errors.city} />
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Phone with country code */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Phone number</label>
+                    <div className="relative flex items-center">
+                      {getCode(form.country) && (
+                        <span className="absolute left-3 text-sm font-bold text-slate-500 select-none pointer-events-none">
+                          {getCode(form.country)}
+                        </span>
+                      )}
+                      <input
+                        type="tel"
+                        value={form.phone}
+                        onChange={(e) => set("phone", e.target.value)}
+                        placeholder={getCode(form.country) ? `${getCode(form.country)} 000 000 0000` : "Phone number"}
+                        className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                          getCode(form.country) ? "pl-14 pr-4" : "px-4"
+                        }`}
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                       <span className="flex items-center gap-1.5">
@@ -502,7 +588,7 @@ export default function RegisterPage() {
                       type="tel"
                       value={form.whatsapp_number}
                       onChange={(e) => set("whatsapp_number", e.target.value)}
-                      placeholder="+44 7700 900 000"
+                      placeholder={getCode(form.country) ? `${getCode(form.country)} 000 000 0000` : "+00 000 000 0000"}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all"
                     />
                     <p className="text-[10px] text-slate-400 mt-1">Guests can contact you directly</p>

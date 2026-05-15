@@ -1,3 +1,4 @@
+import json as _json
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -49,7 +50,18 @@ class HotelProfileView(APIView):
         hotel = self._get_hotel(request.user)
         if not hotel:
             return Response({"detail": "No hotel linked."}, status=status.HTTP_404_NOT_FOUND)
-        serializer = HotelSerializer(hotel, data=request.data, partial=True, context={"request": request})
+
+        # FormData sends JSON fields as plain strings — coerce them before validation.
+        data = request.data.copy()
+        if isinstance(data.get("amenities"), str):
+            try:
+                data["amenities"] = _json.loads(data["amenities"])
+            except (ValueError, TypeError):
+                data["amenities"] = []
+        if "is_24_7" in data and isinstance(data["is_24_7"], str):
+            data["is_24_7"] = data["is_24_7"].lower() in ("true", "1", "yes")
+
+        serializer = HotelSerializer(hotel, data=data, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
