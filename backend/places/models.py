@@ -9,6 +9,8 @@ class Place(models.Model):
         ("cafe", "Cafe"),
         ("attraction", "Attraction"),
         ("shop", "Shop"),
+        ("parking", "Parking"),
+        ("nightlife", "Night Life"),
         ("other", "Other"),
     ]
 

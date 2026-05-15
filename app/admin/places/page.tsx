@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, placesApi, type Place } from "@/lib/api";
 
-const TYPES = ["restaurant", "museum", "cafe", "attraction", "shop", "other"];
+const TYPES = ["restaurant", "museum", "cafe", "attraction", "shop", "parking", "nightlife", "other"];
 const empty = { city: "", name: "", type: "restaurant", description: "", address: "", google_maps_link: "" };
 
 const typeColors: Record<string, { bg: string; text: string; dot: string }> = {
