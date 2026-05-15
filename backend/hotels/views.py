@@ -51,8 +51,13 @@ class HotelProfileView(APIView):
         if not hotel:
             return Response({"detail": "No hotel linked."}, status=status.HTTP_404_NOT_FOUND)
 
-        # FormData sends JSON fields as plain strings — coerce them before validation.
-        data = request.data.copy()
+        # Build a plain dict so Python objects (list, bool, file) survive unmodified.
+        # request.data (QueryDict) holds form fields; request.FILES holds uploads.
+        data = {k: request.data[k] for k in request.data}
+        for k, v in request.FILES.items():
+            data[k] = v
+
+        # FormData sends JSON fields as plain strings — coerce before validation.
         if isinstance(data.get("amenities"), str):
             try:
                 data["amenities"] = _json.loads(data["amenities"])
