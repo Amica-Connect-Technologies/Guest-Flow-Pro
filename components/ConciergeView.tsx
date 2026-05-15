@@ -60,8 +60,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [places,   setPlaces]   = useState<Place[]>([]);
   const [services, setServices] = useState<HotelService[]>([]);
   const [tab,      setTab]      = useState<"restaurant"|"parking"|"night"|"tours"|"places"|"info">("restaurant");
-  const [svcCat,   setSvcCat]   = useState("all");
-  const [svcQ,     setSvcQ]     = useState("");
   const [tourQ,    setTourQ]    = useState("");
   const [placeQ,   setPlaceQ]   = useState("");
   const [placeT,   setPlaceT]   = useState("all");
@@ -130,12 +128,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   // ── Filtered data ────────────────────────────────────────────────────────
   const availableCategories = [...new Set(services.map(s => s.category))];
 
-  const filteredSvcs = services.filter(s =>
-    (svcCat === "all" || s.category === svcCat) &&
-    (svcQ === "" || s.name.toLowerCase().includes(svcQ.toLowerCase()) ||
-     (s.description ?? "").toLowerCase().includes(svcQ.toLowerCase()))
-  );
-
   const filteredTours  = tours.filter(t =>
     t.title.toLowerCase().includes(tourQ.toLowerCase()) ||
     (t.description ?? "").toLowerCase().includes(tourQ.toLowerCase())
@@ -148,13 +140,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const parkingPlaces = places.filter(p => p.type === "parking");
   const nightPlaces   = places.filter(p => p.type === "nightlife");
   const foodPlaces    = places.filter(p => p.type === "restaurant" || p.type === "cafe");
-
-  // ── Grouped services (when "all" is selected) ────────────────────────────
-  const groupedSvcs = filteredSvcs.reduce((acc, svc) => {
-    if (!acc[svc.category]) acc[svc.category] = [];
-    acc[svc.category].push(svc);
-    return acc;
-  }, {} as Record<string, HotelService[]>);
 
   // ── Service card ─────────────────────────────────────────────────────────
   function ServiceCard({ svc }: { svc: HotelService }) {
@@ -272,7 +257,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               const count = services.filter(s => s.category === cat).length;
               return (
                 <button key={cat}
-                  onClick={() => { setTab("restaurant"); setSvcCat(cat); setSvcQ(""); }}
+                  onClick={() => { setTab("info"); }}
                   className="flex-shrink-0 flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl px-3.5 py-2.5 active:scale-95 transition-transform"
                   style={{ touchAction: "manipulation" }}>
                   <m.Icon className="w-4 h-4 text-white" />
@@ -290,7 +275,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
         <div className="grid grid-cols-3 gap-2">
           {([
-            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils, sub: `${services.length} items`     },
+            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils, sub: `${foodPlaces.length} nearby`  },
             { key: "parking"    as const, label: "Parking",    Icon: Car,      sub: "Nearby areas"                },
             { key: "night"      as const, label: "Night Life",  Icon: Moon,     sub: "Evening fun"                 },
             { key: "tours"      as const, label: "Tours",       Icon: Map,      sub: `${tours.length} available`   },
@@ -325,147 +310,60 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* ══ RESTAURANT ══════════════════════════════════════════════════ */}
         {tab === "restaurant" && (
           <>
-            {/* Search bar */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={svcQ} onChange={e => setSvcQ(e.target.value)} placeholder="Search services…"
-                className="w-full bg-white rounded-2xl pl-10 pr-10 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
-                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }} />
-              {svcQ && (
-                <button onClick={() => setSvcQ("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">
-                  ×
-                </button>
-              )}
+            <div className="bg-white rounded-3xl p-4 flex items-center gap-4 mb-1"
+              style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <Utensils className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-black text-slate-900 text-sm">Nearby Restaurants & Cafés</p>
+                <p className="text-slate-400 text-xs mt-0.5">Food & dining options close to the hotel</p>
+              </div>
             </div>
-
-            {/* Category filter chips */}
-            {services.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
-                <button onClick={() => setSvcCat("all")} style={{ touchAction: "manipulation" }}
-                  className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all ${svcCat === "all" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 border border-slate-200"}`}>
-                  All
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${svcCat === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-400"}`}>{services.length}</span>
-                </button>
-                {availableCategories.map(cat => {
-                  const m = CAT_META[cat] ?? CAT_META.other;
-                  const count = services.filter(s => s.category === cat).length;
-                  const active = svcCat === cat;
-                  return (
-                    <button key={cat} onClick={() => setSvcCat(cat)}
-                      className="flex-shrink-0 flex items-center gap-1.5 text-xs font-black px-4 py-2 rounded-full transition-all border"
-                      style={active
-                        ? { touchAction: "manipulation", background: m.color, color: "#fff", borderColor: m.color, boxShadow: `0 4px 14px ${m.color}45` }
-                        : { touchAction: "manipulation", background: "#fff", color: "#64748B", borderColor: "#E2E8F0" }}>
-                      <m.Icon className="w-3.5 h-3.5" />
-                      {m.label}
-                      <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${active ? "bg-white/25 text-white" : "bg-slate-100 text-slate-400"}`}>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Service list */}
-            {filteredSvcs.length === 0 ? (
+            {foodPlaces.length === 0 ? (
               <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                {svcQ ? (
-                  <>
-                    <Search className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                    <p className="font-bold text-slate-700">No results for &quot;{svcQ}&quot;</p>
-                    <button onClick={() => setSvcQ("")} className="mt-3 text-xs font-bold text-blue-600">Clear search</button>
-                  </>
-                ) : (
-                  <>
-                    <Bell className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                    <p className="font-bold text-slate-700">No services available yet</p>
-                  </>
-                )}
+                <Utensils className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <p className="font-bold text-slate-700">No restaurants listed yet</p>
+                <p className="text-xs text-slate-400 mt-1">Ask reception for dining recommendations</p>
               </div>
-            ) : svcCat === "all" && !svcQ ? (
-              /* Grouped by category */
-              <div className="space-y-1">
-                {Object.entries(groupedSvcs).map(([cat, svcs]) => {
-                  const m = CAT_META[cat] ?? CAT_META.other;
-                  return (
-                    <div key={cat}>
-                      {/* Category header */}
-                      <div className="flex items-center gap-2.5 py-3">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                          style={{ background: m.light }}>
-                          <m.Icon className="w-4 h-4" style={{ color: m.color }} />
+            ) : foodPlaces.map(p => {
+              const [bg, fg] = placeColors[p.type] ?? placeColors.other;
+              const PlaceIco = PLACE_ICON[p.type] ?? UtensilsCrossed;
+              return (
+                <div key={p.id} className="bg-white rounded-3xl overflow-hidden"
+                  style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+                  <div className="p-4">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+                        <PlaceIco className="w-5 h-5" style={{ color: fg }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-black text-slate-900 text-sm leading-snug">{p.name}</p>
+                          <span className="text-[10px] font-bold capitalize px-2.5 py-1 rounded-full flex-shrink-0"
+                            style={{ background: bg, color: fg }}>{p.type}</span>
                         </div>
-                        <p className="font-black text-slate-800 text-sm">{m.label}</p>
-                        <div className="flex-1 h-px bg-slate-100" />
-                        <span className="text-xs font-bold text-slate-300">{svcs.length}</span>
-                      </div>
-                      <div className="space-y-3">
-                        {svcs.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              /* Flat list (filtered category or search) */
-              <div className="space-y-3">
-                {filteredSvcs.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
-              </div>
-            )}
-
-            {/* ── Nearby food places ───────────────────────────────────── */}
-            {foodPlaces.length > 0 && (
-              <div className="mt-2">
-                <div className="flex items-center gap-2.5 py-3">
-                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#FEF3C7" }}>
-                    <UtensilsCrossed className="w-4 h-4" style={{ color: "#92400E" }} />
-                  </div>
-                  <p className="font-black text-slate-800 text-sm">Nearby Restaurants</p>
-                  <div className="flex-1 h-px bg-slate-100" />
-                  <span className="text-xs font-bold text-slate-300">{foodPlaces.length}</span>
-                </div>
-                <div className="space-y-3">
-                  {foodPlaces.map(p => {
-                    const [bg, fg] = placeColors[p.type] ?? placeColors.other;
-                    const PlaceIco = PLACE_ICON[p.type] ?? UtensilsCrossed;
-                    return (
-                      <div key={p.id} className="bg-white rounded-3xl overflow-hidden"
-                        style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
-                        <div className="p-4">
-                          <div className="flex items-start gap-3.5">
-                            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
-                              <PlaceIco className="w-5 h-5" style={{ color: fg }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="font-black text-slate-900 text-sm leading-snug">{p.name}</p>
-                                <span className="text-[10px] font-bold capitalize px-2.5 py-1 rounded-full flex-shrink-0"
-                                  style={{ background: bg, color: fg }}>{p.type}</span>
-                              </div>
-                              {p.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</p>}
-                              {p.address && (
-                                <div className="flex items-center gap-1.5 mt-2">
-                                  <MapPin className="w-3 h-3 flex-shrink-0 text-slate-300" />
-                                  <p className="text-xs text-slate-400 truncate">{p.address}</p>
-                                </div>
-                              )}
-                            </div>
+                        {p.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</p>}
+                        {p.address && (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <MapPin className="w-3 h-3 flex-shrink-0 text-slate-300" />
+                            <p className="text-xs text-slate-400 truncate">{p.address}</p>
                           </div>
-                        </div>
-                        {p.google_maps_link && (
-                          <a href={p.google_maps_link} target="_blank" rel="noopener noreferrer"
-                            style={{ touchAction: "manipulation" }}
-                            className="flex items-center justify-center gap-2 py-3 border-t border-slate-100 text-xs font-bold text-slate-500 active:bg-slate-50 transition-colors">
-                            <MapPin className="w-3.5 h-3.5" />
-                            Open in Google Maps
-                          </a>
                         )}
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+                  {p.google_maps_link && (
+                    <a href={p.google_maps_link} target="_blank" rel="noopener noreferrer"
+                      style={{ touchAction: "manipulation" }}
+                      className="flex items-center justify-center gap-2 py-3 border-t border-slate-100 text-xs font-bold text-slate-500 active:bg-slate-50 transition-colors">
+                      <MapPin className="w-3.5 h-3.5" />
+                      Open in Google Maps
+                    </a>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })}
           </>
         )}
 
@@ -739,17 +637,19 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             {/* Info grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { Icon: Clock,  label: "Check-in",   val: hotel.check_in_time  || "14:00",              color: "#3B82F6", bg: "#EFF6FF" },
-                { Icon: Clock,  label: "Check-out",  val: hotel.check_out_time || "11:00",              color: "#8B5CF6", bg: "#F5F3FF" },
-                { Icon: Clock,  label: "Hours", val: (() => {
+                ...(!hotel.is_24_7 ? [
+                  { Icon: Clock, label: "Check-in",  val: hotel.check_in_time  || "14:00", color: "#3B82F6", bg: "#EFF6FF" },
+                  { Icon: Clock, label: "Check-out", val: hotel.check_out_time || "11:00", color: "#8B5CF6", bg: "#F5F3FF" },
+                ] : []),
+                { Icon: Clock, label: "Hours", val: (() => {
                     if (hotel.is_24_7) return "24/7 Open";
                     const fmt = (t: string) => { if (!t) return ""; const [h,m] = t.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
                     return `${fmt(hotel.open_time||"09:00")} – ${fmt(hotel.close_time||"22:00")}`;
-                  })(),                                                                                  color: "#059669", bg: "#ECFDF5" },
-                { Icon: Wifi,   label: "WiFi",        val: hotel.wifi_info  || "Ask Reception",         color: "#10B981", bg: "#D1FAE5" },
-                { Icon: Globe,  label: "Language",   val: hotel.language_default?.toUpperCase() || "EN", color: "#F97316", bg: "#FFF7ED" },
-                { Icon: Car,    label: "Parking",    val: parkingPlaces.length > 0 ? `${parkingPlaces.length} nearby` : "Ask Reception", color: "#075985", bg: "#E0F2FE" },
-                { Icon: Moon,   label: "Night Life", val: nightPlaces.length > 0 ? `${nightPlaces.length} spots` : "Ask Reception",      color: "#6B21A8", bg: "#F3E8FF" },
+                  })(), color: "#059669", bg: "#ECFDF5" },
+                { Icon: Wifi,  label: "WiFi",       val: hotel.wifi_info || "Ask Reception",                  color: "#10B981", bg: "#D1FAE5" },
+                { Icon: Globe, label: "Language",   val: hotel.language_default?.toUpperCase() || "EN",        color: "#F97316", bg: "#FFF7ED" },
+                { Icon: Car,   label: "Parking",    val: parkingPlaces.length > 0 ? `${parkingPlaces.length} nearby` : "Ask Reception", color: "#075985", bg: "#E0F2FE" },
+                { Icon: Moon,  label: "Night Life", val: nightPlaces.length > 0 ? `${nightPlaces.length} spots` : "Ask Reception",      color: "#6B21A8", bg: "#F3E8FF" },
               ].map(({ Icon, label, val, color, bg }) => (
                 <div key={label} className="bg-white rounded-3xl p-4" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: bg }}>
@@ -761,25 +661,31 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               ))}
             </div>
 
-            {/* Services summary */}
-            {services.length > 0 && (
+            {/* Amenities / Benefits */}
+            {hotel.amenities && hotel.amenities.length > 0 && (
               <div className="bg-white rounded-3xl p-4" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Hotel Services</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Services & Benefits</p>
                 <div className="flex flex-wrap gap-2">
-                  {Object.entries(
-                    services.reduce((acc, s) => { acc[s.category] = (acc[s.category] || 0) + 1; return acc; }, {} as Record<string, number>)
-                  ).map(([cat, count]) => {
-                    const m = CAT_META[cat] ?? CAT_META.other;
-                    return (
-                      <button key={cat} onClick={() => { setTab("restaurant"); setSvcCat(cat); }}
-                        style={{ touchAction: "manipulation", background: m.light, color: m.color }}
-                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full active:scale-95 transition-transform">
-                        <m.Icon className="w-3.5 h-3.5" />
-                        {m.label}
-                        <span className="font-black">{count}</span>
-                      </button>
-                    );
-                  })}
+                  {hotel.amenities.map(a => (
+                    <span key={a} className="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700">{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Full hotel services */}
+            {services.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2.5 py-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <Bell className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="font-black text-slate-800 text-sm">Hotel Services</p>
+                  <div className="flex-1 h-px bg-slate-100" />
+                  <span className="text-xs font-bold text-slate-300">{services.length}</span>
+                </div>
+                <div className="space-y-3">
+                  {services.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
                 </div>
               </div>
             )}
@@ -793,7 +699,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location</p>
-                  <p className="font-black text-slate-900 text-sm mt-0.5">{hotel.city}, United Kingdom</p>
+                  <p className="font-black text-slate-900 text-sm mt-0.5">{hotel.city}</p>
                 </div>
               </div>
             )}
