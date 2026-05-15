@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
@@ -11,4 +11,6 @@ urlpatterns = [
     path("api/places/", include("places.urls")),
     path("api/subscriptions/", include("subscriptions.urls")),
     path("api/", include("services.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Serve media files in all environments (nginx can override this for performance)
+    re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+]

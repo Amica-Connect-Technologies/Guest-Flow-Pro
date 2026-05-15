@@ -85,6 +85,11 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Reverse-proxy headers — lets Django build correct absolute URLs (for logo_url etc.)
+# when running behind nginx which forwards X-Forwarded-Host and X-Forwarded-Proto.
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # CORS — allow all origins so guests can access the hotel page from any device.
 # Security is enforced by JWT auth on protected endpoints, not CORS.
 CORS_ALLOW_ALL_ORIGINS = True
