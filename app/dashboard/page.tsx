@@ -2,13 +2,33 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Utensils, BedDouble, Map, Target, Sparkles, Bell, ClipboardList, Banknote, type LucideIcon } from "lucide-react";
+import { Utensils, BedDouble, Map, Target, Sparkles, Bell, ClipboardList, Banknote, User, type LucideIcon } from "lucide-react";
 import {
   auth, hotelsApi, servicesApi, bookingsApi,
   type Hotel, type HotelService, type ServiceBooking,
 } from "@/lib/api";
 import Image from "next/image";
 import QRCode from "react-qr-code";
+
+// ── Amenity/benefit tags ──────────────────────────────────────────────────────
+const AMENITIES = [
+  { key: "reservations",    label: "Reservations",       emoji: "📅" },
+  { key: "about_hotel",     label: "About the Hotel",    emoji: "🏨" },
+  { key: "location",        label: "Location",           emoji: "📍" },
+  { key: "pre_arrival",     label: "Pre-arrival",        emoji: "⏱" },
+  { key: "weddings_events", label: "Weddings & Events",  emoji: "💒" },
+  { key: "tours_travel",    label: "Tours & Travel",     emoji: "✈️" },
+  { key: "spa",             label: "Spa",                emoji: "💆" },
+  { key: "restaurant",      label: "Restaurant",         emoji: "🍽️" },
+  { key: "day_use",         label: "Day Use",            emoji: "🌞" },
+  { key: "events",          label: "Events",             emoji: "🎤" },
+  { key: "parking",         label: "Parking",            emoji: "🅿️" },
+  { key: "night_life",      label: "Night Life",         emoji: "🌙" },
+  { key: "wifi",            label: "Free WiFi",          emoji: "📶" },
+  { key: "gym",             label: "Gym / Fitness",      emoji: "🏋️" },
+  { key: "pool",            label: "Swimming Pool",      emoji: "🏊" },
+  { key: "bar",             label: "Bar / Lounge",       emoji: "🍸" },
+] as const;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const CAT_LABEL: Record<string, string> = {
@@ -45,7 +65,7 @@ export default function HotelDashboard() {
   const [userEmail, setUserEmail] = useState("");
 
   // ── active section
-  const [section, setSection] = useState<"qr" | "services" | "bookings">("qr");
+  const [section, setSection] = useState<"qr" | "services" | "bookings" | "profile">("qr");
 
   // ── services
   const [services, setServices]   = useState<HotelService[]>([]);
@@ -63,6 +83,24 @@ export default function HotelDashboard() {
   const [bookLoading, setBookLoading] = useState(false);
   const [bookFilter, setBookFilter] = useState("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // ── profile edit
+  type ProfileForm = {
+    name: string; city: string; phone: string; email: string;
+    whatsapp_number: string; address: string; description: string;
+    check_in_time: string; check_out_time: string; wifi_info: string;
+    language_default: string; amenities: string[];
+    logoFile: File | null; logoPreview: string;
+  };
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [profileForm, setProfileForm] = useState<ProfileForm>({
+    name: "", city: "", phone: "", email: "", whatsapp_number: "", address: "",
+    description: "", check_in_time: "14:00", check_out_time: "11:00", wifi_info: "",
+    language_default: "en", amenities: [], logoFile: null, logoPreview: "",
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const logoRef = useRef<HTMLInputElement>(null);
 
   const [toast, setToast] = useState({ msg: "", ok: true });
 
@@ -167,6 +205,59 @@ export default function HotelDashboard() {
     setDeletingId(null);
   }
 
+  // ── profile helpers ───────────────────────────────────────────────────────
+  function openProfileForm() {
+    if (!hotel) return;
+    setProfileForm({
+      name: hotel.name, city: hotel.city, phone: hotel.phone ?? "",
+      email: hotel.email ?? "", whatsapp_number: hotel.whatsapp_number ?? "",
+      address: hotel.address ?? "", description: hotel.description ?? "",
+      check_in_time: hotel.check_in_time || "14:00",
+      check_out_time: hotel.check_out_time || "11:00",
+      wifi_info: hotel.wifi_info ?? "", language_default: hotel.language_default || "en",
+      amenities: hotel.amenities ?? [], logoFile: null, logoPreview: hotel.logo_url ?? "",
+    });
+    setProfileError("");
+    setShowProfileForm(true);
+  }
+
+  async function saveProfile() {
+    if (!profileForm.name.trim()) { setProfileError("Hotel name is required."); return; }
+    setProfileSaving(true); setProfileError("");
+    try {
+      const fd = new FormData();
+      fd.append("name",           profileForm.name.trim());
+      fd.append("city",           profileForm.city.trim());
+      fd.append("phone",          profileForm.phone.trim());
+      fd.append("email",          profileForm.email.trim());
+      fd.append("whatsapp_number", profileForm.whatsapp_number.trim());
+      fd.append("address",        profileForm.address.trim());
+      fd.append("description",    profileForm.description.trim());
+      fd.append("check_in_time",  profileForm.check_in_time);
+      fd.append("check_out_time", profileForm.check_out_time);
+      fd.append("wifi_info",      profileForm.wifi_info.trim());
+      fd.append("language_default", profileForm.language_default);
+      fd.append("amenities",      JSON.stringify(profileForm.amenities));
+      if (profileForm.logoFile) fd.append("logo", profileForm.logoFile);
+      const updated = await hotelsApi.updateProfile(fd);
+      setHotel(updated);
+      setShowProfileForm(false);
+      showToast("Profile saved.");
+    } catch (e) {
+      setProfileError(e instanceof Error ? e.message : "Save failed");
+    }
+    setProfileSaving(false);
+  }
+
+  function toggleAmenity(key: string) {
+    setProfileForm(f => ({
+      ...f,
+      amenities: f.amenities.includes(key)
+        ? f.amenities.filter(a => a !== key)
+        : [...f.amenities, key],
+    }));
+  }
+
   // ── booking status update ─────────────────────────────────────────────────
   async function updateBooking(id: string, data: { status?: string; payment_status?: string }) {
     setUpdatingId(id);
@@ -231,6 +322,7 @@ export default function HotelDashboard() {
             { key: "qr",       label: "QR Code"  },
             { key: "services", label: "Services" },
             { key: "bookings", label: "Bookings" },
+            { key: "profile",  label: "Profile"  },
           ] as const).map(({ key, label }) => (
             <button key={key} onClick={() => setSection(key)}
               className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${section === key ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
@@ -448,7 +540,242 @@ export default function HotelDashboard() {
             )}
           </div>
         )}
+
+        {/* ════ PROFILE SECTION ════════════════════════════════════════════ */}
+        {section === "profile" && (
+          <div className="space-y-4">
+            {/* Header card */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  {hotel.logo_url ? (
+                    <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={56} height={56}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white/30 flex-shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-black text-xl">{hotel.name.slice(0,2).toUpperCase()}</span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-white font-black text-lg leading-tight">{hotel.name}</p>
+                    <p className="text-blue-200 text-xs mt-0.5">{hotel.city}</p>
+                  </div>
+                </div>
+                <button onClick={openProfileForm}
+                  className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors border border-white/25">
+                  <User className="w-3.5 h-3.5" />
+                  Edit Profile
+                </button>
+              </div>
+
+              {/* Info rows */}
+              <div className="divide-y divide-slate-50">
+                {[
+                  { label: "Phone",      val: hotel.phone      || "—" },
+                  { label: "Email",      val: hotel.email      || "—" },
+                  { label: "WhatsApp",   val: hotel.whatsapp_number || "—" },
+                  { label: "Address",    val: hotel.address    || "—" },
+                  { label: "Check-in",   val: hotel.check_in_time  || "14:00" },
+                  { label: "Check-out",  val: hotel.check_out_time || "11:00" },
+                  { label: "WiFi",       val: hotel.wifi_info  || "Ask Reception" },
+                ].map(({ label, val }) => (
+                  <div key={label} className="flex items-center justify-between px-5 py-3">
+                    <span className="text-xs font-bold text-slate-400 w-24">{label}</span>
+                    <span className="text-xs font-semibold text-slate-700 text-right flex-1">{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            {hotel.description && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">About</p>
+                <p className="text-sm text-slate-600 leading-relaxed">{hotel.description}</p>
+              </div>
+            )}
+
+            {/* Services & Benefits */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Services &amp; Benefits</p>
+                <button onClick={openProfileForm} className="text-xs text-blue-600 font-semibold hover:underline">Edit</button>
+              </div>
+              {(hotel.amenities ?? []).length === 0 ? (
+                <p className="text-xs text-slate-400">No services selected yet. <button onClick={openProfileForm} className="text-blue-600 font-semibold hover:underline">Add now</button></p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {(hotel.amenities ?? []).map(key => {
+                    const a = AMENITIES.find(x => x.key === key);
+                    return a ? (
+                      <span key={key} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700">
+                        <span>{a.emoji}</span>{a.label}
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ════ PROFILE EDIT SHEET ═════════════════════════════════════════════ */}
+      {showProfileForm && (
+        <>
+          <div onClick={() => !profileSaving && setShowProfileForm(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }} />
+          <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 210, background: "white",
+            borderRadius: "24px 24px 0 0", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+            maxHeight: "94vh", overflowY: "auto" }}>
+            <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
+            <div className="px-5 pb-2">
+              <h3 className="font-bold text-slate-900 text-base mb-4">Edit Hotel Profile</h3>
+
+              <div className="space-y-4">
+
+                {/* Logo upload */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">Hotel Logo</label>
+                  <div className="flex items-center gap-3">
+                    <div onClick={() => logoRef.current?.click()}
+                      className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-400 transition-colors flex-shrink-0">
+                      {profileForm.logoPreview ? (
+                        <Image unoptimized src={profileForm.logoPreview} alt="" width={64} height={64} className="w-16 h-16 object-cover" />
+                      ) : (
+                        <span className="text-2xl font-black text-slate-300">{profileForm.name.slice(0,2).toUpperCase() || "?"}</span>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => logoRef.current?.click()}
+                      className="text-xs font-semibold text-blue-600 hover:underline">
+                      {profileForm.logoPreview ? "Change logo" : "Upload logo"}
+                    </button>
+                    <input ref={logoRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => {
+                        const f = e.target.files?.[0];
+                        if (f) setProfileForm(s => ({ ...s, logoFile: f, logoPreview: URL.createObjectURL(f) }));
+                      }} />
+                  </div>
+                </div>
+
+                {/* Name + City */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Hotel Name <span className="text-red-400">*</span></label>
+                    <input value={profileForm.name} onChange={e => setProfileForm(s => ({ ...s, name: e.target.value }))}
+                      placeholder="The Grand Hotel"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">City</label>
+                    <input value={profileForm.city} onChange={e => setProfileForm(s => ({ ...s, city: e.target.value }))}
+                      placeholder="London"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                </div>
+
+                {/* About */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">About / Description</label>
+                  <textarea value={profileForm.description} onChange={e => setProfileForm(s => ({ ...s, description: e.target.value }))}
+                    rows={3} placeholder="A short description of your hotel…"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all resize-none" />
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Address</label>
+                  <input value={profileForm.address} onChange={e => setProfileForm(s => ({ ...s, address: e.target.value }))}
+                    placeholder="123 High Street, London"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                </div>
+
+                {/* Phone + Email */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Phone</label>
+                    <input value={profileForm.phone} onChange={e => setProfileForm(s => ({ ...s, phone: e.target.value }))}
+                      placeholder="+44 20 1234 5678"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Email</label>
+                    <input type="email" value={profileForm.email} onChange={e => setProfileForm(s => ({ ...s, email: e.target.value }))}
+                      placeholder="info@hotel.com"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                </div>
+
+                {/* WhatsApp */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">WhatsApp Number</label>
+                  <input value={profileForm.whatsapp_number} onChange={e => setProfileForm(s => ({ ...s, whatsapp_number: e.target.value }))}
+                    placeholder="+44 7700 000000"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                </div>
+
+                {/* Check-in / Check-out / WiFi */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Check-in</label>
+                    <input value={profileForm.check_in_time} onChange={e => setProfileForm(s => ({ ...s, check_in_time: e.target.value }))}
+                      placeholder="14:00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">Check-out</label>
+                    <input value={profileForm.check_out_time} onChange={e => setProfileForm(s => ({ ...s, check_out_time: e.target.value }))}
+                      placeholder="11:00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">WiFi Info</label>
+                    <input value={profileForm.wifi_info} onChange={e => setProfileForm(s => ({ ...s, wifi_info: e.target.value }))}
+                      placeholder="Password123"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  </div>
+                </div>
+
+                {/* Services & Benefits */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">Services &amp; Benefits</label>
+                  <div className="flex flex-wrap gap-2">
+                    {AMENITIES.map(({ key, label, emoji }) => {
+                      const active = profileForm.amenities.includes(key);
+                      return (
+                        <button key={key} type="button" onClick={() => toggleAmenity(key)}
+                          style={{ touchAction: "manipulation" }}
+                          className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border transition-all ${
+                            active ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                          }`}>
+                          <span>{emoji}</span>{label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {profileError && (
+                <div className="mt-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                  <p className="text-xs text-red-600">{profileError}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-5">
+                <button onClick={() => setShowProfileForm(false)} disabled={profileSaving}
+                  className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl text-sm">
+                  Cancel
+                </button>
+                <button onClick={saveProfile} disabled={profileSaving}
+                  className="flex-1 bg-blue-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl text-sm">
+                  {profileSaving ? "Saving…" : "Save Profile"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ════ SERVICE FORM SHEET ══════════════════════════════════════════════ */}
       {showSvcForm && (

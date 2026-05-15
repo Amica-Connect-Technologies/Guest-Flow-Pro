@@ -42,7 +42,7 @@ const PLANS = [
 // ── Steps config ─────────────────────────────────────────────────────────────
 const STEPS = [
   { label: "Your account", subtitle: "Login credentials" },
-  { label: "Business info", subtitle: "Property details" },
+  { label: "Hotel info",    subtitle: "Hotel details"    },
   { label: "Choose plan",   subtitle: "Subscription" },
   { label: "Payment proof", subtitle: "Bank transfer" },
 ];
@@ -436,12 +436,29 @@ export default function RegisterPage() {
           {step === 2 && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-violet-700">
-                <h1 className="text-lg font-bold text-white">Your property details</h1>
-                <p className="text-violet-200 text-sm mt-0.5">Tell us about your hotel or property</p>
+                <h1 className="text-lg font-bold text-white">Your hotel details</h1>
+                <p className="text-violet-200 text-sm mt-0.5">Tell us about your hotel</p>
               </div>
               <div className="p-6 space-y-4">
+                {/* Business type — locked to Hotel */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Business Type</label>
+                  <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-blue-800">Hotel</p>
+                      <p className="text-[11px] text-blue-500 mt-0.5">This platform is for hotels only</p>
+                    </div>
+                    <span className="text-[10px] font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full">Selected</span>
+                  </div>
+                </div>
+
                 <Input
-                  label="Hotel / business name *"
+                  label="Hotel name *"
                   value={form.business_name}
                   onChange={(v) => set("business_name", v)}
                   placeholder="The Grand Hotel"

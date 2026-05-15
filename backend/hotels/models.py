@@ -13,6 +13,16 @@ class Hotel(models.Model):
     logo = models.ImageField(upload_to="hotel-logos/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Extended profile fields
+    description   = models.TextField(blank=True)
+    address       = models.CharField(max_length=300, blank=True)
+    phone         = models.CharField(max_length=30, blank=True)
+    email         = models.EmailField(blank=True)
+    check_in_time  = models.CharField(max_length=10, blank=True, default="14:00")
+    check_out_time = models.CharField(max_length=10, blank=True, default="11:00")
+    wifi_info     = models.CharField(max_length=100, blank=True)
+    amenities     = models.JSONField(default=list, blank=True)
+
     class Meta:
         ordering = ["-created_at"]
 

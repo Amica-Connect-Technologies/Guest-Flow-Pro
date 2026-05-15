@@ -3,6 +3,10 @@ const BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replac
 export type Hotel = {
   id: string; name: string; city: string; whatsapp_number: string;
   language_default: string; logo_url: string; created_at: string;
+  // extended profile fields
+  description: string; address: string; phone: string; email: string;
+  check_in_time: string; check_out_time: string; wifi_info: string;
+  amenities: string[];
 };
 export type Tour = {
   id: string; city: string; title: string; description: string;
@@ -112,6 +116,12 @@ export const hotelsApi = {
   delete: (id: string) => req<void>(`/api/hotels/${id}/`, { method: "DELETE" }),
 
   stats: () => req<{ hotels: number; tours: number; places: number }>("/api/auth/stats/"),
+
+  getProfile: () => req<Hotel>("/api/hotels/profile/"),
+  updateProfile: (data: FormData | Record<string, unknown>) => {
+    const body = data instanceof FormData ? data : JSON.stringify(data);
+    return req<Hotel>("/api/hotels/profile/", { method: "PATCH", body });
+  },
 };
 
 // ── Tours ────────────────────────────────────────────────────────────────────
