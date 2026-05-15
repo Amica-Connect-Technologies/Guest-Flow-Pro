@@ -225,7 +225,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           )}
           <div className="flex-1 min-w-0">
             <p className="text-blue-200/80 text-xs font-semibold tracking-wider uppercase">Welcome to</p>
-            <p className="text-white font-black text-2xl leading-tight truncate">{hotel.name}</p>
+            <p className="text-white font-black text-2xl leading-tight line-clamp-2">{hotel.name}</p>
             <div className="flex items-center gap-1.5 mt-1">
               <MapPin className="w-3 h-3 text-blue-300 flex-shrink-0" />
               <span className="text-blue-200 text-xs font-semibold">{hotel.city}</span>
