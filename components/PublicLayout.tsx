@@ -16,19 +16,27 @@ type Lang = (typeof languages)[number];
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isPrivate =
+
+  // Dashboard and admin have their own full headers — skip everything
+  const isDashAdmin =
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/dashboard");
+
+  // Hotel guest pages and auth pages get the branded header but no footer/bottom-nav
+  const isHotelPage = pathname.startsWith("/h/");
+  const isAuthPage  =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/h/");
+    pathname.startsWith("/register");
+
+  const showHeader = !isDashAdmin;
+  const showFooter = !isDashAdmin && !isHotelPage && !isAuthPage;
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeLang, setActiveLang] = useState<Lang>(languages[0]);
 
   return (
     <>
-      {!isPrivate && (
+      {showHeader && (
         <>
           <div className="hidden md:block">
             <Navbar />
@@ -37,11 +45,11 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         </>
       )}
 
-      <main className={!isPrivate ? "flex-1 pt-14 md:pt-16 pb-20 md:pb-0" : "flex-1"}>
+      <main className={showHeader ? `flex-1 pt-14 md:pt-16${showFooter ? " pb-20 md:pb-0" : ""}` : "flex-1"}>
         {children}
       </main>
 
-      {!isPrivate && (
+      {showFooter && (
         <>
           <div className="hidden md:block">
             <Footer />
@@ -51,7 +59,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       )}
 
       {/* ── Language Sheet — rendered at PublicLayout root, no stacking-context parent ── */}
-      {!isPrivate && sheetOpen && (
+      {showHeader && sheetOpen && (
         <>
           {/* Backdrop */}
           <div

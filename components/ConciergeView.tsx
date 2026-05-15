@@ -207,7 +207,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
 
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
-      <div className="relative bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#2563EB] px-5 pt-14 pb-6 overflow-hidden">
+      <div className="relative bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#2563EB] px-5 pt-6 pb-6 overflow-hidden">
         {/* Decorative blobs */}
         <div className="absolute top-0 right-0 w-56 h-56 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/4" />
         <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-blue-400/10 translate-y-1/3 -translate-x-1/4" />
