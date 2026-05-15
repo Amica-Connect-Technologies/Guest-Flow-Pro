@@ -321,10 +321,25 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               </div>
             </div>
             {foodPlaces.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                <Utensils className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="font-bold text-slate-700">No restaurants listed yet</p>
-                <p className="text-xs text-slate-400 mt-1">Ask reception for dining recommendations</p>
+              <div className="bg-white rounded-3xl overflow-hidden" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+                <div className="bg-gradient-to-br from-amber-400 to-orange-500 px-6 pt-8 pb-6 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mb-4">
+                    <Utensils className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="text-white font-black text-xl">Coming Soon</p>
+                  <p className="text-orange-100 text-xs font-semibold mt-1">Working on Nearby Restaurant APIs</p>
+                </div>
+                <div className="px-6 py-5 flex flex-col gap-3">
+                  <div className="flex items-center gap-3 bg-amber-50 rounded-2xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-slate-600">Nearby restaurants & cafés will appear here</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-amber-50 rounded-2xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-slate-600">Google Maps integration in progress</p>
+                  </div>
+                  <p className="text-center text-xs text-slate-400 pt-1">Ask reception for dining recommendations</p>
+                </div>
               </div>
             ) : foodPlaces.map(p => {
               const [bg, fg] = placeColors[p.type] ?? placeColors.other;
@@ -381,10 +396,25 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               </div>
             </div>
             {parkingPlaces.length === 0 ? (
-              <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                <Car className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="font-bold text-slate-700">No parking areas listed yet</p>
-                <p className="text-xs text-slate-400 mt-1">Ask reception for parking recommendations</p>
+              <div className="bg-white rounded-3xl overflow-hidden" style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+                <div className="bg-gradient-to-br from-blue-500 to-cyan-600 px-6 pt-8 pb-6 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center mb-4">
+                    <Car className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="text-white font-black text-xl">Coming Soon</p>
+                  <p className="text-blue-100 text-xs font-semibold mt-1">Working on Nearby Parking APIs</p>
+                </div>
+                <div className="px-6 py-5 flex flex-col gap-3">
+                  <div className="flex items-center gap-3 bg-blue-50 rounded-2xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-slate-600">Nearby parking areas will appear here</p>
+                  </div>
+                  <div className="flex items-center gap-3 bg-blue-50 rounded-2xl px-4 py-3">
+                    <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                    <p className="text-xs font-semibold text-slate-600">Real-time availability integration in progress</p>
+                  </div>
+                  <p className="text-center text-xs text-slate-400 pt-1">Ask reception for parking recommendations</p>
+                </div>
               </div>
             ) : parkingPlaces.map(p => (
               <div key={p.id} className="bg-white rounded-3xl overflow-hidden"
