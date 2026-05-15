@@ -2,21 +2,12 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from concierge.auth import SilentJWTAuthentication
 from hotels.models import Hotel
 from accounts.models import HotelUser
 from .models import HotelService, ServiceBooking
 from .serializers import HotelServiceSerializer, ServiceBookingSerializer
-
-
-class SilentJWTAuthentication(JWTAuthentication):
-    """JWT auth that never raises – bad/missing tokens just yield AnonymousUser."""
-    def authenticate(self, request):
-        try:
-            return super().authenticate(request)
-        except Exception:
-            return None
 
 
 class ServiceViewSet(viewsets.ModelViewSet):

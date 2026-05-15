@@ -85,16 +85,14 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS", default="http://localhost:3000"
-).split(",")
-CORS_ALLOW_CREDENTIALS = True
+# CORS — allow all origins so guests can access the hotel page from any device.
+# Security is enforced by JWT auth on protected endpoints, not CORS.
+CORS_ALLOW_ALL_ORIGINS = True
 
 # DRF
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "concierge.auth.SilentJWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
