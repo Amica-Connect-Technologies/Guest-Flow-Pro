@@ -13,6 +13,8 @@ from django.core.management.base import BaseCommand
 from places.models import Place
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+UA = "GuestFlowPro/1.0 (contact@guestflowpro.com)"
 
 AMENITY_TO_TYPE = {
     "restaurant": "restaurant",
@@ -27,20 +29,32 @@ AMENITY_TO_TYPE = {
 }
 
 
-def fetch_overpass(city: str, amenities: list[str], limit: int) -> list[dict]:
+def geocode_city(city: str) -> tuple:
+    """Return (south, west, north, east) bounding box via Nominatim."""
+    url = NOMINATIM_URL + "?" + urllib.parse.urlencode({"q": city, "format": "json", "limit": 1})
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", UA)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        results = json.loads(resp.read())
+    if not results:
+        raise ValueError(f"City '{city}' not found.")
+    bb = results[0]["boundingbox"]  # [south, north, west, east]
+    return float(bb[0]), float(bb[2]), float(bb[1]), float(bb[3])
+
+
+def fetch_overpass(south: float, west: float, north: float, east: float,
+                   amenities: list, limit: int) -> list:
+    bbox   = f"{south},{west},{north},{east}"
     amenity_filter = "|".join(amenities)
-    query = f"""
-[out:json][timeout:60];
-area["name"~"^{city}$","i"]->.a;
-(
-  node["amenity"~"{amenity_filter}"](area.a);
-  way["amenity"~"{amenity_filter}"](area.a);
-);
-out center {limit};
-"""
+    query = (
+        f"[out:json][timeout:60];"
+        f"(node[\"amenity\"~\"{amenity_filter}\"][\"name\"]({bbox});"
+        f"way[\"amenity\"~\"{amenity_filter}\"][\"name\"]({bbox}););"
+        f"out center {limit};"
+    )
     data = urllib.parse.urlencode({"data": query}).encode()
-    req = urllib.request.Request(OVERPASS_URL, data=data)
-    req.add_header("User-Agent", "GuestFlowPro/1.0 (contact@guestflowpro.com)")
+    req  = urllib.request.Request(OVERPASS_URL, data=data)
+    req.add_header("User-Agent", UA)
     with urllib.request.urlopen(req, timeout=90) as resp:
         return json.loads(resp.read())["elements"]
 
@@ -92,10 +106,17 @@ class Command(BaseCommand):
             deleted, _ = Place.objects.filter(city__iexact=city, type=ptype).delete()
             self.stdout.write(f"Deleted {deleted} existing {ptype} places in {city}")
 
-        self.stdout.write(f"Fetching up to {limit} {ptype} places in {city} from OpenStreetMap…")
-
+        self.stdout.write(f"Geocoding '{city}'…")
         try:
-            elements = fetch_overpass(city, amenities, limit)
+            south, west, north, east = geocode_city(city)
+            self.stdout.write(f"  Bounding box: {south:.4f},{west:.4f} → {north:.4f},{east:.4f}")
+        except Exception as exc:
+            self.stderr.write(f"Geocoding error: {exc}")
+            return
+
+        self.stdout.write(f"Fetching up to {limit} {ptype} places in {city} from OpenStreetMap…")
+        try:
+            elements = fetch_overpass(south, west, north, east, amenities, limit)
         except Exception as exc:
             self.stderr.write(f"Overpass API error: {exc}")
             return

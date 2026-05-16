@@ -45,8 +45,74 @@ class PlaceViewSet(viewsets.ModelViewSet):
         return qs
 
 
+def _geocode_city(city: str) -> tuple[float, float, float, float]:
+    """Return (south, west, north, east) bounding box via Nominatim."""
+    url = (
+        "https://nominatim.openstreetmap.org/search?"
+        + urllib.parse.urlencode({"q": city, "format": "json", "limit": 1})
+    )
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", "GuestFlowPro/1.0 (contact@guestflowpro.com)")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        results = _json.loads(resp.read())
+    if not results:
+        raise ValueError(f"City '{city}' not found via Nominatim geocoding.")
+    bb = results[0]["boundingbox"]  # [south, north, west, east]
+    return float(bb[0]), float(bb[2]), float(bb[1]), float(bb[3])
+
+
+def _fetch_overpass(south: float, west: float, north: float, east: float,
+                    amenity_filter: str, limit: int) -> list[dict]:
+    """Fetch OSM nodes/ways within a bounding box."""
+    bbox = f"{south},{west},{north},{east}"
+    query = (
+        f"[out:json][timeout:60];"
+        f"("
+        f'node["amenity"~"{amenity_filter}"]["name"]({bbox});'
+        f'way["amenity"~"{amenity_filter}"]["name"]({bbox});'
+        f");"
+        f"out center {limit};"
+    )
+    data = urllib.parse.urlencode({"data": query}).encode()
+    req  = urllib.request.Request(OVERPASS_URL, data=data)
+    req.add_header("User-Agent", "GuestFlowPro/1.0 (contact@guestflowpro.com)")
+    with urllib.request.urlopen(req, timeout=90) as resp:
+        return _json.loads(resp.read())["elements"]
+
+
+def _save_elements(elements: list[dict], city: str, ptype: str) -> tuple[int, int]:
+    created = skipped = 0
+    for el in elements:
+        tags = el.get("tags", {})
+        name = tags.get("name") or tags.get("name:en")
+        if not name:
+            skipped += 1
+            continue
+        if Place.objects.filter(city__iexact=city, name__iexact=name).exists():
+            skipped += 1
+            continue
+
+        lat = el.get("lat") or (el.get("center") or {}).get("lat")
+        lon = el.get("lon") or (el.get("center") or {}).get("lon")
+
+        addr_parts = [tags.get(k, "") for k in
+                      ("addr:housenumber", "addr:street", "addr:suburb", "addr:city")]
+        address = ", ".join(p for p in addr_parts if p)
+
+        Place.objects.create(
+            city=city,
+            name=name,
+            type=AMENITY_TO_TYPE.get(tags.get("amenity", ""), ptype),
+            description=tags.get("description") or tags.get("cuisine") or "",
+            address=address,
+            google_maps_link=f"https://www.google.com/maps?q={lat},{lon}" if lat and lon else "",
+        )
+        created += 1
+    return created, skipped
+
+
 class ImportPlacesView(APIView):
-    """Admin-only: fetch places from OpenStreetMap and save to DB."""
+    """Admin-only: geocode city → fetch from Overpass → save to DB."""
     permission_classes = [permissions.IsAdminUser]
 
     def post(self, request):
@@ -60,50 +126,21 @@ class ImportPlacesView(APIView):
             return Response({"detail": f"type must be one of {list(TYPE_AMENITIES)}."},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        amenity_filter = "|".join(TYPE_AMENITIES[ptype])
-        query = (
-            f'[out:json][timeout:60];'
-            f'area["name"~"^{city}$","i"]->.a;'
-            f'(node["amenity"~"{amenity_filter}"](area.a);'
-            f' way["amenity"~"{amenity_filter}"](area.a););'
-            f'out center {limit};'
-        )
+        # Step 1: geocode city → bounding box
         try:
-            data = urllib.parse.urlencode({"data": query}).encode()
-            req  = urllib.request.Request(OVERPASS_URL, data=data)
-            req.add_header("User-Agent", "GuestFlowPro/1.0")
-            with urllib.request.urlopen(req, timeout=90) as resp:
-                elements = _json.loads(resp.read())["elements"]
+            south, west, north, east = _geocode_city(city)
+        except Exception as exc:
+            return Response({"detail": f"Geocoding error: {exc}"},
+                            status=status.HTTP_502_BAD_GATEWAY)
+
+        # Step 2: query Overpass with bounding box
+        amenity_filter = "|".join(TYPE_AMENITIES[ptype])
+        try:
+            elements = _fetch_overpass(south, west, north, east, amenity_filter, limit)
         except Exception as exc:
             return Response({"detail": f"Overpass API error: {exc}"},
                             status=status.HTTP_502_BAD_GATEWAY)
 
-        created = skipped = 0
-        for el in elements:
-            tags = el.get("tags", {})
-            name = tags.get("name") or tags.get("name:en")
-            if not name:
-                skipped += 1
-                continue
-            if Place.objects.filter(city__iexact=city, name__iexact=name).exists():
-                skipped += 1
-                continue
-
-            lat = el.get("lat") or (el.get("center") or {}).get("lat")
-            lon = el.get("lon") or (el.get("center") or {}).get("lon")
-            amenity    = tags.get("amenity", "")
-            place_type = AMENITY_TO_TYPE.get(amenity, ptype)
-
-            addr_parts = [tags.get(k, "") for k in
-                          ("addr:housenumber", "addr:street", "addr:suburb", "addr:city")]
-            address = ", ".join(p for p in addr_parts if p)
-
-            Place.objects.create(
-                city=city, name=name, type=place_type,
-                description=tags.get("description") or tags.get("cuisine") or "",
-                address=address,
-                google_maps_link=f"https://www.google.com/maps?q={lat},{lon}" if lat and lon else "",
-            )
-            created += 1
-
+        # Step 3: save to DB
+        created, skipped = _save_elements(elements, city, ptype)
         return Response({"created": created, "skipped": skipped, "city": city, "type": ptype})
