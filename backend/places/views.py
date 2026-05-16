@@ -21,9 +21,12 @@ TYPE_AMENITIES = {
     "restaurant": ["restaurant", "fast_food"],
     "cafe":       ["cafe"],
     "nightlife":  ["bar", "pub", "nightclub"],
-    "parking":    ["parking"],
+    "parking":    ["parking", "parking_entrance"],
     "museum":     ["museum"],
 }
+
+# These types often have no OSM name — don't filter by ["name"], auto-generate instead
+NAME_OPTIONAL_TYPES = {"parking"}
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -62,14 +65,15 @@ def _geocode_city(city: str) -> tuple[float, float, float, float]:
 
 
 def _fetch_overpass(south: float, west: float, north: float, east: float,
-                    amenity_filter: str, limit: int) -> list[dict]:
+                    amenity_filter: str, limit: int, require_name: bool = True) -> list[dict]:
     """Fetch OSM nodes/ways within a bounding box."""
-    bbox = f"{south},{west},{north},{east}"
+    bbox       = f"{south},{west},{north},{east}"
+    name_filter = '["name"]' if require_name else ""
     query = (
         f"[out:json][timeout:60];"
         f"("
-        f'node["amenity"~"{amenity_filter}"]["name"]({bbox});'
-        f'way["amenity"~"{amenity_filter}"]["name"]({bbox});'
+        f'node["amenity"~"{amenity_filter}"]{name_filter}({bbox});'
+        f'way["amenity"~"{amenity_filter}"]{name_filter}({bbox});'
         f");"
         f"out center {limit};"
     )
@@ -81,29 +85,37 @@ def _fetch_overpass(south: float, west: float, north: float, east: float,
 
 
 def _save_elements(elements: list[dict], city: str, ptype: str) -> tuple[int, int]:
-    created = skipped = 0
+    created = skipped = counter = 0
     for el in elements:
-        tags = el.get("tags", {})
-        name = tags.get("name") or tags.get("name:en")
-        if not name:
-            skipped += 1
-            continue
-        if Place.objects.filter(city__iexact=city, name__iexact=name).exists():
-            skipped += 1
-            continue
-
-        lat = el.get("lat") or (el.get("center") or {}).get("lat")
-        lon = el.get("lon") or (el.get("center") or {}).get("lon")
+        tags   = el.get("tags", {})
+        lat    = el.get("lat") or (el.get("center") or {}).get("lat")
+        lon    = el.get("lon") or (el.get("center") or {}).get("lon")
 
         addr_parts = [tags.get(k, "") for k in
                       ("addr:housenumber", "addr:street", "addr:suburb", "addr:city")]
         address = ", ".join(p for p in addr_parts if p)
 
+        name = tags.get("name") or tags.get("name:en")
+        if not name:
+            # Auto-generate a name for unnamed places (common for parking)
+            counter += 1
+            if address:
+                name = f"{ptype.capitalize()} Area — {address.split(',')[0]}"
+            elif lat and lon:
+                name = f"{ptype.capitalize()} Area #{counter}"
+            else:
+                skipped += 1
+                continue
+
+        if Place.objects.filter(city__iexact=city, name__iexact=name).exists():
+            skipped += 1
+            continue
+
         Place.objects.create(
             city=city,
             name=name,
             type=AMENITY_TO_TYPE.get(tags.get("amenity", ""), ptype),
-            description=tags.get("description") or tags.get("cuisine") or "",
+            description=tags.get("description") or tags.get("parking") or "",
             address=address,
             google_maps_link=f"https://www.google.com/maps?q={lat},{lon}" if lat and lon else "",
         )
@@ -135,8 +147,9 @@ class ImportPlacesView(APIView):
 
         # Step 2: query Overpass with bounding box
         amenity_filter = "|".join(TYPE_AMENITIES[ptype])
+        require_name   = ptype not in NAME_OPTIONAL_TYPES
         try:
-            elements = _fetch_overpass(south, west, north, east, amenity_filter, limit)
+            elements = _fetch_overpass(south, west, north, east, amenity_filter, limit, require_name)
         except Exception as exc:
             return Response({"detail": f"Overpass API error: {exc}"},
                             status=status.HTTP_502_BAD_GATEWAY)

@@ -42,14 +42,17 @@ def geocode_city(city: str) -> tuple:
     return float(bb[0]), float(bb[2]), float(bb[1]), float(bb[3])
 
 
+NAME_OPTIONAL = {"parking"}
+
 def fetch_overpass(south: float, west: float, north: float, east: float,
-                   amenities: list, limit: int) -> list:
-    bbox   = f"{south},{west},{north},{east}"
+                   amenities: list, limit: int, require_name: bool = True) -> list:
+    bbox          = f"{south},{west},{north},{east}"
     amenity_filter = "|".join(amenities)
+    name_filter    = '["name"]' if require_name else ""
     query = (
         f"[out:json][timeout:60];"
-        f"(node[\"amenity\"~\"{amenity_filter}\"][\"name\"]({bbox});"
-        f"way[\"amenity\"~\"{amenity_filter}\"][\"name\"]({bbox}););"
+        f"(node[\"amenity\"~\"{amenity_filter}\"]{name_filter}({bbox});"
+        f"way[\"amenity\"~\"{amenity_filter}\"]{name_filter}({bbox}););"
         f"out center {limit};"
     )
     data = urllib.parse.urlencode({"data": query}).encode()
