@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, placesApi, type Place } from "@/lib/api";
 
+const IMPORT_TYPES = ["restaurant", "cafe", "nightlife", "parking", "museum"];
+
 const TYPES = ["restaurant", "museum", "cafe", "attraction", "shop", "parking", "nightlife", "other"];
 const empty = { city: "", name: "", type: "restaurant", description: "", address: "", google_maps_link: "" };
 
@@ -27,6 +29,11 @@ export default function AdminPlaces() {
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ msg: "", error: false });
+  const [showImport, setShowImport] = useState(false);
+  const [importCity, setImportCity] = useState("");
+  const [importType, setImportType] = useState("restaurant");
+  const [importLimit, setImportLimit] = useState(50);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     auth.me().catch(() => router.push("/login"));
@@ -59,6 +66,18 @@ export default function AdminPlaces() {
     if (!confirm("Delete this place?")) return;
     try { await placesApi.delete(id); showToast("Place deleted"); fetchPlaces(); }
     catch (err) { showToast(err instanceof Error ? err.message : "Delete failed", true); }
+  }
+
+  async function handleImport() {
+    if (!importCity.trim()) return;
+    setImporting(true);
+    try {
+      const res = await placesApi.import(importCity.trim(), importType, importLimit);
+      showToast(`Imported ${res.created} places (${res.skipped} skipped)`);
+      setShowImport(false);
+      fetchPlaces();
+    } catch (err) { showToast(err instanceof Error ? err.message : "Import failed", true); }
+    setImporting(false);
   }
 
   function showToast(msg: string, error = false) {
@@ -97,9 +116,15 @@ export default function AdminPlaces() {
             <p className="font-bold text-slate-900 text-sm">Places</p>
             <p className="text-[11px] text-slate-400 mt-0.5">{places.length} place{places.length !== 1 ? "s" : ""}</p>
           </div>
-          <button onClick={openAdd} className="bg-violet-600 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform" style={{ touchAction: "manipulation" }}>
-            + Add Place
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowImport(true)} className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition-transform flex items-center gap-1.5" style={{ touchAction: "manipulation" }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+              Import
+            </button>
+            <button onClick={openAdd} className="bg-violet-600 text-white text-xs font-bold px-4 py-2 rounded-xl active:scale-95 transition-transform" style={{ touchAction: "manipulation" }}>
+              + Add
+            </button>
+          </div>
         </div>
         <div className="px-4 pb-2">
           <div className="relative">
@@ -194,6 +219,75 @@ export default function AdminPlaces() {
               <div className="flex gap-3 mt-6">
                 <button onClick={() => setShowSheet(false)} style={{ touchAction: "manipulation" }} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl active:scale-95 transition-transform text-sm">Cancel</button>
                 <button onClick={handleSave} disabled={saving} style={{ touchAction: "manipulation" }} className="flex-1 bg-violet-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl active:scale-95 transition-transform text-sm">{saving ? "Saving…" : "Save Place"}</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Import from OpenStreetMap sheet ── */}
+      {showImport && (
+        <>
+          <div onClick={() => setShowImport(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 210 }} />
+          <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 220, background: "white", borderRadius: "24px 24px 0 0", maxHeight: "92vh", overflowY: "auto", paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+            <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
+            <div className="px-5 pb-2">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth={2.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-base">Import from OpenStreetMap</p>
+                  <p className="text-xs text-slate-400">Free · No API key · Data from OSM community</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* City */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1.5 block">City Name</label>
+                  <input
+                    value={importCity} onChange={e => setImportCity(e.target.value)}
+                    placeholder="e.g. Lahore, Rome, New York"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-50 transition-all"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">Must match the city name used in your hotel profile</p>
+                </div>
+
+                {/* Type */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1.5 block">Place Type</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {IMPORT_TYPES.map(t => (
+                      <button key={t} onClick={() => setImportType(t)} style={{ touchAction: "manipulation" }}
+                        className={`py-2.5 rounded-xl text-xs font-bold capitalize transition-colors ${importType === t ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Limit */}
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1.5 block">Max Results: <span className="text-emerald-600">{importLimit}</span></label>
+                  <input type="range" min={10} max={200} step={10} value={importLimit} onChange={e => setImportLimit(Number(e.target.value))}
+                    className="w-full accent-emerald-600" />
+                  <div className="flex justify-between text-[10px] text-slate-400 mt-0.5"><span>10</span><span>200</span></div>
+                </div>
+
+                {/* Info box */}
+                <div className="bg-emerald-50 rounded-2xl px-4 py-3 flex items-start gap-2.5">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth={2} className="w-4 h-4 mt-0.5 flex-shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                  <p className="text-xs text-emerald-700">Duplicates are skipped automatically. Places without a name are ignored. Google Maps links are generated from coordinates.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setShowImport(false)} style={{ touchAction: "manipulation" }} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl active:scale-95 transition-transform text-sm">Cancel</button>
+                <button onClick={handleImport} disabled={importing || !importCity.trim()} style={{ touchAction: "manipulation" }} className="flex-1 bg-emerald-600 disabled:opacity-50 text-white font-bold py-3.5 rounded-2xl active:scale-95 transition-transform text-sm">
+                  {importing ? "Importing…" : `Import ${importType}s`}
+                </button>
               </div>
             </div>
           </div>

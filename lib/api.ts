@@ -152,6 +152,12 @@ export const placesApi = {
     req<Place>(`/api/places/${id}/`, { method: "PATCH", body: JSON.stringify(data) }),
 
   delete: (id: string) => req<void>(`/api/places/${id}/`, { method: "DELETE" }),
+
+  import: (city: string, type: string, limit = 50) =>
+    req<{ created: number; skipped: number; city: string; type: string }>(
+      "/api/places/import/",
+      { method: "POST", body: JSON.stringify({ city, type, limit }) }
+    ),
 };
 
 // ── Registrations ────────────────────────────────────────────────────────────
