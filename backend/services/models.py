@@ -5,11 +5,20 @@ from hotels.models import Hotel
 
 class HotelService(models.Model):
     CATEGORY_CHOICES = [
-        ("food", "Food & Drinks"),
-        ("room", "Room Service"),
-        ("tour", "Tour"),
-        ("activity", "Activity"),
-        ("other", "Other"),
+        ("food",         "Food & Drinks"),
+        ("room",         "Room Service"),
+        ("breakfast",    "Breakfast"),
+        ("bar",          "Bar & Drinks"),
+        ("nightlife",    "Night Life"),
+        ("massage",      "Massage & Wellness"),
+        ("spa",          "Spa & Beauty"),
+        ("gym",          "Gym & Fitness"),
+        ("transport",    "Transport"),
+        ("laundry",      "Laundry"),
+        ("housekeeping", "Housekeeping"),
+        ("concierge",    "Concierge"),
+        ("business",     "Business Services"),
+        ("other",        "Other"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

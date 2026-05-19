@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Utensils, BedDouble, Map, Target, Sparkles, Bell, ClipboardList, Banknote, User, type LucideIcon } from "lucide-react";
+import { Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling, Dumbbell, Car, Shirt, Home, Bell, Briefcase, Sparkles, ClipboardList, Banknote, User, type LucideIcon } from "lucide-react";
 import {
   auth, hotelsApi, servicesApi, bookingsApi,
   type Hotel, type HotelService, type ServiceBooking,
@@ -32,10 +32,36 @@ const AMENITIES = [
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 const CAT_LABEL: Record<string, string> = {
-  food: "Food & Drinks", room: "Room Service", tour: "Tour", activity: "Activity", other: "Other",
+  food:         "Food & Drinks",
+  room:         "Room Service",
+  breakfast:    "Breakfast",
+  bar:          "Bar & Drinks",
+  nightlife:    "Night Life",
+  massage:      "Massage & Wellness",
+  spa:          "Spa & Beauty",
+  gym:          "Gym & Fitness",
+  transport:    "Transport",
+  laundry:      "Laundry",
+  housekeeping: "Housekeeping",
+  concierge:    "Concierge",
+  business:     "Business Services",
+  other:        "Other",
 };
 const CAT_ICON: Record<string, LucideIcon> = {
-  food: Utensils, room: BedDouble, tour: Map, activity: Target, other: Sparkles,
+  food:         Utensils,
+  room:         BedDouble,
+  breakfast:    Coffee,
+  bar:          Wine,
+  nightlife:    Moon,
+  massage:      Heart,
+  spa:          FlameKindling,
+  gym:          Dumbbell,
+  transport:    Car,
+  laundry:      Shirt,
+  housekeeping: Home,
+  concierge:    Bell,
+  business:     Briefcase,
+  other:        Sparkles,
 };
 
 const BOOKING_STATUS_COLORS: Record<string, string> = {
