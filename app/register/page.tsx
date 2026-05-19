@@ -15,14 +15,19 @@ const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: strin
       "Pisa", "Siena", "Amalfi", "Ravenna", "Trieste", "Perugia",
     ],
   },
-  "United States": {
-    code: "+1",
-    flag: "🇺🇸",
+  "United Kingdom": {
+    code: "+44",
+    flag: "🇬🇧",
     cities: [
-      "New York", "Los Angeles", "Chicago", "Houston", "Miami",
-      "San Francisco", "Las Vegas", "Seattle", "Boston", "Atlanta",
-      "Dallas", "Phoenix", "Orlando", "Denver", "Nashville",
-      "New Orleans", "Washington DC", "San Diego", "Austin", "Portland",
+      "London", "Birmingham", "Manchester", "Liverpool", "Leeds",
+      "Sheffield", "Bristol", "Edinburgh", "Glasgow", "Cardiff",
+      "Leicester", "Nottingham", "Coventry", "Bradford", "Belfast",
+      "Newcastle upon Tyne", "Southampton", "Portsmouth", "Brighton",
+      "Plymouth", "Reading", "Derby", "Wolverhampton", "Stoke-on-Trent",
+      "Sunderland", "Oxford", "Cambridge", "Bath", "York", "Exeter",
+      "Norwich", "Bournemouth", "Luton", "Aberdeen", "Swansea",
+      "Milton Keynes", "Northampton", "Peterborough", "Middlesbrough",
+      "Chester", "Dundee", "Swindon", "Kingston upon Hull",
     ],
   },
   Other: { code: "", flag: "🌍", cities: [] },
@@ -500,7 +505,7 @@ export default function RegisterPage() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">Country</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {(["Italy", "United States", "Other"] as const).map((c) => {
+                    {(["Italy", "United Kingdom", "Other"] as const).map((c) => {
                       const cfg = COUNTRY_CONFIG[c];
                       const active = form.country === c;
                       return (
