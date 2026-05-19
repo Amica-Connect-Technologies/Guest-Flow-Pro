@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
-  Utensils, BedDouble, Map, Target, Sparkles,
+  Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling,
+  Dumbbell, Car, Shirt, Home, Briefcase, Sparkles,
   Bell, MapPin, Info, SearchX, Clock, Wifi, Globe,
   Banknote, Landmark, CreditCard, Search,
-  Coffee, ShoppingBag, Star, UtensilsCrossed,
-  Car, Moon, type LucideIcon,
+  ShoppingBag, Star, UtensilsCrossed, Map, Target,
+  type LucideIcon,
 } from "lucide-react";
 import {
   hotelsApi, toursApi, placesApi, servicesApi, bookingsApi,
@@ -16,11 +17,22 @@ import {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const CAT_META: Record<string, { label: string; Icon: LucideIcon; color: string; light: string }> = {
-  food:     { label: "Food & Drinks", Icon: Utensils,       color: "#F97316", light: "#FFF7ED" },
-  room:     { label: "Room Service",  Icon: BedDouble,       color: "#8B5CF6", light: "#F5F3FF" },
-  tour:     { label: "Tours",         Icon: Map,             color: "#3B82F6", light: "#EFF6FF" },
-  activity: { label: "Activities",    Icon: Target,          color: "#10B981", light: "#ECFDF5" },
-  other:    { label: "Other",         Icon: Sparkles,        color: "#6B7280", light: "#F9FAFB" },
+  food:         { label: "Food & Drinks",      Icon: Utensils,      color: "#F97316", light: "#FFF7ED" },
+  room:         { label: "Room Service",        Icon: BedDouble,     color: "#8B5CF6", light: "#F5F3FF" },
+  breakfast:    { label: "Breakfast",           Icon: Coffee,        color: "#D97706", light: "#FFFBEB" },
+  bar:          { label: "Bar & Drinks",        Icon: Wine,          color: "#DC2626", light: "#FEF2F2" },
+  nightlife:    { label: "Night Life",          Icon: Moon,          color: "#7C3AED", light: "#F5F3FF" },
+  massage:      { label: "Massage & Wellness",  Icon: Heart,         color: "#DB2777", light: "#FDF2F8" },
+  spa:          { label: "Spa & Beauty",        Icon: FlameKindling, color: "#0891B2", light: "#ECFEFF" },
+  gym:          { label: "Gym & Fitness",       Icon: Dumbbell,      color: "#16A34A", light: "#F0FDF4" },
+  transport:    { label: "Transport",           Icon: Car,           color: "#2563EB", light: "#EFF6FF" },
+  laundry:      { label: "Laundry",             Icon: Shirt,         color: "#0284C7", light: "#F0F9FF" },
+  housekeeping: { label: "Housekeeping",        Icon: Home,          color: "#059669", light: "#ECFDF5" },
+  concierge:    { label: "Concierge",           Icon: Bell,          color: "#9333EA", light: "#FAF5FF" },
+  business:     { label: "Business Services",   Icon: Briefcase,     color: "#374151", light: "#F9FAFB" },
+  tour:         { label: "Tours",               Icon: Map,           color: "#3B82F6", light: "#EFF6FF" },
+  activity:     { label: "Activities",          Icon: Target,        color: "#10B981", light: "#ECFDF5" },
+  other:        { label: "Other",               Icon: Sparkles,      color: "#6B7280", light: "#F9FAFB" },
 };
 
 const PLACE_ICON: Record<string, LucideIcon> = {
@@ -66,6 +78,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [loading,  setLoading]  = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [sheet,    setSheet]    = useState<Sheet | null>(null);
+  const [viewSvc,  setViewSvc]  = useState<HotelService | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -142,7 +155,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const foodPlaces    = places.filter(p => p.type === "restaurant" || p.type === "cafe");
 
   // ── Service card ─────────────────────────────────────────────────────────
-  function ServiceCard({ svc }: { svc: HotelService }) {
+  function ServiceCard({ svc, viewOnly = false }: { svc: HotelService; viewOnly?: boolean }) {
     const m = CAT_META[svc.category] ?? CAT_META.other;
     return (
       <div className="bg-white rounded-3xl overflow-hidden"
@@ -181,22 +194,31 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           </div>
         </div>
 
-        {/* Full-width Book button */}
-        <button onClick={() => setSheet(mkSheet(svc))}
-          className="w-full flex items-center justify-center gap-2.5 py-4 font-black text-[15px] text-white active:opacity-85 transition-opacity"
-          style={{
-            touchAction: "manipulation",
-            background: `linear-gradient(135deg, ${m.color}ee, ${m.color})`,
-            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.15)`,
-          }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Book Now &nbsp;·&nbsp; £{Number(svc.price).toFixed(2)}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4 opacity-70">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        </button>
+        {/* Action button */}
+        {viewOnly ? (
+          <button onClick={() => setViewSvc(svc)}
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 font-black text-sm active:opacity-75 transition-opacity border-t"
+            style={{ borderColor: m.light, background: m.light, color: m.color, touchAction: "manipulation" }}>
+            <Info className="w-4 h-4" />
+            View Details
+          </button>
+        ) : (
+          <button onClick={() => setSheet(mkSheet(svc))}
+            className="w-full flex items-center justify-center gap-2.5 py-4 font-black text-[15px] text-white active:opacity-85 transition-opacity"
+            style={{
+              touchAction: "manipulation",
+              background: `linear-gradient(135deg, ${m.color}ee, ${m.color})`,
+              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.15)`,
+            }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Book Now &nbsp;·&nbsp; £{Number(svc.price).toFixed(2)}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4 opacity-70">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+        )}
       </div>
     );
   }
@@ -715,7 +737,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   <span className="text-xs font-bold text-slate-300">{services.length}</span>
                 </div>
                 <div className="space-y-3">
-                  {services.map(svc => <ServiceCard key={svc.id} svc={svc} />)}
+                  {services.map(svc => <ServiceCard key={svc.id} svc={svc} viewOnly />)}
                 </div>
               </div>
             )}
@@ -982,6 +1004,87 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           </div>
         </div>
       )}
+
+      {/* ── Service Detail Sheet (view-only, no booking) ──────────────────── */}
+      {viewSvc && (() => {
+        const m = CAT_META[viewSvc.category] ?? CAT_META.other;
+        return (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end"
+            style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
+            onClick={() => setViewSvc(null)}>
+            <div className="bg-[#F0F2F5] rounded-t-[32px] overflow-hidden max-h-[85vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}>
+
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1.5 bg-slate-300 rounded-full" />
+              </div>
+
+              {/* Image */}
+              <div className="relative w-full h-48 mx-0 overflow-hidden">
+                {viewSvc.image_url ? (
+                  <Image unoptimized src={viewSvc.image_url} alt={viewSvc.name} fill className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center" style={{ background: m.light }}>
+                    <m.Icon className="w-20 h-20 opacity-30" style={{ color: m.color }} />
+                  </div>
+                )}
+                {/* Close button */}
+                <button onClick={() => setViewSvc(null)}
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/40 flex items-center justify-center backdrop-blur-sm">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="px-5 py-5 space-y-4" style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}>
+                {/* Category badge + name */}
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wide px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 mb-2"
+                    style={{ background: m.light, color: m.color }}>
+                    <m.Icon className="w-3 h-3" />{m.label}
+                  </span>
+                  <h2 className="font-black text-slate-900 text-2xl leading-tight">{viewSvc.name}</h2>
+                </div>
+
+                {/* Price */}
+                <div className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between"
+                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                  <span className="text-sm font-bold text-slate-500">Price</span>
+                  <span className="font-black text-3xl" style={{ color: m.color }}>
+                    £{Number(viewSvc.price).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* Description */}
+                {viewSvc.description && (
+                  <div className="bg-white rounded-2xl px-5 py-4"
+                    style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">About</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{viewSvc.description}</p>
+                  </div>
+                )}
+
+                {/* Availability */}
+                <div className="flex items-center gap-3 bg-white rounded-2xl px-5 py-4"
+                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${viewSvc.is_available ? "bg-emerald-400" : "bg-slate-300"}`} />
+                  <span className={`text-sm font-bold ${viewSvc.is_available ? "text-emerald-700" : "text-slate-400"}`}>
+                    {viewSvc.is_available ? "Available now" : "Currently unavailable"}
+                  </span>
+                </div>
+
+                {/* Contact prompt */}
+                <p className="text-center text-xs text-slate-400 pb-2">
+                  To enquire or book, please contact the hotel reception.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

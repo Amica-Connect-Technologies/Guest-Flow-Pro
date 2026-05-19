@@ -84,6 +84,75 @@ const blankForm = (): SvcForm => ({
   name: "", description: "", category: "food", price: "", is_available: true, imageFile: null, previewUrl: "",
 });
 
+type SvcSug = { name: string; description: string; category: string; price: string };
+const SERVICE_SUGGESTIONS: SvcSug[] = [
+  // Food & Drinks
+  { name: "Club Sandwich",          description: "Chicken, bacon, lettuce and tomato on toasted bread. Served with fries.",    category: "food",      price: "8.50"  },
+  { name: "Caesar Salad",           description: "Crisp romaine, parmesan, croutons and Caesar dressing.",                     category: "food",      price: "7.00"  },
+  { name: "Cheeseburger & Fries",   description: "Grilled beef patty with cheddar, lettuce and tomato.",                       category: "food",      price: "11.00" },
+  { name: "Fish & Chips",           description: "Beer-battered cod fillet with hand-cut chips and mushy peas.",               category: "food",      price: "13.00" },
+  { name: "Pasta Carbonara",        description: "Spaghetti carbonara with pancetta, egg and parmesan.",                       category: "food",      price: "10.50" },
+  { name: "Chicken Wings",          description: "Crispy wings with your choice of sauce.",                                    category: "food",      price: "9.00"  },
+  { name: "Afternoon Tea",          description: "Finger sandwiches, scones, cakes and a pot of tea.",                         category: "food",      price: "18.00" },
+  // Breakfast
+  { name: "Full English Breakfast", description: "Eggs, bacon, sausages, beans, toast and grilled tomatoes.",                  category: "breakfast", price: "12.00" },
+  { name: "Continental Breakfast",  description: "Selection of pastries, fresh fruit, yoghurt and hot drink.",                 category: "breakfast", price: "9.00"  },
+  { name: "Eggs Benedict",          description: "Poached eggs and Canadian bacon on English muffin with hollandaise.",        category: "breakfast", price: "11.00" },
+  { name: "Pancakes & Maple Syrup", description: "Fluffy pancakes with maple syrup and fresh berries.",                        category: "breakfast", price: "8.50"  },
+  { name: "Avocado Toast",          description: "Smashed avocado on sourdough with poached egg and chilli flakes.",           category: "breakfast", price: "9.50"  },
+  // Bar & Drinks
+  { name: "Cocktail of the Day",    description: "Ask our bartender for today's featured cocktail creation.",                  category: "bar",       price: "9.00"  },
+  { name: "Glass of House Wine",    description: "Red, white or rosé — ask for today's selection.",                            category: "bar",       price: "6.50"  },
+  { name: "Gin & Tonic",            description: "Premium gin with tonic, ice and a slice of citrus.",                         category: "bar",       price: "8.00"  },
+  { name: "Mocktail (Non-Alcoholic)", description: "Refreshing non-alcoholic cocktail — ask for today's flavour.",             category: "bar",       price: "6.00"  },
+  { name: "Beer / Lager",           description: "Chilled draught or bottled beer — ask for available brands.",                category: "bar",       price: "5.50"  },
+  // Night Life
+  { name: "VIP Table Reservation",  description: "Reserved table with priority seating in our lounge.",                       category: "nightlife", price: "50.00" },
+  { name: "Club Entry Ticket",      description: "Entry to our exclusive nightclub — valid Friday & Saturday.",                category: "nightlife", price: "15.00" },
+  { name: "Private Bar Package",    description: "Private bar area for up to 10 guests with a dedicated server (2 hrs).",     category: "nightlife", price: "150.00"},
+  // Massage
+  { name: "Full Body Massage (60 min)",  description: "Relaxing Swedish-style massage covering back, legs, arms and shoulders.", category: "massage", price: "65.00" },
+  { name: "Head & Neck Massage (30 min)", description: "Focused massage for the neck, shoulders and scalp.",                   category: "massage", price: "35.00" },
+  { name: "Hot Stone Massage (60 min)",  description: "Heated stones with gentle pressure for deep relaxation.",               category: "massage", price: "75.00" },
+  { name: "Deep Tissue Massage (60 min)", description: "Firm pressure targeting deep muscle layers to relieve tension.",       category: "massage", price: "70.00" },
+  { name: "Couple's Massage (60 min)",   description: "Side-by-side massage for two in our private couples suite.",            category: "massage", price: "120.00"},
+  // Spa
+  { name: "Facial Treatment (45 min)",  description: "Deep-cleansing facial using premium skincare products.",                 category: "spa",     price: "55.00" },
+  { name: "Body Scrub & Wrap",          description: "Exfoliating body scrub followed by a nourishing body wrap.",            category: "spa",     price: "65.00" },
+  { name: "Manicure & Pedicure",        description: "Classic mani-pedi with nail polish of your choice.",                    category: "spa",     price: "45.00" },
+  { name: "Sauna & Steam Room Access",  description: "Private use of sauna and steam room facilities.",                       category: "spa",     price: "20.00" },
+  // Gym
+  { name: "Gym Day Pass",               description: "Full access to all gym equipment and facilities.",                      category: "gym",     price: "15.00" },
+  { name: "Personal Training (1 hr)",   description: "One-to-one session with a qualified personal trainer.",                 category: "gym",     price: "50.00" },
+  { name: "Yoga Class (1 hr)",          description: "Group yoga session for all levels — mats provided.",                    category: "gym",     price: "18.00" },
+  // Transport
+  { name: "Airport Transfer",           description: "Private car to or from the airport. Please provide flight details.",    category: "transport", price: "45.00" },
+  { name: "City Centre Transfer",       description: "Private car to or from the city centre — up to 4 passengers.",         category: "transport", price: "25.00" },
+  { name: "Car Rental Arrangement",     description: "We'll arrange a rental car from our trusted partner.",                 category: "transport", price: "10.00" },
+  // Laundry
+  { name: "Express Laundry (Same Day)", description: "Collected before 10am, returned by 6pm same day.",                     category: "laundry", price: "18.00" },
+  { name: "Shirt Laundering (each)",    description: "Professional laundering and pressing per shirt.",                       category: "laundry", price: "4.50"  },
+  { name: "Suit Dry Cleaning",          description: "Dry cleaning and pressing for a full suit (jacket & trousers).",       category: "laundry", price: "12.00" },
+  // Housekeeping
+  { name: "Extra Towels",               description: "Additional fresh towels delivered to your room.",                      category: "housekeeping", price: "0.00"  },
+  { name: "Room Deep Clean",            description: "Full deep clean of your room including carpet and upholstery.",        category: "housekeeping", price: "20.00" },
+  { name: "Baby Cot Setup",             description: "Travel cot set up in your room with clean bedding.",                   category: "housekeeping", price: "10.00" },
+  { name: "Extra Bedding Set",          description: "Additional pillows, duvet and fresh linen delivered to your room.",   category: "housekeeping", price: "5.00"  },
+  // Room Service
+  { name: "Late Checkout (+2 hours)",   description: "Extend your checkout time by 2 hours (subject to availability).",     category: "room",    price: "25.00" },
+  { name: "Early Check-in",             description: "Check in from 10am subject to availability.",                          category: "room",    price: "20.00" },
+  { name: "Pillow Menu",                description: "Choose your preferred pillow type — memory foam, feather or ortho.",  category: "room",    price: "0.00"  },
+  { name: "Evening Turndown Service",   description: "Bed prepared for night with chocolates and a bedtime drink.",          category: "room",    price: "0.00"  },
+  // Concierge
+  { name: "Restaurant Reservation",    description: "Our concierge will book a table at a local restaurant for you.",       category: "concierge", price: "0.00" },
+  { name: "Theatre / Show Tickets",    description: "We'll source and book show tickets on your behalf.",                   category: "concierge", price: "5.00" },
+  { name: "Sightseeing Tour Booking",  description: "We'll arrange a guided tour of local attractions.",                    category: "concierge", price: "5.00" },
+  // Business
+  { name: "Meeting Room (per hour)",   description: "Private meeting room with projector, whiteboard and refreshments.",    category: "business", price: "35.00" },
+  { name: "Printing Service (per page)", description: "Black & white or colour printing available at reception.",           category: "business", price: "0.50"  },
+  { name: "Business Lounge Access",    description: "Full-day access to our business lounge with workspace and Wi-Fi.",     category: "business", price: "20.00" },
+];
+
 export default function HotelDashboard() {
   const router = useRouter();
   const [hotel, setHotel]     = useState<Hotel | null>(null);
@@ -102,6 +171,7 @@ export default function HotelDashboard() {
   const [svcSaving, setSvcSaving] = useState(false);
   const [svcError, setSvcError]   = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showSug, setShowSug]     = useState(false);
   const imgRef = useRef<HTMLInputElement>(null);
 
   // ── bookings
@@ -926,12 +996,53 @@ export default function HotelDashboard() {
                   </div>
                 </div>
 
-                {/* Name */}
-                <div>
+                {/* Name + Suggestions */}
+                <div className="relative">
                   <label className="text-xs font-bold text-slate-600 block mb-1">Name <span className="text-red-400">*</span></label>
-                  <input value={svcForm.name} onChange={e => setSvcForm(s => ({ ...s, name: e.target.value }))}
-                    placeholder="e.g. Club Sandwich, Airport Transfer…"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
+                  <input
+                    value={svcForm.name}
+                    onChange={e => { setSvcForm(s => ({ ...s, name: e.target.value })); setShowSug(true); }}
+                    onFocus={() => setShowSug(true)}
+                    onBlur={() => setTimeout(() => setShowSug(false), 160)}
+                    placeholder="Type to search or pick a suggestion…"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all"
+                  />
+                  {showSug && (() => {
+                    const q = svcForm.name.toLowerCase().trim();
+                    const sugs = SERVICE_SUGGESTIONS.filter(s =>
+                      q ? s.name.toLowerCase().includes(q) : s.category === svcForm.category
+                    ).slice(0, 6);
+                    if (!sugs.length) return null;
+                    return (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                        <p className="px-4 pt-2.5 pb-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          {q ? "Matching services" : `Suggestions for ${CAT_LABEL[svcForm.category] ?? svcForm.category}`}
+                        </p>
+                        {sugs.map((s, i) => {
+                          const Icon = CAT_ICON[s.category] ?? Sparkles;
+                          return (
+                            <button key={i} type="button"
+                              onMouseDown={() => {
+                                setSvcForm(f => ({ ...f, name: s.name, description: s.description, category: s.category, price: s.price }));
+                                setShowSug(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-50 border-t border-slate-50 active:bg-blue-100 transition-colors text-left">
+                              <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                <Icon className="w-4 h-4 text-slate-500" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-slate-800 truncate">{s.name}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{CAT_LABEL[s.category]} · £{s.price}</p>
+                              </div>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5 text-blue-400 flex-shrink-0">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                              </svg>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Description */}
