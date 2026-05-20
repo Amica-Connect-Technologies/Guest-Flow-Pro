@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { auth } from "@/lib/api";
 
 const navItems = [
   {
@@ -48,8 +48,8 @@ export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
+  function handleLogout() {
+    auth.logout();
     router.push("/login");
   }
 
