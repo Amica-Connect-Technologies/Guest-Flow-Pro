@@ -1,4 +1,4 @@
-name: Deploy to Production
+name: Deploy to VPS
 
 on:
   push:
@@ -8,28 +8,33 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to VPS via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-            cd /root/Guest-Flow-Pro
-            git fetch origin main
-            git reset --hard origin/main
+            cd /var/www/guestflowpro
 
-            # Backend
-            cd /root/Guest-Flow-Pro/backend
+            # Pull latest code
+            git pull origin main
+
+            # Backend — install deps, migrate, collect static
+            cd backend
             source venv/bin/activate
             pip install -r requirements.txt --quiet
-            python manage.py migrate --noinput
-            python manage.py collectstatic --noinput
-            systemctl restart concierge
+            python manage.py migrate --no-input
+            python manage.py collectstatic --no-input
+            deactivate
+            cd ..
 
-            # Frontend
-            cd /root/Guest-Flow-Pro
-            npm install
-            NEXT_PUBLIC_API_URL=https://api.guestflowpro.com npm run build
-            pm2 reload guestflowpro
+            # Frontend — build Next.js
+            npm ci --silent
+            npm run build
+
+            # Restart services
+            sudo systemctl restart guestflowpro-api
+            pm2 restart guestflowpro-web --update-env
