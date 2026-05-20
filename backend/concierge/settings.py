@@ -109,6 +109,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+# Google & OpenAI API keys — set via environment variable or .env file on server
+GOOGLE_PLACES_API_KEY    = config("GOOGLE_PLACES_API_KEY",    default="")
+GOOGLE_GEOCODING_API_KEY = config("GOOGLE_GEOCODING_API_KEY", default="")
+OPENAI_API_KEY           = config("OPENAI_API_KEY",           default="")
+
 # Stripe
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="sk_test_placeholder")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="whsec_placeholder")

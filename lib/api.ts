@@ -78,6 +78,15 @@ async function req<T>(path: string, { headers: extra, ...opts }: RequestInit = {
   return json;
 }
 
+export type NearbyPlace = {
+  place_id: string; name: string; address: string;
+  rating: number | null; user_ratings_total: number;
+  lat: number; lng: number; maps_link: string;
+  open_now: boolean | null; price_level: number | null;
+  photo_url: string | null; ai_description: string | null;
+  types: string[];
+};
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const auth = {
   async login(email: string, password: string): Promise<{ access: string; refresh: string; user: UserInfo }> {
@@ -157,6 +166,11 @@ export const placesApi = {
     req<{ created: number; skipped: number; city: string; type: string }>(
       "/api/places/import/",
       { method: "POST", body: JSON.stringify({ city, type, limit }) }
+    ),
+
+  nearby: (hotelId: string, type: string) =>
+    req<{ places: NearbyPlace[]; lat: number; lng: number }>(
+      `/api/places/nearby/?hotel_id=${encodeURIComponent(hotelId)}&type=${type}`
     ),
 };
 

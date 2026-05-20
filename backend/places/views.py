@@ -123,6 +123,133 @@ def _save_elements(elements: list[dict], city: str, ptype: str) -> tuple[int, in
     return created, skipped
 
 
+def _geocode_google(location: str) -> tuple[float, float]:
+    from django.conf import settings as _s
+    url = (
+        "https://maps.googleapis.com/maps/api/geocode/json?"
+        + urllib.parse.urlencode({"address": location, "key": _s.GOOGLE_GEOCODING_API_KEY})
+    )
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", "GuestFlowPro/1.0")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        data = _json.loads(resp.read())
+    if data.get("status") != "OK":
+        raise ValueError(f"Geocoding failed: {data.get('status')} – {data.get('error_message', '')}")
+    loc = data["results"][0]["geometry"]["location"]
+    return float(loc["lat"]), float(loc["lng"])
+
+
+def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 2000) -> list:
+    from django.conf import settings as _s
+    key = _s.GOOGLE_PLACES_API_KEY
+    url = (
+        "https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
+        + urllib.parse.urlencode({"location": f"{lat},{lng}", "radius": radius, "type": google_type, "key": key})
+    )
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", "GuestFlowPro/1.0")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = _json.loads(resp.read())
+    if data.get("status") not in ("OK", "ZERO_RESULTS"):
+        raise ValueError(f"Places API: {data.get('status')} – {data.get('error_message', '')}")
+    results = []
+    for place in data.get("results", [])[:12]:
+        photo_url = None
+        if place.get("photos"):
+            ref = place["photos"][0]["photo_reference"]
+            photo_url = (
+                f"https://maps.googleapis.com/maps/api/place/photo"
+                f"?maxwidth=400&photo_reference={ref}&key={key}"
+            )
+        results.append({
+            "place_id": place["place_id"],
+            "name": place["name"],
+            "address": place.get("vicinity", ""),
+            "rating": place.get("rating"),
+            "user_ratings_total": place.get("user_ratings_total", 0),
+            "lat": place["geometry"]["location"]["lat"],
+            "lng": place["geometry"]["location"]["lng"],
+            "maps_link": f"https://www.google.com/maps/place/?q=place_id:{place['place_id']}",
+            "open_now": place.get("opening_hours", {}).get("open_now"),
+            "price_level": place.get("price_level"),
+            "photo_url": photo_url,
+            "ai_description": None,
+            "types": place.get("types", []),
+        })
+    return results
+
+
+def _ai_describe(places: list, ptype: str, city: str) -> list:
+    from django.conf import settings as _s
+    key = getattr(_s, "OPENAI_API_KEY", "")
+    if not places or not key:
+        return places
+    names = [p["name"] for p in places[:6]]
+    prompt = (
+        f"You are a friendly hotel concierge in {city}. For each of these nearby {ptype}s, "
+        f"write ONE engaging sentence (max 18 words) that tells a hotel guest why they should visit. "
+        f"Return ONLY a JSON array of strings in the same order.\n\nPlaces: {_json.dumps(names)}"
+    )
+    payload = _json.dumps({
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 400,
+        "temperature": 0.7,
+    }).encode()
+    api_req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=payload)
+    api_req.add_header("Content-Type", "application/json")
+    api_req.add_header("Authorization", f"Bearer {key}")
+    try:
+        with urllib.request.urlopen(api_req, timeout=25) as resp:
+            result = _json.loads(resp.read())
+        descriptions = _json.loads(result["choices"][0]["message"]["content"])
+        for i, desc in enumerate(descriptions[: len(places)]):
+            places[i]["ai_description"] = str(desc)
+    except Exception:
+        pass
+    return places
+
+
+class NearbyPlacesView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        from hotels.models import Hotel as HotelModel
+        hotel_id = request.query_params.get("hotel_id", "").strip()
+        ptype = request.query_params.get("type", "restaurant")
+        if not hotel_id:
+            return Response({"detail": "hotel_id required."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            hotel = HotelModel.objects.get(id=hotel_id)
+        except HotelModel.DoesNotExist:
+            return Response({"detail": "Hotel not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        location = f"{hotel.address}, {hotel.city}" if getattr(hotel, "address", "") else hotel.city
+        try:
+            lat, lng = _geocode_google(location)
+        except Exception as exc:
+            return Response({"detail": f"Geocoding error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        google_type_map = {
+            "restaurant": "restaurant",
+            "parking": "parking",
+            "nightlife": "night_club",
+            "places": "tourist_attraction",
+            "cafe": "cafe",
+        }
+        google_type = google_type_map.get(ptype, "tourist_attraction")
+        try:
+            places = _nearby_google(lat, lng, google_type)
+        except Exception as exc:
+            return Response({"detail": f"Places API error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        if ptype in ("restaurant", "places"):
+            places = _ai_describe(places, ptype, hotel.city)
+
+        return Response({"places": places, "lat": lat, "lng": lng})
+
+
 class ImportPlacesView(APIView):
     """Admin-only: geocode city → fetch from Overpass → save to DB."""
     permission_classes = [permissions.IsAdminUser]
