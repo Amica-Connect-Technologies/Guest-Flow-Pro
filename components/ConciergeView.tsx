@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import {
   hotelsApi, toursApi, placesApi, servicesApi, bookingsApi,
-  type Hotel, type Tour, type Place, type HotelService, type NearbyPlace,
+  type Hotel, type Tour, type HotelService, type NearbyPlace,
 } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,7 +55,6 @@ function mkSheet(svc: HotelService): Sheet {
 export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [hotel,    setHotel]    = useState<Hotel | null>(null);
   const [tours,    setTours]    = useState<Tour[]>([]);
-  const [places,   setPlaces]   = useState<Place[]>([]);
   const [services, setServices] = useState<HotelService[]>([]);
   const [tab,      setTab]      = useState<"restaurant"|"parking"|"night"|"tours"|"places"|"info">("restaurant");
   const [tourQ,    setTourQ]    = useState("");
@@ -65,6 +64,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [viewSvc,  setViewSvc]  = useState<HotelService | null>(null);
   const [nearbyFood,        setNearbyFood]        = useState<NearbyPlace[] | null>(null);
   const [nearbyParking,     setNearbyParking]     = useState<NearbyPlace[] | null>(null);
+  const [nearbyNightlife,   setNearbyNightlife]   = useState<NearbyPlace[] | null>(null);
   const [nearbyAttractions, setNearbyAttractions] = useState<NearbyPlace[] | null>(null);
   const [loadingNearby,     setLoadingNearby]     = useState<Record<string, boolean>>({});
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -74,10 +74,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       try {
         const h = await hotelsApi.get(hotelId);
         setHotel(h);
-        const [t, p, s] = await Promise.all([
-          toursApi.list(h.city), placesApi.list(h.city), servicesApi.list(hotelId),
+        const [t, s] = await Promise.all([
+          toursApi.list(h.city), servicesApi.list(hotelId),
         ]);
-        setTours(t); setPlaces(p); setServices(s);
+        setTours(t); setServices(s);
       } catch { setNotFound(true); }
       setLoading(false);
     })();
@@ -101,9 +101,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       setLoadingNearby(l => ({ ...l, [type]: false }));
     };
     if (tab === "restaurant" && nearbyFood === null) fetchNearby("restaurant", setNearbyFood);
-    else if (tab === "parking" && nearbyParking === null) fetchNearby("parking", setNearbyParking);
-    else if (tab === "places" && nearbyAttractions === null) fetchNearby("places", setNearbyAttractions);
-  }, [tab, hotel, nearbyFood, nearbyParking, nearbyAttractions]); // eslint-disable-line
+    else if (tab === "parking"  && nearbyParking    === null) fetchNearby("parking",    setNearbyParking);
+    else if (tab === "night"    && nearbyNightlife   === null) fetchNearby("nightlife",  setNearbyNightlife);
+    else if (tab === "places"   && nearbyAttractions === null) fetchNearby("places",     setNearbyAttractions);
+  }, [tab, hotel, nearbyFood, nearbyParking, nearbyNightlife, nearbyAttractions]); // eslint-disable-line
 
   async function confirmBooking() {
     if (!sheet) return;
@@ -145,9 +146,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     t.title.toLowerCase().includes(tourQ.toLowerCase()) ||
     (t.description ?? "").toLowerCase().includes(tourQ.toLowerCase())
   );
-  const parkingPlaces = places.filter(p => p.type === "parking");
-  const nightPlaces   = places.filter(p => p.type === "nightlife");
-  const foodPlaces    = places.filter(p => p.type === "restaurant" || p.type === "cafe");
 
   // ── Nearby skeleton ──────────────────────────────────────────────────────
   function NearbyLoading() {
@@ -349,9 +347,9 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* Stats strip */}
         <div className="relative z-10 grid grid-cols-3 gap-2.5 mt-5">
           {[
-            { n: services.length, label: "Services", onClick: () => setTab("restaurant") },
-            { n: tours.length,    label: "Tours",    onClick: () => setTab("tours")    },
-            { n: places.length,   label: "Places",   onClick: () => setTab("places")   },
+            { n: services.length,                              label: "Services",   onClick: () => setTab("info")       },
+            { n: services.filter(s => s.is_available).length, label: "Available",  onClick: () => setTab("info")       },
+            { n: (hotel.amenities || []).length,               label: "Amenities",  onClick: () => setTab("info")       },
           ].map(({ n, label, onClick }) => (
             <button key={label} onClick={onClick}
               className="bg-white/12 backdrop-blur-sm rounded-2xl px-2 py-3 text-center border border-white/10 active:scale-95 transition-transform"
@@ -388,12 +386,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
         <div className="grid grid-cols-3 gap-2">
           {([
-            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils, sub: `${foodPlaces.length} nearby`  },
-            { key: "parking"    as const, label: "Parking",    Icon: Car,      sub: "Nearby areas"                },
-            { key: "night"      as const, label: "Night Life",  Icon: Moon,     sub: "Evening fun"                 },
-            { key: "tours"      as const, label: "Tours",       Icon: Map,      sub: `${tours.length} available`   },
-            { key: "places"     as const, label: "Places",      Icon: MapPin,   sub: `${places.length} nearby`     },
-            { key: "info"       as const, label: "Hotel Info",  Icon: Info,     sub: "WiFi · Check-in"             },
+            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils, sub: "Near hotel"       },
+            { key: "parking"    as const, label: "Parking",    Icon: Car,      sub: "Near hotel"       },
+            { key: "night"      as const, label: "Night Life",  Icon: Moon,     sub: "Near hotel"       },
+            { key: "tours"      as const, label: "Tours",       Icon: Map,      sub: `${tours.length} listed` },
+            { key: "places"     as const, label: "Places",      Icon: MapPin,   sub: "Near hotel"       },
+            { key: "info"       as const, label: "Hotel Info",  Icon: Info,     sub: "WiFi · Check-in"  },
           ]).map(({ key, label, Icon, sub }) => {
             const active = tab === key;
             return (
@@ -488,47 +486,22 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               </div>
               <div>
                 <p className="font-black text-slate-900 text-sm">Night Life & Evening Fun</p>
-                <p className="text-slate-400 text-xs mt-0.5">Entertainment & night programmes nearby</p>
+                <p className="text-slate-400 text-xs mt-0.5">Clubs & bars near {hotel.city}</p>
               </div>
             </div>
-            {nightPlaces.length === 0 ? (
+            {loadingNearby["nightlife"] ? (
+              <NearbyLoading />
+            ) : nearbyNightlife && nearbyNightlife.length > 0 ? (
+              nearbyNightlife.map(p => (
+                <NearbyCard key={p.place_id} place={p} accentColor="#6B21A8" accentBg="#F3E8FF" />
+              ))
+            ) : (
               <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                 <Moon className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="font-bold text-slate-700">No night life listings yet</p>
+                <p className="font-bold text-slate-700">No nightlife found nearby</p>
                 <p className="text-xs text-slate-400 mt-1">Ask reception for evening recommendations</p>
               </div>
-            ) : nightPlaces.map(p => (
-              <div key={p.id} className="bg-white rounded-3xl overflow-hidden"
-                style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
-                <div className="p-4">
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "#F3E8FF" }}>
-                      <Moon className="w-5 h-5" style={{ color: "#6B21A8" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-slate-900 text-sm leading-snug">{p.name}</p>
-                      {p.description && <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</p>}
-                      {p.address && (
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <MapPin className="w-3 h-3 flex-shrink-0 text-slate-300" />
-                          <p className="text-xs text-slate-400 truncate">{p.address}</p>
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full flex-shrink-0"
-                      style={{ background: "#F3E8FF", color: "#6B21A8" }}>Night Life</span>
-                  </div>
-                </div>
-                {p.google_maps_link && (
-                  <a href={p.google_maps_link} target="_blank" rel="noopener noreferrer"
-                    style={{ touchAction: "manipulation" }}
-                    className="flex items-center justify-center gap-2 py-3 border-t border-slate-100 text-xs font-bold text-slate-500 active:bg-slate-50 transition-colors">
-                    <MapPin className="w-3.5 h-3.5" />
-                    Open in Google Maps
-                  </a>
-                )}
-              </div>
-            ))}
+            )}
           </>
         )}
 
@@ -657,8 +630,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   })(), color: "#059669", bg: "#ECFDF5" },
                 { Icon: Wifi,  label: "WiFi",       val: hotel.wifi_info || "Ask Reception",                  color: "#10B981", bg: "#D1FAE5" },
                 { Icon: Globe, label: "Language",   val: hotel.language_default?.toUpperCase() || "EN",        color: "#F97316", bg: "#FFF7ED" },
-                { Icon: Car,   label: "Parking",    val: parkingPlaces.length > 0 ? `${parkingPlaces.length} nearby` : "Ask Reception", color: "#075985", bg: "#E0F2FE" },
-                { Icon: Moon,  label: "Night Life", val: nightPlaces.length > 0 ? `${nightPlaces.length} spots` : "Ask Reception",      color: "#6B21A8", bg: "#F3E8FF" },
+                { Icon: Car,   label: "Parking",    val: nearbyParking   ? `${nearbyParking.length} nearby`   : "See Parking tab",   color: "#075985", bg: "#E0F2FE" },
+                { Icon: Moon,  label: "Night Life", val: nearbyNightlife ? `${nearbyNightlife.length} nearby` : "See Night Life tab", color: "#6B21A8", bg: "#F3E8FF" },
               ].map(({ Icon, label, val, color, bg }) => (
                 <div key={label} className="bg-white rounded-3xl p-4" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: bg }}>
