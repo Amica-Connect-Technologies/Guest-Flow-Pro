@@ -139,7 +139,16 @@ def _geocode_google(location: str) -> tuple[float, float]:
     return float(loc["lat"]), float(loc["lng"])
 
 
-def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 2000) -> list:
+# Types that should be excluded from each search category to avoid irrelevant results
+_EXCLUDE_TYPES: dict[str, set[str]] = {
+    "restaurant": {"lodging", "real_estate_agency", "insurance_agency", "finance"},
+    "parking":    {"lodging"},
+    "night_club": {"lodging"},
+    "tourist_attraction": {"lodging"},
+}
+
+
+def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 1000) -> list:
     from django.conf import settings as _s
     key = _s.GOOGLE_PLACES_API_KEY
     url = (
@@ -152,8 +161,13 @@ def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 2000)
         data = _json.loads(resp.read())
     if data.get("status") not in ("OK", "ZERO_RESULTS"):
         raise ValueError(f"Places API: {data.get('status')} – {data.get('error_message', '')}")
+
+    excluded = _EXCLUDE_TYPES.get(google_type, set())
     results = []
-    for place in data.get("results", [])[:12]:
+    for place in data.get("results", []):
+        place_types = set(place.get("types", []))
+        if place_types & excluded:          # skip if any excluded type matches
+            continue
         photo_url = None
         if place.get("photos"):
             ref = place["photos"][0]["photo_reference"]
@@ -174,8 +188,10 @@ def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 2000)
             "price_level": place.get("price_level"),
             "photo_url": photo_url,
             "ai_description": None,
-            "types": place.get("types", []),
+            "types": list(place_types),
         })
+        if len(results) == 12:
+            break
     return results
 
 
@@ -225,7 +241,10 @@ class NearbyPlacesView(APIView):
         except HotelModel.DoesNotExist:
             return Response({"detail": "Hotel not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        location = f"{hotel.address}, {hotel.city}" if getattr(hotel, "address", "") else hotel.city
+        has_address = bool(getattr(hotel, "address", "").strip())
+        location = f"{hotel.address}, {hotel.city}" if has_address else hotel.city
+        # Tighter radius when we have a precise street address; wider for city-only
+        radius = 1000 if has_address else 2000
         try:
             lat, lng = _geocode_google(location)
         except Exception as exc:
@@ -240,7 +259,7 @@ class NearbyPlacesView(APIView):
         }
         google_type = google_type_map.get(ptype, "tourist_attraction")
         try:
-            places = _nearby_google(lat, lng, google_type)
+            places = _nearby_google(lat, lng, google_type, radius=radius)
         except Exception as exc:
             return Response({"detail": f"Places API error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
 
