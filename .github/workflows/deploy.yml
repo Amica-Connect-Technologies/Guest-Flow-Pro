@@ -15,12 +15,15 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          command_timeout: 20m
           script: |
             set -e
             cd /root/Guest-Flow-Pro
 
+            echo ">>> Pulling latest code..."
             git pull origin main
 
+            echo ">>> Updating backend..."
             cd backend
             source venv/bin/activate
             pip install -r requirements.txt --quiet
@@ -32,6 +35,11 @@ jobs:
             deactivate
             cd ..
 
-            npm ci --silent
+            echo ">>> Building frontend..."
+            npm install --silent
             npm run build
+
+            echo ">>> Restarting frontend..."
             pm2 restart guestflowpro --update-env
+
+            echo ">>> Deploy complete!"
