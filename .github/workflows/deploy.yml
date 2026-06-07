@@ -17,24 +17,21 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             set -e
-            cd /var/www/guestflowpro
+            cd /root/Guest-Flow-Pro
 
-            # Pull latest code
             git pull origin main
 
-            # Backend — install deps, migrate, collect static
             cd backend
             source venv/bin/activate
             pip install -r requirements.txt --quiet
             python manage.py migrate --no-input
             python manage.py collectstatic --no-input
+            pkill -f gunicorn || true
+            sleep 1
+            gunicorn --workers 3 --bind unix:/run/concierge.sock concierge.wsgi:application --daemon
             deactivate
             cd ..
 
-            # Frontend — build Next.js
             npm ci --silent
             npm run build
-
-            # Restart services
-            sudo systemctl restart guestflowpro-api
-            pm2 restart guestflowpro-web --update-env
+            pm2 restart guestflowpro --update-env
