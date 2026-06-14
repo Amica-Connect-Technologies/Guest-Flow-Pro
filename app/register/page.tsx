@@ -105,6 +105,20 @@ function getCode(country: string) {
 function getCities(country: string) {
   return COUNTRY_CONFIG[country]?.cities ?? [];
 }
+// Max subscriber digits (excluding country code)
+function getMaxDigits(country: string): number {
+  if (country === "Italy")          return 10;
+  if (country === "United Kingdom") return 10;
+  return 15;
+}
+function sanitizePhone(val: string, maxDigits: number): string {
+  // Allow digits, spaces, hyphens only
+  const cleaned = val.replace(/[^\d\s\-]/g, "");
+  // Count only the digit characters
+  const digits = cleaned.replace(/\D/g, "");
+  if (digits.length > maxDigits) return cleaned.slice(0, cleaned.length - (digits.length - maxDigits));
+  return cleaned;
+}
 
 // ── Small helpers ─────────────────────────────────────────────────────────────
 function FieldError({ msg }: { msg?: string }) {
@@ -190,6 +204,15 @@ export default function RegisterPage() {
     const e: Partial<Record<keyof Form, string>> = {};
     if (!form.business_name.trim()) e.business_name = "Business name is required.";
     if (!form.city.trim())          e.city = "City is required.";
+
+    const phoneDigits = form.phone.replace(/\D/g, "");
+    if (form.phone && phoneDigits.length < 7)
+      e.phone = "Enter at least 7 digits.";
+
+    const waDigits = form.whatsapp_number.replace(/\D/g, "");
+    if (form.whatsapp_number && waDigits.length < 7)
+      e.whatsapp_number = "Enter at least 7 digits.";
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -211,14 +234,17 @@ export default function RegisterPage() {
     setLoading(true);
     setGlobalError("");
     try {
+      const code = getCode(form.country);
+      const fullPhone    = form.phone           ? `${code} ${form.phone}`.trim()           : "";
+      const fullWhatsApp = form.whatsapp_number ? `${code} ${form.whatsapp_number}`.trim() : "";
       const result = await registrationsApi.register({
         owner_name: form.owner_name,
         business_name: form.business_name,
         email: form.email,
         password: form.password,
-        phone: form.phone,
+        phone: fullPhone,
         city: form.city,
-        whatsapp_number: form.whatsapp_number,
+        whatsapp_number: fullWhatsApp,
         plan: form.plan,
         payment_method: form.payment_method,
       });
@@ -513,11 +539,8 @@ export default function RegisterPage() {
                           onClick={() => {
                             set("country", c);
                             set("city", "");
-                            // prepend country code to phone if not already set
-                            const code = COUNTRY_CONFIG[c].code;
-                            if (code && !form.phone.startsWith(code)) {
-                              set("phone", code + " ");
-                            }
+                            set("phone", "");
+                            set("whatsapp_number", "");
                           }}
                           className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center ${
                             active ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
@@ -565,21 +588,32 @@ export default function RegisterPage() {
                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">Phone number</label>
                     <div className="relative flex items-center">
                       {getCode(form.country) && (
-                        <span className="absolute left-3 text-sm font-bold text-slate-500 select-none pointer-events-none">
+                        <span className="absolute left-3 text-sm font-bold text-slate-600 select-none pointer-events-none z-10 bg-slate-50 pr-1">
                           {getCode(form.country)}
                         </span>
                       )}
                       <input
                         type="tel"
+                        inputMode="numeric"
                         value={form.phone}
-                        onChange={(e) => set("phone", e.target.value)}
-                        placeholder={getCode(form.country) ? `${getCode(form.country)} 000 000 0000` : "Phone number"}
-                        className={`w-full bg-slate-50 border border-slate-200 rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
-                          getCode(form.country) ? "pl-14 pr-4" : "px-4"
-                        }`}
+                        onChange={(e) => set("phone", sanitizePhone(e.target.value, getMaxDigits(form.country)))}
+                        placeholder="000 000 0000"
+                        maxLength={getMaxDigits(form.country) + 4}
+                        className={`w-full bg-slate-50 border rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                          errors.phone
+                            ? "border-red-300 focus:ring-red-100 focus:border-red-400"
+                            : "border-slate-200 focus:ring-blue-50 focus:border-blue-400"
+                        } ${getCode(form.country) ? "pl-14 pr-4" : "px-4"}`}
                       />
                     </div>
+                    {form.phone && (
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Full number: {getCode(form.country)} {form.phone}
+                      </p>
+                    )}
+                    <FieldError msg={errors.phone} />
                   </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1.5">
                       <span className="flex items-center gap-1.5">
@@ -589,13 +623,32 @@ export default function RegisterPage() {
                         WhatsApp number
                       </span>
                     </label>
-                    <input
-                      type="tel"
-                      value={form.whatsapp_number}
-                      onChange={(e) => set("whatsapp_number", e.target.value)}
-                      placeholder={getCode(form.country) ? `${getCode(form.country)} 000 000 0000` : "+00 000 000 0000"}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all"
-                    />
+                    <div className="relative flex items-center">
+                      {getCode(form.country) && (
+                        <span className="absolute left-3 text-sm font-bold text-slate-600 select-none pointer-events-none z-10 bg-slate-50 pr-1">
+                          {getCode(form.country)}
+                        </span>
+                      )}
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        value={form.whatsapp_number}
+                        onChange={(e) => set("whatsapp_number", sanitizePhone(e.target.value, getMaxDigits(form.country)))}
+                        placeholder="000 000 0000"
+                        maxLength={getMaxDigits(form.country) + 4}
+                        className={`w-full bg-slate-50 border rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                          errors.whatsapp_number
+                            ? "border-red-300 focus:ring-red-100 focus:border-red-400"
+                            : "border-slate-200 focus:ring-blue-50 focus:border-blue-400"
+                        } ${getCode(form.country) ? "pl-14 pr-4" : "px-4"}`}
+                      />
+                    </div>
+                    {form.whatsapp_number && (
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Full number: {getCode(form.country)} {form.whatsapp_number}
+                      </p>
+                    )}
+                    <FieldError msg={errors.whatsapp_number} />
                     <p className="text-[10px] text-slate-400 mt-1">Guests can contact you directly</p>
                   </div>
 
