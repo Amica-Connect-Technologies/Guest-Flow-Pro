@@ -387,83 +387,124 @@ export default function HotelDashboard() {
   const filteredBookings = bookFilter === "all" ? bookings : bookings.filter(b => b.status === bookFilter);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "#ECEEF3" }}>
 
       {/* ── Toast ─────────────────────────────────────────────────────────── */}
       {toast.msg && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 text-white text-sm px-5 py-3 rounded-2xl shadow-xl z-[300] whitespace-nowrap transition-all ${toast.ok ? "bg-slate-900" : "bg-red-500"}`}>
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 text-white text-sm px-5 py-3.5 rounded-2xl shadow-2xl z-[300] whitespace-nowrap font-semibold ${toast.ok ? "bg-slate-900" : "bg-red-500"}`}>
           {toast.msg}
         </div>
       )}
 
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-3">
-          {hotel.logo_url ? (
-            <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={36} height={36} className="w-9 h-9 rounded-xl object-cover border border-slate-100" />
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-              {hotel.name.slice(0, 2).toUpperCase()}
+      <header className="sticky top-0 z-10 overflow-hidden"
+        style={{ background: "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)", boxShadow: "0 4px 24px rgba(2,11,18,0.35)" }}>
+        <div className="px-4 py-4 flex items-center justify-between max-w-2xl mx-auto">
+          <div className="flex items-center gap-3">
+            {hotel.logo_url ? (
+              <div className="relative flex-shrink-0">
+                <div className="absolute -inset-0.5 rounded-xl opacity-70" style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
+                <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={40} height={40}
+                  className="relative w-10 h-10 rounded-xl object-cover" />
+              </div>
+            ) : (
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #083344, #0E7490)", border: "1.5px solid rgba(6,182,212,0.4)" }}>
+                {hotel.name.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <p className="font-black text-white text-sm leading-none">{hotel.name}</p>
+              <p className="text-cyan-300/80 text-xs mt-0.5 font-medium">{hotel.city}</p>
             </div>
-          )}
-          <div>
-            <p className="font-bold text-slate-900 text-sm leading-none">{hotel.name}</p>
-            <p className="text-slate-400 text-xs mt-0.5">{hotel.city}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-cyan-300/60 hidden sm:block font-medium">{userEmail}</span>
+            <button onClick={() => { auth.logout(); router.push("/login"); }}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+              style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              Sign out
+            </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 hidden sm:block">{userEmail}</span>
-          <button onClick={() => { auth.logout(); router.push("/login"); }}
-            className="text-xs text-slate-500 hover:text-red-500 font-semibold transition-colors">Sign out</button>
+
+        {/* Section Nav inside header */}
+        <div className="px-4 pb-3 max-w-2xl mx-auto">
+          <div className="flex gap-2">
+            {([
+              { key: "qr",       label: "QR Code",  emoji: "◻" },
+              { key: "services", label: "Services",  emoji: "🛎" },
+              { key: "bookings", label: "Bookings",  emoji: "📋" },
+              { key: "profile",  label: "Profile",   emoji: "🏨" },
+            ] as const).map(({ key, label, emoji }) => {
+              const active = section === key;
+              const pendingCount = key === "bookings" ? bookings.filter(b => b.status === "pending").length : 0;
+              return (
+                <button key={key} onClick={() => setSection(key)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black transition-all active:scale-95"
+                  style={{
+                    touchAction: "manipulation",
+                    background: active ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.10)",
+                    color: active ? "#083344" : "rgba(255,255,255,0.70)",
+                    boxShadow: active ? "0 4px 16px rgba(0,0,0,0.20)" : "none",
+                    border: active ? "none" : "1px solid rgba(255,255,255,0.12)",
+                  }}>
+                  <span className="text-sm leading-none">{emoji}</span>
+                  <span>{label}</span>
+                  {pendingCount > 0 && (
+                    <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                      {pendingCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 
-      {/* ── Section Nav ───────────────────────────────────────────────────── */}
-      <div className="bg-white border-b border-slate-100 px-4">
-        <div className="flex gap-1 py-2 max-w-xl">
-          {([
-            { key: "qr",       label: "QR Code"  },
-            { key: "services", label: "Services" },
-            { key: "bookings", label: "Bookings" },
-            { key: "profile",  label: "Profile"  },
-          ] as const).map(({ key, label }) => (
-            <button key={key} onClick={() => setSection(key)}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${section === key ? "bg-blue-600 text-white" : "text-slate-500 hover:bg-slate-100"}`}>
-              {label}
-              {key === "bookings" && bookings.filter(b => b.status === "pending").length > 0 && (
-                <span className="ml-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                  {bookings.filter(b => b.status === "pending").length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="max-w-2xl mx-auto px-4 py-6 pb-16">
+      <div className="max-w-2xl mx-auto px-4 py-5 pb-16">
 
         {/* ════ QR CODE SECTION ══════════════════════════════════════════════ */}
         {section === "qr" && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <h2 className="font-bold text-slate-900 text-sm mb-1">Guest QR Code</h2>
-            <p className="text-xs text-slate-400 mb-5">Guests scan this to access your services, tours, and attractions.</p>
-            <div className="flex flex-col sm:flex-row items-center gap-6">
-              <div className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex-shrink-0">
-                <QRCode value={guestUrl} size={140} />
+          <div className="space-y-4">
+            {/* QR banner */}
+            <div className="relative overflow-hidden rounded-3xl p-6 text-white"
+              style={{ background: "linear-gradient(140deg, #020B12 0%, #083344 45%, #0E7490 100%)", boxShadow: "0 8px 32px rgba(14,116,144,0.30)" }}>
+              <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(6,182,212,0.25) 0%, transparent 65%)" }} />
+              <div className="absolute -bottom-16 -left-8 w-40 h-40 rounded-full pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(8,145,178,0.22) 0%, transparent 65%)" }} />
+              <div className="relative z-10">
+                <p className="text-cyan-300/80 text-[11px] font-black uppercase tracking-[0.15em] mb-1">Digital Concierge</p>
+                <h2 className="font-black text-white text-xl mb-1">Guest QR Code</h2>
+                <p className="text-cyan-200/70 text-sm">Guests scan this to access your services, tours &amp; local attractions.</p>
               </div>
-              <div className="flex-1 min-w-0 text-center sm:text-left">
-                <p className="text-xs text-slate-500 mb-2">Concierge link</p>
-                <a href={guestUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-sm font-semibold text-blue-600 break-all hover:underline">{guestUrl}</a>
-                <div className="flex flex-col sm:flex-row gap-2 mt-4">
-                  <button onClick={() => { navigator.clipboard.writeText(guestUrl); showToast("Link copied to clipboard!"); }}
-                    className="text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition-colors">
-                    Copy link
-                  </button>
+            </div>
+
+            {/* QR + actions card */}
+            <div className="bg-white rounded-3xl p-6" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="p-4 rounded-2xl flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #ECFEFF, #F0FDFA)", border: "2px solid #A5F3FC" }}>
+                  <QRCode value={guestUrl} size={136} />
+                </div>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Concierge Link</p>
                   <a href={guestUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors text-center">
-                    Preview as guest
-                  </a>
+                    className="text-sm font-semibold break-all" style={{ color: "#0E7490" }}>{guestUrl}</a>
+                  <div className="flex flex-col sm:flex-row gap-2.5 mt-5">
+                    <button onClick={() => { navigator.clipboard.writeText(guestUrl); showToast("Link copied!"); }}
+                      className="flex-1 text-sm font-black py-3 rounded-2xl transition-all active:scale-95"
+                      style={{ background: "#ECFEFF", color: "#0E7490", border: "1.5px solid #A5F3FC", touchAction: "manipulation" }}>
+                      Copy Link
+                    </button>
+                    <a href={guestUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex-1 text-sm font-black py-3 rounded-2xl text-center text-white transition-all active:scale-95"
+                      style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}>
+                      Preview as Guest
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -474,10 +515,13 @@ export default function HotelDashboard() {
         {section === "services" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="font-bold text-slate-900 text-sm">Your Services <span className="text-slate-400 font-normal">({services.length})</span></p>
-              <button onClick={openAddService}
-                className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
+              <div>
+                <p className="font-black text-slate-800 text-base">Services</p>
+                <p className="text-slate-400 text-xs font-medium">{services.length} total</p>
+              </div>
+              <button onClick={openAddService} style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}
+                className="flex items-center gap-2 text-white text-xs font-black px-4 py-3 rounded-2xl active:scale-95 transition-all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Add Service
@@ -485,16 +529,18 @@ export default function HotelDashboard() {
             </div>
 
             {svcLoading ? (
-              <div className="bg-white rounded-2xl p-10 border border-slate-100 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+              <div className="bg-white rounded-3xl p-10 flex items-center justify-center" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+                <div className="w-8 h-8 rounded-full border-[3px] border-t-transparent animate-spin" style={{ borderColor: "#0E7490", borderTopColor: "transparent" }} />
               </div>
             ) : services.length === 0 ? (
-              <div className="bg-white rounded-2xl p-10 border border-slate-100 text-center">
-                <Bell className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="font-bold text-slate-700 text-sm">No services yet</p>
-                <p className="text-slate-400 text-xs mt-1">Add food, room service, tours, and more.</p>
-                <button onClick={openAddService}
-                  className="mt-4 bg-blue-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
+              <div className="bg-white rounded-3xl p-12 text-center" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+                <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "#ECFEFF" }}>
+                  <Bell className="w-8 h-8" style={{ color: "#0E7490" }} />
+                </div>
+                <p className="font-black text-slate-800 text-base">No services yet</p>
+                <p className="text-slate-400 text-sm mt-1.5">Add food, room service, spa, tours &amp; more.</p>
+                <button onClick={openAddService} style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}
+                  className="mt-5 text-white text-sm font-black px-6 py-3 rounded-2xl active:scale-95 transition-all">
                   Add First Service
                 </button>
               </div>
@@ -503,32 +549,35 @@ export default function HotelDashboard() {
                 {services.map(svc => {
                   const CatIcon = CAT_ICON[svc.category] ?? Sparkles;
                   return (
-                  <div key={svc.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${svc.is_available ? "border-slate-100" : "border-slate-200 opacity-60"}`}>
+                  <div key={svc.id} className={`bg-white rounded-3xl overflow-hidden transition-opacity ${!svc.is_available ? "opacity-55" : ""}`}
+                    style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.07)" }}>
                     <div className="flex items-start gap-3 p-4">
                       {svc.image_url ? (
-                        <Image unoptimized src={svc.image_url} alt={svc.name} width={56} height={56}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                        <Image unoptimized src={svc.image_url} alt={svc.name} width={60} height={60}
+                          className="w-[60px] h-[60px] rounded-2xl object-cover flex-shrink-0" />
                       ) : (
-                        <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                          <CatIcon className="w-6 h-6 text-slate-400" />
+                        <div className="w-[60px] h-[60px] rounded-2xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: "#ECFEFF" }}>
+                          <CatIcon className="w-7 h-7" style={{ color: "#0E7490" }} />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-1">
-                          <p className="font-bold text-slate-900 text-sm leading-snug">{svc.name}</p>
+                          <p className="font-black text-slate-900 text-sm leading-snug">{svc.name}</p>
                           {!svc.is_available && (
-                            <span className="text-[9px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full flex-shrink-0">Hidden</span>
+                            <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full flex-shrink-0">Hidden</span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-400 capitalize mt-0.5">{CAT_LABEL[svc.category] ?? svc.category}</p>
-                        <p className="font-bold text-emerald-600 text-sm mt-1">£{Number(svc.price).toFixed(2)}</p>
+                        <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#0E7490" }}>{CAT_LABEL[svc.category] ?? svc.category}</p>
+                        <p className="font-black text-emerald-600 text-sm mt-1.5">£{Number(svc.price).toFixed(2)}</p>
                       </div>
                     </div>
                     <div className="flex border-t border-slate-100">
-                      <button onClick={() => openEditService(svc)}
-                        className="flex-1 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 transition-colors">Edit</button>
+                      <button onClick={() => openEditService(svc)} style={{ touchAction: "manipulation", color: "#0E7490" }}
+                        className="flex-1 py-3 text-xs font-black hover:bg-cyan-50 transition-colors">Edit</button>
                       <button onClick={() => deleteService(svc.id)} disabled={deletingId === svc.id}
-                        className="flex-1 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border-l border-slate-100 disabled:opacity-50">
+                        style={{ touchAction: "manipulation" }}
+                        className="flex-1 py-3 text-xs font-black text-red-500 hover:bg-red-50 transition-colors border-l border-slate-100 disabled:opacity-50">
                         {deletingId === svc.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
@@ -544,95 +593,109 @@ export default function HotelDashboard() {
         {section === "bookings" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <p className="font-bold text-slate-900 text-sm">Bookings <span className="text-slate-400 font-normal">({bookings.length})</span></p>
-              <button onClick={fetchBookings} className="text-xs text-blue-600 font-semibold hover:underline">Refresh</button>
+              <div>
+                <p className="font-black text-slate-800 text-base">Bookings</p>
+                <p className="text-slate-400 text-xs font-medium">{bookings.length} total</p>
+              </div>
+              <button onClick={fetchBookings}
+                className="text-xs font-black px-3 py-2 rounded-xl bg-white active:scale-95 transition-all"
+                style={{ touchAction: "manipulation", color: "#0E7490", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                ↻ Refresh
+              </button>
             </div>
 
             {/* Filter chips */}
             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
               {[
-                { k: "all", label: "All" },
-                { k: "pending", label: "Pending" },
+                { k: "all",       label: "All"       },
+                { k: "pending",   label: "Pending"   },
                 { k: "confirmed", label: "Confirmed" },
                 { k: "completed", label: "Completed" },
                 { k: "cancelled", label: "Cancelled" },
               ].map(({ k, label }) => (
                 <button key={k} onClick={() => setBookFilter(k)}
-                  className={`flex-shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-xl transition-colors ${bookFilter === k ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-500"}`}>
+                  className={`flex-shrink-0 text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 ${
+                    bookFilter === k ? "text-white" : "bg-white text-slate-500"
+                  }`}
+                  style={bookFilter === k
+                    ? { background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 14px rgba(14,116,144,0.35)", touchAction: "manipulation" }
+                    : { touchAction: "manipulation", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }
+                  }>
                   {label}
                 </button>
               ))}
             </div>
 
             {bookLoading ? (
-              <div className="bg-white rounded-2xl p-10 border border-slate-100 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+              <div className="bg-white rounded-3xl p-10 flex items-center justify-center" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+                <div className="w-8 h-8 rounded-full border-[3px] border-t-transparent animate-spin" style={{ borderColor: "#0E7490", borderTopColor: "transparent" }} />
               </div>
             ) : filteredBookings.length === 0 ? (
-              <div className="bg-white rounded-2xl p-10 border border-slate-100 text-center">
-                <ClipboardList className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="font-bold text-slate-700 text-sm">No bookings yet</p>
-                <p className="text-slate-400 text-xs mt-1">Guest bookings will appear here.</p>
+              <div className="bg-white rounded-3xl p-12 text-center" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+                <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "#ECFEFF" }}>
+                  <ClipboardList className="w-8 h-8" style={{ color: "#0E7490" }} />
+                </div>
+                <p className="font-black text-slate-800 text-base">No bookings yet</p>
+                <p className="text-slate-400 text-sm mt-1.5">Guest bookings will appear here.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {filteredBookings.map(b => (
-                  <div key={b.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                  <div key={b.id} className="bg-white rounded-3xl overflow-hidden" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.07)" }}>
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-bold text-slate-900 text-sm">{b.service_name}</p>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg capitalize ${BOOKING_STATUS_COLORS[b.status] ?? ""}`}>
+                          <p className="font-black text-slate-900 text-sm mb-1.5">{b.service_name}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl capitalize ${BOOKING_STATUS_COLORS[b.status] ?? ""}`}>
                               {b.status}
                             </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${PAY_STATUS_COLORS[b.payment_status] ?? ""}`}>
-                              {b.payment_status === "paid" ? "Paid" : b.payment_method === "cod" ? "COD" : "Unpaid"}
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl ${PAY_STATUS_COLORS[b.payment_status] ?? ""}`}>
+                              {b.payment_status === "paid" ? "Paid" : b.payment_method === "cod" ? "Cash on Delivery" : "Unpaid"}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">{b.guest_name}
-                            {b.guest_room && <span className="text-slate-400"> · Room {b.guest_room}</span>}
-                            {b.guest_phone && <span className="text-slate-400"> · {b.guest_phone}</span>}
+                          <p className="text-xs text-slate-500 mt-2 font-semibold">{b.guest_name}
+                            {b.guest_room && <span className="text-slate-400 font-normal"> · Room {b.guest_room}</span>}
+                            {b.guest_phone && <span className="text-slate-400 font-normal"> · {b.guest_phone}</span>}
                           </p>
-                          {b.notes && <p className="text-xs text-slate-400 mt-1 italic">"{b.notes}"</p>}
+                          {b.notes && <p className="text-xs text-slate-400 mt-1 italic">&ldquo;{b.notes}&rdquo;</p>}
+                          <p className="text-[10px] text-slate-300 mt-1.5 font-medium">
+                            {new Date(b.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="font-bold text-emerald-600 text-sm">£{Number(b.total_price).toFixed(2)}</p>
-                          <p className="text-[10px] text-slate-300 mt-0.5">×{b.quantity}</p>
+                          <p className="font-black text-emerald-600 text-base">£{Number(b.total_price).toFixed(2)}</p>
+                          <p className="text-[10px] text-slate-300 mt-0.5 font-medium">×{b.quantity}</p>
                         </div>
                       </div>
-                      <p className="text-[10px] text-slate-300 mt-2">
-                        {new Date(b.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
                     </div>
 
-                    {/* Action buttons */}
                     {b.status !== "completed" && b.status !== "cancelled" && (
                       <div className="flex border-t border-slate-100 divide-x divide-slate-100">
                         {b.status === "pending" && (
                           <button onClick={() => updateBooking(b.id, { status: "confirmed" })}
-                            disabled={updatingId === b.id}
-                            className="flex-1 py-2.5 text-xs font-bold text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition-colors">
+                            disabled={updatingId === b.id} style={{ touchAction: "manipulation", color: "#0E7490" }}
+                            className="flex-1 py-3 text-xs font-black hover:bg-cyan-50 disabled:opacity-50 transition-colors">
                             Confirm
                           </button>
                         )}
                         {b.status === "confirmed" && (
                           <button onClick={() => updateBooking(b.id, { status: "completed" })}
-                            disabled={updatingId === b.id}
-                            className="flex-1 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
+                            disabled={updatingId === b.id} style={{ touchAction: "manipulation" }}
+                            className="flex-1 py-3 text-xs font-black text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
                             Mark Done
                           </button>
                         )}
                         {b.payment_status === "pending" && b.payment_method !== "stripe" && (
                           <button onClick={() => updateBooking(b.id, { payment_status: "paid" })}
-                            disabled={updatingId === b.id}
-                            className="flex-1 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
+                            disabled={updatingId === b.id} style={{ touchAction: "manipulation" }}
+                            className="flex-1 py-3 text-xs font-black text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
                             Mark Paid
                           </button>
                         )}
                         <button onClick={() => updateBooking(b.id, { status: "cancelled" })}
-                          disabled={updatingId === b.id}
-                          className="flex-1 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
+                          disabled={updatingId === b.id} style={{ touchAction: "manipulation" }}
+                          className="flex-1 py-3 text-xs font-black text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
                           Cancel
                         </button>
                       </div>
@@ -648,24 +711,34 @@ export default function HotelDashboard() {
         {section === "profile" && (
           <div className="space-y-4">
             {/* Header card */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-5 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <div className="rounded-3xl overflow-hidden" style={{ boxShadow: "0 8px 32px rgba(14,116,144,0.22)" }}>
+              <div className="relative px-5 py-6 flex items-center justify-between overflow-hidden"
+                style={{ background: "linear-gradient(140deg, #020B12 0%, #083344 45%, #0E7490 100%)" }}>
+                <div className="absolute -top-12 -right-12 w-40 h-40 rounded-full pointer-events-none"
+                  style={{ background: "radial-gradient(circle, rgba(6,182,212,0.22) 0%, transparent 65%)" }} />
+                <div className="absolute -bottom-16 -left-8 w-36 h-36 rounded-full pointer-events-none"
+                  style={{ background: "radial-gradient(circle, rgba(8,145,178,0.20) 0%, transparent 65%)" }} />
+                <div className="relative z-10 flex items-center gap-4">
                   {hotel.logo_url ? (
-                    <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={56} height={56}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-white/30 flex-shrink-0" />
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute -inset-0.5 rounded-2xl opacity-70" style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
+                      <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={56} height={56}
+                        className="relative w-14 h-14 rounded-2xl object-cover" />
+                    </div>
                   ) : (
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center flex-shrink-0">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(6,182,212,0.3)" }}>
                       <span className="text-white font-black text-xl">{hotel.name.slice(0,2).toUpperCase()}</span>
                     </div>
                   )}
                   <div>
                     <p className="text-white font-black text-lg leading-tight">{hotel.name}</p>
-                    <p className="text-blue-200 text-xs mt-0.5">{hotel.city}</p>
+                    <p className="text-cyan-300/80 text-xs mt-0.5 font-medium">{hotel.city}</p>
                   </div>
                 </div>
                 <button onClick={openProfileForm}
-                  className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors border border-white/25">
+                  className="relative z-10 flex items-center gap-1.5 text-white text-xs font-black px-3.5 py-2.5 rounded-xl transition-all active:scale-95"
+                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.22)", touchAction: "manipulation" }}>
                   <User className="w-3.5 h-3.5" />
                   Edit Profile
                 </button>
