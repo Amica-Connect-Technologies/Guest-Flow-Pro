@@ -107,31 +107,31 @@ export default function RestaurantView({ hotel }: Props) {
         {/* Welcome header */}
         <div className="relative overflow-hidden rounded-3xl p-6 text-white"
           style={{
-            background: "linear-gradient(140deg, #1A0A00 0%, #7C2D12 40%, #C2410C 75%, #EA580C 100%)",
-            boxShadow: "0 12px 40px rgba(194,65,12,0.38)",
+            background: "linear-gradient(140deg, #1A0208 0%, #6B1535 40%, #9D174D 72%, #BE185D 100%)",
+            boxShadow: "0 12px 40px rgba(157,23,77,0.40)",
           }}>
           {/* Decorative glows */}
-          <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(251,146,60,0.28) 0%, transparent 65%)" }} />
+          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(244,114,182,0.28) 0%, transparent 65%)" }} />
           <div className="absolute -bottom-12 -left-8 w-40 h-40 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 65%)" }} />
-          <div className="absolute top-3 right-14 w-14 h-14 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, rgba(251,191,36,0.16) 0%, transparent 65%)" }} />
+          <div className="absolute top-4 right-16 w-14 h-14 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)" }} />
 
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(255,255,255,0.18)" }}>
+                style={{ background: "rgba(255,255,255,0.16)" }}>
                 <Utensils className="w-4 h-4 text-white" />
               </div>
-              <span className="text-orange-200/90 text-[11px] font-black uppercase tracking-[0.15em]">
+              <span className="text-pink-200/90 text-[11px] font-black uppercase tracking-[0.15em]">
                 Digital Concierge
               </span>
             </div>
             <p className="text-white font-black text-2xl leading-tight mb-1.5 drop-shadow-sm">
               What would you like<br/>to eat today?
             </p>
-            <p className="text-orange-200/75 text-sm leading-relaxed">
+            <p className="text-pink-200/70 text-sm leading-relaxed">
               Choose a cuisine — we&apos;ll find the best spots near your hotel.
             </p>
           </div>

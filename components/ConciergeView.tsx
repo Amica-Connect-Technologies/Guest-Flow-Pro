@@ -362,38 +362,38 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
   // ── Main render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#F0F2F5] pb-28"
-      style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+    <div className="min-h-screen pb-28"
+      style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", background: "#ECEEF3" }}>
 
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
       <div className="relative px-5 pt-8 pb-7 overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #0D0D1A 0%, #1A1040 30%, #2D1B69 62%, #5B21B6 100%)" }}>
+        style={{ background: "linear-gradient(150deg, #020B12 0%, #083344 30%, #0A4A5E 62%, #0E7490 100%)" }}>
 
         {/* Glow blobs */}
-        <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.30) 0%, transparent 65%)" }} />
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.28) 0%, transparent 65%)" }} />
         <div className="absolute top-6 right-5 w-20 h-20 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(251,191,36,0.22) 0%, transparent 70%)" }} />
-        <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(109,40,217,0.32) 0%, transparent 65%)" }} />
-        <div className="absolute bottom-10 right-24 w-16 h-16 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(196,181,253,0.12) 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, rgba(251,191,36,0.20) 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(8,145,178,0.30) 0%, transparent 65%)" }} />
+        <div className="absolute bottom-8 right-20 w-16 h-16 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(103,232,249,0.12) 0%, transparent 70%)" }} />
 
         {/* Hotel identity */}
         <div className="relative z-10 flex items-center gap-4">
           {hotel.logo_url ? (
             <div className="relative flex-shrink-0">
-              <div className="absolute inset-0 rounded-2xl"
-                style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", padding: 2 }} />
+              <div className="absolute -inset-0.5 rounded-2xl opacity-80"
+                style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
               <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={72} height={72}
-                className="relative w-[72px] h-[72px] rounded-2xl object-cover border-2 border-amber-400/60 shadow-2xl" />
+                className="relative w-[72px] h-[72px] rounded-2xl object-cover shadow-2xl" />
             </div>
           ) : (
             <div className="relative flex-shrink-0">
-              <div className="absolute -inset-0.5 rounded-2xl opacity-70"
-                style={{ background: "linear-gradient(135deg, #F59E0B, #A855F7)" }} />
+              <div className="absolute -inset-0.5 rounded-2xl opacity-80"
+                style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
               <div className="relative w-[72px] h-[72px] rounded-2xl flex items-center justify-center shadow-2xl"
-                style={{ background: "linear-gradient(135deg, #2D1B69, #4C1D95)" }}>
+                style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
                 <span className="text-white font-black text-2xl tracking-tight">
                   {hotel.name.slice(0, 2).toUpperCase()}
                 </span>
@@ -403,7 +403,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-1">
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <p className="text-amber-300/90 text-[11px] font-black tracking-[0.18em] uppercase">
+              <p className="text-cyan-300/90 text-[11px] font-black tracking-[0.18em] uppercase">
                 Welcome to
               </p>
             </div>
@@ -411,8 +411,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               {hotel.name}
             </p>
             <div className="flex items-center gap-1.5 mt-1.5">
-              <MapPin className="w-3.5 h-3.5 text-violet-300 flex-shrink-0" />
-              <span className="text-violet-200 text-sm font-semibold">{hotel.city}</span>
+              <MapPin className="w-3.5 h-3.5 text-cyan-300 flex-shrink-0" />
+              <span className="text-cyan-200 text-sm font-semibold">{hotel.city}</span>
             </div>
           </div>
         </div>
@@ -420,20 +420,20 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* Stats strip */}
         <div className="relative z-10 grid grid-cols-3 gap-3 mt-6">
           {[
-            { n: services.length,                              label: "Services",  accent: "#F59E0B" },
-            { n: services.filter(s => s.is_available).length, label: "Available", accent: "#34D399" },
-            { n: (hotel.amenities || []).length,               label: "Amenities", accent: "#A78BFA" },
+            { n: services.length,                              label: "Services",  accent: "#FCD34D" },
+            { n: services.filter(s => s.is_available).length, label: "Available", accent: "#6EE7B7" },
+            { n: (hotel.amenities || []).length,               label: "Amenities", accent: "#67E8F9" },
           ].map(({ n, label, accent }) => (
             <button key={label} onClick={() => setTab("info")}
               className="rounded-2xl px-2 py-4 text-center active:scale-95 transition-transform"
               style={{
                 touchAction: "manipulation",
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(103,232,249,0.20)",
                 backdropFilter: "blur(12px)",
               }}>
               <p className="font-black text-3xl leading-none" style={{ color: accent }}>{n}</p>
-              <p className="text-violet-200/80 text-[11px] font-bold mt-1.5 tracking-wide">{label}</p>
+              <p className="text-cyan-200/70 text-[11px] font-bold mt-1.5 tracking-wide">{label}</p>
             </button>
           ))}
         </div>
@@ -450,14 +450,14 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   className="flex-shrink-0 flex items-center gap-2 rounded-2xl px-4 py-2.5 active:scale-95 transition-transform"
                   style={{
                     touchAction: "manipulation",
-                    background: "rgba(255,255,255,0.10)",
-                    border: "1px solid rgba(255,255,255,0.18)",
+                    background: "rgba(255,255,255,0.09)",
+                    border: "1px solid rgba(103,232,249,0.20)",
                     backdropFilter: "blur(10px)",
                   }}>
                   <m.Icon className="w-4 h-4 text-white" />
                   <span className="text-white text-xs font-bold whitespace-nowrap">{m.label}</span>
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
-                    style={{ background: "rgba(255,255,255,0.2)", color: "white" }}>{count}</span>
+                    style={{ background: "rgba(6,182,212,0.35)", color: "white" }}>{count}</span>
                 </button>
               );
             })}
@@ -466,8 +466,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       </div>
 
       {/* ── Tab Navigation (horizontal scroll) ──────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-[#F0F2F5] pt-4 pb-3"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.10)" }}>
+      <div className="sticky top-0 z-30 pt-4 pb-3"
+        style={{ background: "#ECEEF3", boxShadow: "0 4px 24px rgba(0,0,0,0.09)" }}>
         <div className="flex gap-2 overflow-x-auto px-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
           {([
             { key: "restaurant" as const, label: "Restaurant", Icon: Utensils },
@@ -483,19 +483,19 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 style={{
                   touchAction: "manipulation",
                   background: active
-                    ? "linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)"
+                    ? "linear-gradient(135deg, #083344 0%, #0E7490 100%)"
                     : "white",
                   boxShadow: active
-                    ? "0 6px 22px rgba(37,99,235,0.40)"
+                    ? "0 6px 22px rgba(14,116,144,0.42)"
                     : "0 2px 8px rgba(0,0,0,0.06)",
                 }}
                 className="flex-shrink-0 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl transition-all active:scale-[0.96]">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  active ? "bg-white/20" : "bg-blue-50"
-                }`}>
-                  <Icon className={`w-4 h-4 ${active ? "text-white" : "text-blue-600"}`} />
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0`}
+                  style={{ background: active ? "rgba(255,255,255,0.18)" : "#ECFEFF" }}>
+                  <Icon className="w-4 h-4" style={{ color: active ? "white" : "#0E7490" }} />
                 </div>
-                <span className={`font-black text-[13px] whitespace-nowrap ${active ? "text-white" : "text-slate-700"}`}>
+                <span className="font-black text-[13px] whitespace-nowrap"
+                  style={{ color: active ? "white" : "#1E293B" }}>
                   {label}
                 </span>
               </button>
