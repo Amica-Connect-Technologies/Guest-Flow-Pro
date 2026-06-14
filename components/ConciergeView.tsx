@@ -366,7 +366,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
 
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
-      <div className="relative bg-gradient-to-br from-[#0F172A] via-[#1E3A8A] to-[#2563EB] px-5 pt-8 pb-7 overflow-hidden">
+      <div className="relative px-5 pt-8 pb-7 overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #0F172A 0%, #1E3A8A 60%, #1D4ED8 100%)" }}>
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/3" />
         <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blue-400/10 translate-y-1/3 -translate-x-1/4" />
         <div className="absolute top-1/2 right-12 w-28 h-28 rounded-full bg-white/[0.04]" />
@@ -428,39 +429,39 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         )}
       </div>
 
-      {/* ── Tab Grid ─────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 bg-[#F0F2F5] px-4 pt-4 pb-3"
-        style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.09)" }}>
-        <div className="grid grid-cols-3 gap-2.5">
+      {/* ── Tab Navigation (horizontal scroll) ──────────────────────────── */}
+      <div className="sticky top-0 z-30 bg-[#F0F2F5] pt-4 pb-3"
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.10)" }}>
+        <div className="flex gap-2 overflow-x-auto px-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
           {([
-            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils, sub: "Near hotel"              },
-            { key: "parking"    as const, label: "Parking",    Icon: Car,      sub: "Near hotel"              },
-            { key: "night"      as const, label: "Night Life", Icon: Moon,     sub: "Near hotel"              },
-            { key: "tours"      as const, label: "Tours",      Icon: Map,      sub: `${tours.length} listed`  },
-            { key: "places"     as const, label: "Places",     Icon: MapPin,   sub: "Near hotel"              },
-            { key: "info"       as const, label: "Hotel Info", Icon: Info,     sub: "WiFi · Check-in"         },
-          ]).map(({ key, label, Icon, sub }) => {
+            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils },
+            { key: "parking"    as const, label: "Parking",    Icon: Car      },
+            { key: "night"      as const, label: "Night Life", Icon: Moon     },
+            { key: "tours"      as const, label: "Tours",      Icon: Map      },
+            { key: "places"     as const, label: "Places",     Icon: MapPin   },
+            { key: "info"       as const, label: "Hotel Info", Icon: Info     },
+          ]).map(({ key, label, Icon }) => {
             const active = tab === key;
             return (
               <button key={key} onClick={() => setTab(key)}
                 style={{
                   touchAction: "manipulation",
-                  boxShadow: active ? "0 8px 24px rgba(37,99,235,0.40)" : "0 2px 10px rgba(0,0,0,0.07)",
+                  background: active
+                    ? "linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)"
+                    : "white",
+                  boxShadow: active
+                    ? "0 6px 22px rgba(37,99,235,0.40)"
+                    : "0 2px 8px rgba(0,0,0,0.06)",
                 }}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl py-4 px-2 transition-all active:scale-[0.95] ${
-                  active ? "bg-blue-600" : "bg-white"
-                }`}>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                className="flex-shrink-0 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl transition-all active:scale-[0.96]">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                   active ? "bg-white/20" : "bg-blue-50"
                 }`}>
-                  <Icon className={`w-6 h-6 ${active ? "text-white" : "text-blue-600"}`} />
+                  <Icon className={`w-4 h-4 ${active ? "text-white" : "text-blue-600"}`} />
                 </div>
-                <p className={`font-black text-xs leading-tight text-center ${active ? "text-white" : "text-slate-800"}`}>
+                <span className={`font-black text-[13px] whitespace-nowrap ${active ? "text-white" : "text-slate-700"}`}>
                   {label}
-                </p>
-                <p className={`text-[10px] font-semibold leading-tight text-center truncate w-full px-1 ${active ? "text-blue-100" : "text-slate-400"}`}>
-                  {sub}
-                </p>
+                </span>
               </button>
             );
           })}

@@ -105,20 +105,32 @@ export default function RestaurantView({ hotel }: Props) {
     return (
       <div className="space-y-4">
         {/* Welcome header */}
-        <div className="bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] rounded-3xl p-6 text-white"
-          style={{ boxShadow: "0 8px 32px rgba(37,99,235,0.25)" }}>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
-              <Utensils className="w-5 h-5 text-white" />
+        <div className="relative overflow-hidden rounded-3xl p-6 text-white"
+          style={{
+            background: "linear-gradient(135deg, #0F172A 0%, #1E3A8A 55%, #1D4ED8 100%)",
+            boxShadow: "0 12px 40px rgba(30,58,138,0.35)",
+          }}>
+          {/* Decorative circles */}
+          <div className="absolute -top-8 -right-8 w-40 h-40 rounded-full bg-white/[0.06]" />
+          <div className="absolute -bottom-10 -left-6 w-32 h-32 rounded-full bg-blue-400/10" />
+          <div className="absolute top-4 right-16 w-16 h-16 rounded-full bg-white/[0.04]" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                <Utensils className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-blue-300 text-[11px] font-black uppercase tracking-[0.15em]">
+                Digital Concierge
+              </span>
             </div>
-            <div>
-              <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest">Digital Concierge</p>
-              <p className="text-white font-black text-xl leading-tight">What would you like<br/>to eat today?</p>
-            </div>
+            <p className="text-white font-black text-2xl leading-tight mb-1.5">
+              What would you like<br/>to eat today?
+            </p>
+            <p className="text-blue-300/80 text-sm leading-relaxed">
+              Choose a cuisine — we&apos;ll find the best spots near your hotel.
+            </p>
           </div>
-          <p className="text-blue-200 text-sm mt-3 leading-relaxed">
-            Choose a cuisine and we will find the best nearby options for you.
-          </p>
         </div>
 
         {/* Active filters strip */}
@@ -134,28 +146,49 @@ export default function RestaurantView({ hotel }: Props) {
 
         {/* Filter button */}
         <button onClick={() => setShowFilters(true)}
-          style={{ touchAction: "manipulation", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}
-          className="w-full flex items-center justify-between bg-white rounded-2xl px-4 py-3.5 active:scale-[0.98] transition-transform">
-          <div className="flex items-center gap-2.5 text-slate-700">
-            <SlidersHorizontal className="w-4 h-4 text-blue-600" />
-            <span className="font-bold text-sm">Filter Results</span>
+          style={{
+            touchAction: "manipulation",
+            boxShadow: activeFilterCount > 0
+              ? "0 4px 16px rgba(37,99,235,0.22)"
+              : "0 2px 10px rgba(0,0,0,0.06)",
+            background: activeFilterCount > 0
+              ? "linear-gradient(135deg, #1E40AF, #2563EB)"
+              : "white",
+          }}
+          className="w-full flex items-center justify-between rounded-2xl px-4 py-4 active:scale-[0.98] transition-all">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${activeFilterCount > 0 ? "bg-white/20" : "bg-blue-50"}`}>
+              <SlidersHorizontal className={`w-4 h-4 ${activeFilterCount > 0 ? "text-white" : "text-blue-600"}`} />
+            </div>
+            <span className={`font-black text-sm ${activeFilterCount > 0 ? "text-white" : "text-slate-700"}`}>
+              Filter Results
+            </span>
             {activeFilterCount > 0 && (
-              <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{activeFilterCount}</span>
+              <span className="bg-white/25 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{activeFilterCount}</span>
             )}
           </div>
-          <span className="text-xs text-slate-400 font-semibold">Tap to customise</span>
+          <span className={`text-xs font-semibold ${activeFilterCount > 0 ? "text-blue-200" : "text-slate-400"}`}>
+            Tap to customise
+          </span>
         </button>
 
         {/* Category grid */}
         <div>
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 px-1">Choose a Cuisine</p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-3.5 px-1">Choose a Cuisine</p>
+          <div className="grid grid-cols-3 gap-3">
             {CATEGORIES.map(cat => (
               <button key={cat.id} onClick={() => loadCategory(cat)}
-                style={{ touchAction: "manipulation", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
-                className="bg-white rounded-2xl p-3 flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform min-h-[90px]">
-                <span className="text-3xl leading-none">{cat.emoji}</span>
-                <span className="font-black text-[11px] text-slate-800 text-center leading-tight">{cat.label}</span>
+                style={{
+                  touchAction: "manipulation",
+                  background: `linear-gradient(145deg, ${cat.color}18, ${cat.color}32)`,
+                  boxShadow: `0 4px 18px ${cat.color}28`,
+                  border: `1.5px solid ${cat.color}22`,
+                }}
+                className="rounded-2xl py-5 px-2 flex flex-col items-center justify-center gap-2.5 active:scale-95 transition-all min-h-[102px]">
+                <span className="text-[34px] leading-none">{cat.emoji}</span>
+                <span className="font-black text-[11px] text-center leading-tight" style={{ color: cat.color }}>
+                  {cat.label}
+                </span>
               </button>
             ))}
           </div>
