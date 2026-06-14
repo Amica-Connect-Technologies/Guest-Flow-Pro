@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import PublicLayout from "@/components/PublicLayout";
+import { LanguageProvider } from "@/lib/LanguageContext";
 
 export const metadata: Metadata = {
   title: "Guest Flow Pro | Italian Hotel Services in the UK",
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="flex flex-col min-h-screen bg-slate-50 md:bg-white">
-        <PublicLayout>{children}</PublicLayout>
+        <LanguageProvider>
+          <PublicLayout>{children}</PublicLayout>
+        </LanguageProvider>
       </body>
     </html>
   );

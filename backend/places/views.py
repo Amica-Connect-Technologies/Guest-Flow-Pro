@@ -148,12 +148,15 @@ _EXCLUDE_TYPES: dict[str, set[str]] = {
 }
 
 
-def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 1000) -> list:
+def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 1000, keyword: str = "") -> list:
     from django.conf import settings as _s
     key = _s.GOOGLE_PLACES_API_KEY
+    params: dict = {"location": f"{lat},{lng}", "radius": radius, "type": google_type, "key": key}
+    if keyword:
+        params["keyword"] = keyword
     url = (
         "https://maps.googleapis.com/maps/api/place/nearbysearch/json?"
-        + urllib.parse.urlencode({"location": f"{lat},{lng}", "radius": radius, "type": google_type, "key": key})
+        + urllib.parse.urlencode(params)
     )
     req = urllib.request.Request(url)
     req.add_header("User-Agent", "GuestFlowPro/1.0")
@@ -243,8 +246,16 @@ class NearbyPlacesView(APIView):
 
         has_address = bool(getattr(hotel, "address", "").strip())
         location = f"{hotel.address}, {hotel.city}" if has_address else hotel.city
-        # Tighter radius when we have a precise street address; wider for city-only
-        radius = 1000 if has_address else 2000
+        # Allow caller to override radius; default to 1km with address, 2km without
+        default_radius = 1000 if has_address else 2000
+        try:
+            requested_radius = int(request.query_params.get("radius", default_radius))
+        except (ValueError, TypeError):
+            requested_radius = default_radius
+        radius = max(200, min(requested_radius, 5000))
+
+        keyword = request.query_params.get("keyword", "").strip()
+
         try:
             lat, lng = _geocode_google(location)
         except Exception as exc:
@@ -259,7 +270,7 @@ class NearbyPlacesView(APIView):
         }
         google_type = google_type_map.get(ptype, "tourist_attraction")
         try:
-            places = _nearby_google(lat, lng, google_type, radius=radius)
+            places = _nearby_google(lat, lng, google_type, radius=radius, keyword=keyword)
         except Exception as exc:
             return Response({"detail": f"Places API error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
 

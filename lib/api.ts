@@ -168,10 +168,12 @@ export const placesApi = {
       { method: "POST", body: JSON.stringify({ city, type, limit }) }
     ),
 
-  nearby: (hotelId: string, type: string) =>
-    req<{ places: NearbyPlace[]; lat: number; lng: number }>(
-      `/api/places/nearby/?hotel_id=${encodeURIComponent(hotelId)}&type=${type}`
-    ),
+  nearby: (hotelId: string, type: string, keyword?: string, radius?: number) => {
+    let url = `/api/places/nearby/?hotel_id=${encodeURIComponent(hotelId)}&type=${type}`;
+    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+    if (radius)  url += `&radius=${radius}`;
+    return req<{ places: NearbyPlace[]; lat: number; lng: number }>(url);
+  },
 };
 
 // ── Registrations ────────────────────────────────────────────────────────────
