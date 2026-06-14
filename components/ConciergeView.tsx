@@ -367,27 +367,52 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
       {/* ── Hero Header ──────────────────────────────────────────────────── */}
       <div className="relative px-5 pt-8 pb-7 overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #0F172A 0%, #1E3A8A 60%, #1D4ED8 100%)" }}>
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blue-400/10 translate-y-1/3 -translate-x-1/4" />
-        <div className="absolute top-1/2 right-12 w-28 h-28 rounded-full bg-white/[0.04]" />
+        style={{ background: "linear-gradient(145deg, #0D0D1A 0%, #1A1040 30%, #2D1B69 62%, #5B21B6 100%)" }}>
+
+        {/* Glow blobs */}
+        <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.30) 0%, transparent 65%)" }} />
+        <div className="absolute top-6 right-5 w-20 h-20 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(251,191,36,0.22) 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-24 -left-10 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(109,40,217,0.32) 0%, transparent 65%)" }} />
+        <div className="absolute bottom-10 right-24 w-16 h-16 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(196,181,253,0.12) 0%, transparent 70%)" }} />
 
         {/* Hotel identity */}
         <div className="relative z-10 flex items-center gap-4">
           {hotel.logo_url ? (
-            <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={72} height={72}
-              className="w-18 h-18 rounded-2xl object-cover border-2 border-white/30 shadow-xl flex-shrink-0" />
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 rounded-2xl"
+                style={{ background: "linear-gradient(135deg, #F59E0B, #D97706)", padding: 2 }} />
+              <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={72} height={72}
+                className="relative w-[72px] h-[72px] rounded-2xl object-cover border-2 border-amber-400/60 shadow-2xl" />
+            </div>
           ) : (
-            <div className="w-[72px] h-[72px] rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center shadow-xl flex-shrink-0">
-              <span className="text-white font-black text-2xl">{hotel.name.slice(0, 2).toUpperCase()}</span>
+            <div className="relative flex-shrink-0">
+              <div className="absolute -inset-0.5 rounded-2xl opacity-70"
+                style={{ background: "linear-gradient(135deg, #F59E0B, #A855F7)" }} />
+              <div className="relative w-[72px] h-[72px] rounded-2xl flex items-center justify-center shadow-2xl"
+                style={{ background: "linear-gradient(135deg, #2D1B69, #4C1D95)" }}>
+                <span className="text-white font-black text-2xl tracking-tight">
+                  {hotel.name.slice(0, 2).toUpperCase()}
+                </span>
+              </div>
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-blue-200/80 text-xs font-bold tracking-widest uppercase mb-1">Welcome to</p>
-            <p className="text-white font-black text-[26px] leading-tight line-clamp-2">{hotel.name}</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <p className="text-amber-300/90 text-[11px] font-black tracking-[0.18em] uppercase">
+                Welcome to
+              </p>
+            </div>
+            <p className="text-white font-black text-[26px] leading-tight line-clamp-2 drop-shadow-md">
+              {hotel.name}
+            </p>
             <div className="flex items-center gap-1.5 mt-1.5">
-              <MapPin className="w-3.5 h-3.5 text-blue-300 flex-shrink-0" />
-              <span className="text-blue-200 text-sm font-semibold">{hotel.city}</span>
+              <MapPin className="w-3.5 h-3.5 text-violet-300 flex-shrink-0" />
+              <span className="text-violet-200 text-sm font-semibold">{hotel.city}</span>
             </div>
           </div>
         </div>
@@ -395,33 +420,44 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* Stats strip */}
         <div className="relative z-10 grid grid-cols-3 gap-3 mt-6">
           {[
-            { n: services.length,                              label: "Services"  },
-            { n: services.filter(s => s.is_available).length, label: "Available" },
-            { n: (hotel.amenities || []).length,               label: "Amenities" },
-          ].map(({ n, label }) => (
+            { n: services.length,                              label: "Services",  accent: "#F59E0B" },
+            { n: services.filter(s => s.is_available).length, label: "Available", accent: "#34D399" },
+            { n: (hotel.amenities || []).length,               label: "Amenities", accent: "#A78BFA" },
+          ].map(({ n, label, accent }) => (
             <button key={label} onClick={() => setTab("info")}
-              className="bg-white/15 backdrop-blur-sm rounded-2xl px-2 py-4 text-center border border-white/15 active:scale-95 transition-transform"
-              style={{ touchAction: "manipulation" }}>
-              <p className="text-white font-black text-3xl leading-none">{n}</p>
-              <p className="text-blue-200 text-xs font-bold mt-1.5 tracking-wide">{label}</p>
+              className="rounded-2xl px-2 py-4 text-center active:scale-95 transition-transform"
+              style={{
+                touchAction: "manipulation",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                backdropFilter: "blur(12px)",
+              }}>
+              <p className="font-black text-3xl leading-none" style={{ color: accent }}>{n}</p>
+              <p className="text-violet-200/80 text-[11px] font-bold mt-1.5 tracking-wide">{label}</p>
             </button>
           ))}
         </div>
 
         {/* Quick-access category pills */}
         {availableCategories.length > 0 && (
-          <div className="relative z-10 mt-5 -mx-1 flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          <div className="relative z-10 mt-5 -mx-1 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {availableCategories.map(cat => {
               const m = CAT_META[cat] ?? CAT_META.other;
               const count = services.filter(s => s.category === cat).length;
               return (
                 <button key={cat}
                   onClick={() => setTab("info")}
-                  className="flex-shrink-0 flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-2.5 active:scale-95 transition-transform"
-                  style={{ touchAction: "manipulation" }}>
+                  className="flex-shrink-0 flex items-center gap-2 rounded-2xl px-4 py-2.5 active:scale-95 transition-transform"
+                  style={{
+                    touchAction: "manipulation",
+                    background: "rgba(255,255,255,0.10)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    backdropFilter: "blur(10px)",
+                  }}>
                   <m.Icon className="w-4 h-4 text-white" />
                   <span className="text-white text-xs font-bold whitespace-nowrap">{m.label}</span>
-                  <span className="bg-white/25 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{count}</span>
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.2)", color: "white" }}>{count}</span>
                 </button>
               );
             })}
