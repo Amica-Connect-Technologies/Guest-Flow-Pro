@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling, Dumbbell, Car, Shirt, Home, Bell, Briefcase, Sparkles, ClipboardList, Banknote, User, type LucideIcon } from "lucide-react";
+import { Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling, Dumbbell, Car, Shirt, Home, Bell, Briefcase, Sparkles, ClipboardList, Banknote, User, Phone, Mail, MessageCircle, MapPin, LogIn, LogOut, Clock, Wifi, type LucideIcon } from "lucide-react";
 import {
   auth, hotelsApi, servicesApi, bookingsApi,
   type Hotel, type HotelService, type ServiceBooking,
@@ -745,20 +745,27 @@ export default function HotelDashboard() {
               </div>
 
               {/* Info rows */}
-              <div className="divide-y divide-slate-50">
+              <div style={{ background: "#F0F8FA" }} className="px-4 py-4 grid grid-cols-1 gap-2.5">
                 {[
-                  { label: "Phone",      val: hotel.phone      || "—" },
-                  { label: "Email",      val: hotel.email      || "—" },
-                  { label: "WhatsApp",   val: hotel.whatsapp_number || "—" },
-                  { label: "Address",    val: hotel.address    || "—" },
-                  { label: "Check-in",   val: hotel.check_in_time  || "14:00" },
-                  { label: "Check-out",  val: hotel.check_out_time || "11:00" },
-                  { label: "Hours",      val: hotel.is_24_7 ? "24/7 Always Open" : `${hotel.open_time || "09:00"} – ${hotel.close_time || "22:00"}` },
-                  { label: "WiFi",       val: hotel.wifi_info  || "Ask Reception" },
-                ].map(({ label, val }) => (
-                  <div key={label} className="flex items-center justify-between px-5 py-3">
-                    <span className="text-xs font-bold text-slate-400 w-24">{label}</span>
-                    <span className="text-xs font-semibold text-slate-700 text-right flex-1">{val}</span>
+                  { label: "Phone",     val: hotel.phone             || "—", Icon: Phone,      color: "#0E7490", bg: "#ECFEFF" },
+                  { label: "Email",     val: hotel.email             || "—", Icon: Mail,       color: "#0E7490", bg: "#ECFEFF" },
+                  { label: "WhatsApp",  val: hotel.whatsapp_number   || "—", Icon: MessageCircle, color: "#059669", bg: "#ECFDF5" },
+                  { label: "Address",   val: hotel.address           || "—", Icon: MapPin,     color: "#7C3AED", bg: "#F5F3FF" },
+                  { label: "Check-in",  val: hotel.check_in_time     || "14:00", Icon: LogIn,  color: "#0E7490", bg: "#ECFEFF" },
+                  { label: "Check-out", val: hotel.check_out_time    || "11:00", Icon: LogOut, color: "#B45309", bg: "#FFFBEB" },
+                  { label: "Hours",     val: hotel.is_24_7 ? "24/7 Always Open" : `${hotel.open_time || "09:00"} – ${hotel.close_time || "22:00"}`, Icon: Clock, color: "#0E7490", bg: "#ECFEFF" },
+                  { label: "WiFi",      val: hotel.wifi_info         || "Ask Reception", Icon: Wifi, color: "#0E7490", bg: "#ECFEFF" },
+                ].map(({ label, val, Icon, color, bg }) => (
+                  <div key={label} className="flex items-center gap-3 bg-white rounded-2xl px-3.5 py-3"
+                    style={{ boxShadow: "0 1px 6px rgba(14,116,144,0.08)" }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: bg }}>
+                      <Icon className="w-4 h-4" style={{ color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#94A3B8" }}>{label}</p>
+                      <p className="text-xs font-bold truncate mt-0.5" style={{ color: "#1E293B" }}>{val}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -766,32 +773,46 @@ export default function HotelDashboard() {
 
             {/* Description */}
             {hotel.description && (
-              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">About</p>
-                <p className="text-sm text-slate-600 leading-relaxed">{hotel.description}</p>
+              <div className="rounded-3xl overflow-hidden" style={{ boxShadow: "0 4px 18px rgba(14,116,144,0.12)" }}>
+                <div className="px-4 py-3 flex items-center gap-2"
+                  style={{ background: "linear-gradient(135deg, #083344 0%, #0E7490 100%)" }}>
+                  <span className="text-base">🏨</span>
+                  <p className="text-xs font-black text-white/90 uppercase tracking-widest">About</p>
+                </div>
+                <div className="bg-white px-5 py-4">
+                  <p className="text-sm text-slate-600 leading-relaxed">{hotel.description}</p>
+                </div>
               </div>
             )}
 
             {/* Services & Benefits */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Services &amp; Benefits</p>
-                <button onClick={openProfileForm} className="text-xs text-blue-600 font-semibold hover:underline">Edit</button>
-              </div>
-              {(hotel.amenities ?? []).length === 0 ? (
-                <p className="text-xs text-slate-400">No services selected yet. <button onClick={openProfileForm} className="text-blue-600 font-semibold hover:underline">Add now</button></p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {(hotel.amenities ?? []).map(key => {
-                    const a = AMENITIES.find(x => x.key === key);
-                    return a ? (
-                      <span key={key} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700">
-                        <span>{a.emoji}</span>{a.label}
-                      </span>
-                    ) : null;
-                  })}
+            <div className="rounded-3xl overflow-hidden" style={{ boxShadow: "0 4px 18px rgba(14,116,144,0.12)" }}>
+              <div className="px-4 py-3 flex items-center justify-between"
+                style={{ background: "linear-gradient(135deg, #083344 0%, #0E7490 100%)" }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">✨</span>
+                  <p className="text-xs font-black text-white/90 uppercase tracking-widest">Services &amp; Benefits</p>
                 </div>
-              )}
+                <button onClick={openProfileForm} style={{ touchAction: "manipulation", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.28)" }}
+                  className="text-xs text-white font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-transform">Edit</button>
+              </div>
+              <div className="bg-white px-5 py-4">
+                {(hotel.amenities ?? []).length === 0 ? (
+                  <p className="text-xs text-slate-400">No services selected yet. <button onClick={openProfileForm} style={{ touchAction: "manipulation" }} className="text-cyan-600 font-bold hover:underline">Add now</button></p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(hotel.amenities ?? []).map(key => {
+                      const a = AMENITIES.find(x => x.key === key);
+                      return a ? (
+                        <span key={key} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full"
+                          style={{ background: "#ECFEFF", color: "#0E7490", border: "1px solid rgba(14,116,144,0.18)" }}>
+                          <span>{a.emoji}</span>{a.label}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
