@@ -3,6 +3,8 @@
 import Script from "next/script";
 import { useLanguage } from "@/lib/LanguageContext";
 
+export const GYG_LOCATION_IDS = ["193094", "32", "200", "863", "3954", "3953", "5000", "31006"];
+
 export default function ToursView() {
   const { t } = useLanguage();
   return (
@@ -24,48 +26,15 @@ export default function ToursView() {
 
       {/* ── GetYourGuide Live Widgets ───────────────────── */}
       <section className="px-4 py-4 space-y-6">
-        <div
-          data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-          data-gyg-location-id="200"
-          data-gyg-locale-code="it-IT"
-          data-gyg-widget="city"
-          data-gyg-partner-id="E1C9YRK"
-        />
-        <div
-          data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-          data-gyg-location-id="863"
-          data-gyg-locale-code="it-IT"
-          data-gyg-widget="city"
-          data-gyg-partner-id="E1C9YRK"
-        />
-        <div
-          data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-          data-gyg-location-id="3954"
-          data-gyg-locale-code="it-IT"
-          data-gyg-widget="city"
-          data-gyg-partner-id="E1C9YRK"
-        />
-        <div
-          data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-          data-gyg-location-id="3953"
-          data-gyg-locale-code="it-IT"
-          data-gyg-widget="city"
-          data-gyg-partner-id="E1C9YRK"
-        />
-        <div
-          data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-          data-gyg-location-id="5000"
-          data-gyg-locale-code="it-IT"
-          data-gyg-widget="city"
-          data-gyg-partner-id="E1C9YRK"
-        />
-        <div
-          data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-          data-gyg-location-id="31006"
-          data-gyg-locale-code="it-IT"
-          data-gyg-widget="city"
-          data-gyg-partner-id="E1C9YRK"
-        />
+        {GYG_LOCATION_IDS.map((locationId) => (
+          <div key={locationId}
+            data-gyg-href="https://widget.getyourguide.com/default/city.frame"
+            data-gyg-location-id={locationId}
+            data-gyg-locale-code="it-IT"
+            data-gyg-widget="city"
+            data-gyg-partner-id="E1C9YRK"
+          />
+        ))}
       </section>
     </div>
   );

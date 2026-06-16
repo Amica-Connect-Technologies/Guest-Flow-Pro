@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Script from "next/script";
+import { GYG_LOCATION_IDS } from "@/components/ToursView";
 import {
   Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling,
   Dumbbell, Car, Shirt, Home, Briefcase, Sparkles,
@@ -560,7 +561,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               strategy="lazyOnload"
             />
             <div className="space-y-4">
-              {["200", "863", "3954", "3953", "5000", "31006"].map((locationId) => (
+              {GYG_LOCATION_IDS.map((locationId) => (
                 <div key={locationId}
                   data-gyg-href="https://widget.getyourguide.com/default/city.frame"
                   data-gyg-location-id={locationId}
