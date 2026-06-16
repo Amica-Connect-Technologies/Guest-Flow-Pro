@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Script from "next/script";
-import { GYG_LOCATION_IDS } from "@/components/ToursView";
+import { GYG_LOCATION_IDS, useGygImageFallback } from "@/components/ToursView";
 import {
   Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling,
   Dumbbell, Car, Shirt, Home, Briefcase, Sparkles,
@@ -58,6 +58,7 @@ function mkSheet(svc: HotelService): Sheet {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const { t } = useLanguage();
+  useGygImageFallback();
   const CAT_META: Record<string, { label: string; Icon: LucideIcon; color: string; light: string }> = Object.fromEntries(
     Object.entries(CAT_ICONS).map(([key, val]) => [
       key,
