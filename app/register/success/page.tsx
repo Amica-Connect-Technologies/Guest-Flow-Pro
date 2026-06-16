@@ -4,18 +4,14 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { registrationsApi } from "@/lib/api";
-
-const NEXT_STEPS = [
-  "Our team reviews your application",
-  "You receive an approval email within 24h",
-  "Log in and get your guest QR code",
-  "Share it with your guests — done!",
-];
+import { useLanguage } from "@/lib/LanguageContext";
 
 // ── Manual payment success (bank transfer / invoice) ─────────────────────────
 function ManualSuccess({ businessName, method, plan }: { businessName: string; method: string; plan: string }) {
+  const { t } = useLanguage();
+  const NEXT_STEPS = [t.registerFlow.step1, t.registerFlow.step2, t.registerFlow.step3, t.registerFlow.step4];
   const isBank = method === "bank_transfer";
-  const planLabel = plan === "pro" ? "Pro – £79/month" : "Basic – £29/month";
+  const planLabel = plan === "pro" ? t.registerFlow.planPro : t.registerFlow.planBasic;
 
   return (
     <div>
@@ -24,10 +20,10 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       </div>
-      <h1 className="text-2xl font-bold text-slate-900 text-center mb-1">Registration received!</h1>
+      <h1 className="text-2xl font-bold text-slate-900 text-center mb-1">{t.registerFlow.registrationReceived}</h1>
       {businessName && (
         <p className="text-slate-500 text-sm text-center mb-6">
-          <span className="font-semibold text-slate-700">{businessName}</span> is pending admin review.
+          <span className="font-semibold text-slate-700">{businessName}</span> {t.registerFlow.pendingAdminReview}
         </p>
       )}
 
@@ -46,17 +42,17 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
             )}
           </div>
           <p className={`text-sm font-bold ${isBank ? "text-blue-800" : "text-violet-800"}`}>
-            {isBank ? "Bank Transfer Instructions" : "Invoice Details"}
+            {isBank ? t.registerFlow.bankTransferInstructions : t.registerFlow.invoiceDetails}
           </p>
         </div>
 
         {isBank ? (
           <div className="space-y-2">
-            <p className="text-xs text-blue-700 mb-3">We&apos;ll email you full bank details within a few hours. Here&apos;s a summary:</p>
+            <p className="text-xs text-blue-700 mb-3">{t.registerFlow.bankEmailNotice}</p>
             {[
-              { label: "Account name", value: "Amica International Services" },
-              { label: "Reference", value: businessName || "Your business name" },
-              { label: "Amount", value: planLabel },
+              { label: t.registerFlow.accountName, value: t.registerFlow.accountNameValue },
+              { label: t.registerFlow.reference, value: businessName || t.registerFlow.yourBusinessName },
+              { label: t.registerFlow.amount, value: planLabel },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-center bg-white/60 rounded-xl px-3 py-2">
                 <span className="text-xs text-blue-600 font-semibold">{label}</span>
@@ -66,10 +62,10 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
           </div>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs text-violet-700 mb-3">An invoice will be emailed to you. Payment is due within 7 days of approval.</p>
+            <p className="text-xs text-violet-700 mb-3">{t.registerFlow.invoiceEmailNotice}</p>
             {[
-              { label: "Plan", value: planLabel },
-              { label: "Due within", value: "7 days of approval" },
+              { label: t.registerFlow.plan, value: planLabel },
+              { label: t.registerFlow.dueWithin, value: t.registerFlow.sevenDays },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-center bg-white/60 rounded-xl px-3 py-2">
                 <span className="text-xs text-violet-600 font-semibold">{label}</span>
@@ -82,7 +78,7 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
 
       {/* Next steps */}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">What happens next</p>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">{t.registerFlow.whatHappensNext}</p>
         <div className="space-y-2.5">
           {NEXT_STEPS.map((s, i) => (
             <div key={i} className="flex items-start gap-3">
@@ -94,7 +90,7 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
       </div>
 
       <Link href="/login" className="block bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3.5 rounded-2xl text-sm text-center transition-colors">
-        Go to login
+        {t.registerFlow.goToLogin}
       </Link>
     </div>
   );
@@ -102,6 +98,8 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
 
 // ── Stripe payment success ────────────────────────────────────────────────────
 function StripeSuccess({ sessionId }: { sessionId: string }) {
+  const { t } = useLanguage();
+  const NEXT_STEPS = [t.registerFlow.step1, t.registerFlow.step2, t.registerFlow.step3, t.registerFlow.step4];
   const [st, setSt] = useState<"loading" | "ok" | "error">("loading");
   const [businessName, setBusinessName] = useState("");
 
@@ -116,7 +114,7 @@ function StripeSuccess({ sessionId }: { sessionId: string }) {
     return (
       <div className="flex flex-col items-center gap-4 py-8">
         <div className="w-10 h-10 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-        <p className="text-slate-400 text-sm">Confirming your payment…</p>
+        <p className="text-slate-400 text-sm">{t.registerFlow.confirmingPayment}</p>
       </div>
     );
   }
@@ -129,9 +127,9 @@ function StripeSuccess({ sessionId }: { sessionId: string }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Verification failed</h2>
-        <p className="text-slate-500 text-sm mb-6">We couldn&apos;t confirm your payment. Please contact support.</p>
-        <Link href="/register" className="text-blue-600 text-sm font-semibold hover:underline">Try again</Link>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">{t.registerFlow.verificationFailed}</h2>
+        <p className="text-slate-500 text-sm mb-6">{t.registerFlow.couldNotConfirm}</p>
+        <Link href="/register" className="text-blue-600 text-sm font-semibold hover:underline">{t.registerFlow.tryAgain}</Link>
       </div>
     );
   }
@@ -143,14 +141,14 @@ function StripeSuccess({ sessionId }: { sessionId: string }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       </div>
-      <h1 className="text-2xl font-bold text-slate-900 text-center mb-1">Payment confirmed!</h1>
+      <h1 className="text-2xl font-bold text-slate-900 text-center mb-1">{t.registerFlow.paymentConfirmed}</h1>
       {businessName && (
         <p className="text-slate-500 text-sm text-center mb-6">
-          <span className="font-semibold text-slate-700">{businessName}</span> is pending admin review.
+          <span className="font-semibold text-slate-700">{businessName}</span> {t.registerFlow.pendingAdminReview}
         </p>
       )}
       <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">What happens next</p>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">{t.registerFlow.whatHappensNext}</p>
         <div className="space-y-2.5">
           {NEXT_STEPS.map((s, i) => (
             <div key={i} className="flex items-start gap-3">
@@ -161,7 +159,7 @@ function StripeSuccess({ sessionId }: { sessionId: string }) {
         </div>
       </div>
       <Link href="/login" className="block bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3.5 rounded-2xl text-sm text-center transition-colors">
-        Go to login
+        {t.registerFlow.goToLogin}
       </Link>
     </div>
   );
@@ -169,6 +167,7 @@ function StripeSuccess({ sessionId }: { sessionId: string }) {
 
 // ── Page shell ────────────────────────────────────────────────────────────────
 function SuccessContent() {
+  const { t } = useLanguage();
   const sp = useSearchParams();
   const method = sp.get("method");
   const sessionId = sp.get("session_id");
@@ -183,8 +182,8 @@ function SuccessContent() {
   }
   return (
     <div className="text-center py-8">
-      <p className="text-slate-500 text-sm">No registration details found.</p>
-      <Link href="/register" className="text-blue-600 text-sm font-semibold hover:underline mt-3 inline-block">Start registration</Link>
+      <p className="text-slate-500 text-sm">{t.registerFlow.noRegistrationFound}</p>
+      <Link href="/register" className="text-blue-600 text-sm font-semibold hover:underline mt-3 inline-block">{t.registerFlow.startRegistration}</Link>
     </div>
   );
 }

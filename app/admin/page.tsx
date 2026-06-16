@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth, hotelsApi, type Hotel } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function AdminOverview() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [counts, setCounts] = useState({ hotels: 0, tours: 0, places: 0 });
   const [recentHotels, setRecentHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export default function AdminOverview() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-          <p className="text-sm text-slate-400">Loading dashboard…</p>
+          <p className="text-sm text-slate-400">{t.adminOverview.loading}</p>
         </div>
       </div>
     );
@@ -47,7 +49,7 @@ export default function AdminOverview() {
 
   const statCards = [
     {
-      label: "Hotels",
+      label: t.adminOverview.hotels,
       value: counts.hotels,
       href: "/admin/hotels",
       bg: "bg-blue-600",
@@ -59,7 +61,7 @@ export default function AdminOverview() {
       ),
     },
     {
-      label: "Tours",
+      label: t.adminOverview.tours,
       value: counts.tours,
       href: "/admin/tours",
       bg: "bg-emerald-600",
@@ -71,7 +73,7 @@ export default function AdminOverview() {
       ),
     },
     {
-      label: "Places",
+      label: t.adminOverview.places,
       value: counts.places,
       href: "/admin/places",
       bg: "bg-violet-600",
@@ -86,9 +88,9 @@ export default function AdminOverview() {
   ];
 
   const quickLinks = [
-    { href: "/admin/hotels", label: "Manage Hotels", desc: "Add & edit partner hotels", dot: "bg-blue-600" },
-    { href: "/admin/tours", label: "Manage Tours", desc: "Tour packages & affiliate links", dot: "bg-emerald-600" },
-    { href: "/admin/places", label: "Manage Places", desc: "Restaurants, attractions & more", dot: "bg-violet-600" },
+    { href: "/admin/hotels", label: t.adminOverview.manageHotels, desc: t.adminOverview.manageHotelsDesc, dot: "bg-blue-600" },
+    { href: "/admin/tours", label: t.adminOverview.manageTours, desc: t.adminOverview.manageToursDesc, dot: "bg-emerald-600" },
+    { href: "/admin/places", label: t.adminOverview.managePlaces, desc: t.adminOverview.managePlacesDesc, dot: "bg-violet-600" },
   ];
 
   return (
@@ -107,8 +109,8 @@ export default function AdminOverview() {
               </svg>
             </div>
             <div className="leading-none">
-              <p className="text-[10px] font-medium text-slate-400 leading-none tracking-wide">Amica International</p>
-              <p className="font-bold text-slate-900 text-sm leading-none">Admin Panel</p>
+              <p className="text-[10px] font-medium text-slate-400 leading-none tracking-wide">{t.adminOverview.brandLine}</p>
+              <p className="font-bold text-slate-900 text-sm leading-none">{t.adminOverview.panelTitle}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -116,7 +118,7 @@ export default function AdminOverview() {
               href="/hotels"
               className="text-xs font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl"
             >
-              View App
+              {t.adminOverview.viewApp}
             </Link>
           </div>
         </div>
@@ -130,15 +132,15 @@ export default function AdminOverview() {
           <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
           <div className="absolute -bottom-8 -right-2 w-32 h-32 bg-white/5 rounded-full" />
           <div className="relative z-10">
-            <p className="text-blue-200 text-xs font-medium mb-1">Logged in as</p>
+            <p className="text-blue-200 text-xs font-medium mb-1">{t.adminOverview.loggedInAs}</p>
             <p className="text-white font-bold text-sm truncate">{userEmail}</p>
-            <p className="text-blue-200 text-xs mt-2">Digital Concierge · Super Admin</p>
+            <p className="text-blue-200 text-xs mt-2">{t.adminOverview.roleLine}</p>
           </div>
         </div>
 
         {/* Stats */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Content Overview</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">{t.adminOverview.contentOverview}</p>
           <div className="grid grid-cols-3 gap-3">
             {statCards.map(({ label, value, href, bg, icon }) => (
               <Link
@@ -158,7 +160,7 @@ export default function AdminOverview() {
 
         {/* Quick Links */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">{t.adminOverview.quickActions}</p>
           <div className="space-y-2.5">
             {quickLinks.map(({ href, label, desc, dot }) => (
               <Link
@@ -182,14 +184,14 @@ export default function AdminOverview() {
         {/* Recent Hotels */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recent Hotels</p>
-            <Link href="/admin/hotels" className="text-xs font-bold text-blue-600">See all →</Link>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.adminOverview.recentHotels}</p>
+            <Link href="/admin/hotels" className="text-xs font-bold text-blue-600">{t.adminOverview.seeAll}</Link>
           </div>
           {recentHotels.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center">
-              <p className="text-slate-400 text-sm">No hotels added yet.</p>
+              <p className="text-slate-400 text-sm">{t.adminOverview.noHotelsYet}</p>
               <Link href="/admin/hotels" className="inline-block mt-3 text-xs font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-xl">
-                Add First Hotel
+                {t.adminOverview.addFirstHotel}
               </Link>
             </div>
           ) : (

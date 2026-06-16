@@ -2,22 +2,9 @@
 
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { placesApi, type Place } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
 
-const CATEGORIES: { label: string; value: string }[] = [
-  { label: "All",        value: "All" },
-  { label: "Restaurant", value: "restaurant" },
-  { label: "Museum",     value: "museum" },
-  { label: "Cafe",       value: "cafe" },
-  { label: "Attraction", value: "attraction" },
-  { label: "Shop",       value: "shop" },
-  { label: "Parking",    value: "parking" },
-  { label: "Night Life", value: "nightlife" },
-];
-
-const SORT_OPTIONS = [
-  { value: "default", label: "Newest" },
-  { value: "name",    label: "Name A–Z" },
-];
+const CATEGORY_VALUES = ["All", "restaurant", "museum", "cafe", "attraction", "shop", "parking", "nightlife"] as const;
 
 const TYPE_CONFIG: Record<string, { bg: string; text: string; border: string; icon: ReactNode }> = {
   restaurant: { bg: "bg-orange-50",  text: "text-orange-700",  border: "border-orange-100",  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513m6-4.871c1.355 0 2.697.056 4.024.166C17.155 8.51 18 9.473 18 10.608v2.513M15 8.25v-1.5M6 10.608v3.41a3 3 0 01-1.5 2.598V18.75h15v-2.134a3 3 0 01-1.5-2.598v-3.41" /></svg> },
@@ -39,6 +26,16 @@ function mapsLinkFor(p: Place): string {
 }
 
 export default function PlacesView() {
+  const { t } = useLanguage();
+  const CATEGORIES = CATEGORY_VALUES.map((value) => ({
+    value,
+    label: t.places.categories[(value === "All" ? "all" : value) as keyof typeof t.places.categories],
+  }));
+  const SORT_OPTIONS = [
+    { value: "default" as const, label: t.places.newest },
+    { value: "name" as const,    label: t.places.nameAZ },
+  ];
+
   const [cityInput, setCityInput] = useState("");
   const [city, setCity]           = useState("");
   const [places, setPlaces]       = useState<Place[]>([]);
@@ -57,10 +54,10 @@ export default function PlacesView() {
     placesApi
       .list(city || undefined)
       .then((data) => { if (active) setPlaces(data); })
-      .catch((err: Error) => { if (active) setError(err.message || "Failed to load places."); })
+      .catch((err: Error) => { if (active) setError(err.message || t.places.couldNotLoad); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [city]);
+  }, [city]); // eslint-disable-line
 
   const results = useMemo(() => {
     let list = places.filter((p) => {
@@ -90,13 +87,13 @@ export default function PlacesView() {
           </svg>
           <input
             type="text"
-            placeholder="Search by city (e.g. London)…"
+            placeholder={t.places.searchPlaceholder}
             value={cityInput}
             onChange={(e) => setCityInput(e.target.value)}
             className="w-full pl-10 pr-20 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
           />
           <button type="submit" className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-violet-600 text-white text-xs font-bold rounded-xl active:scale-95">
-            Search
+            {t.places.search}
           </button>
         </form>
       </div>
@@ -118,7 +115,7 @@ export default function PlacesView() {
       <div className="bg-white border-b border-slate-100 px-4 py-2.5">
         <input
           type="text"
-          placeholder="Filter these results by name…"
+          placeholder={t.places.filterByName}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -128,7 +125,7 @@ export default function PlacesView() {
       {/* ── Sort Panel ───────────────────────────────────── */}
       {sortOpen && (
         <div className="bg-white border-b border-slate-100 px-4 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Sort by</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{t.places.sortBy}</p>
           <div className="flex gap-2 flex-wrap">
             {SORT_OPTIONS.map((opt) => (
               <button key={opt.value} type="button" onClick={() => { setSortBy(opt.value as SortValue); setSortOpen(false); }}
@@ -145,15 +142,15 @@ export default function PlacesView() {
       <section className="px-4 pt-4 pb-28">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Results</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.places.results}</p>
             <h2 className="text-sm font-bold text-slate-900">
-              {loading ? "Loading…" : `${results.length} Place${results.length !== 1 ? "s" : ""}`}
-              {hasFilters && !loading && <span className="text-violet-500 ml-1 text-xs font-normal">(filtered)</span>}
+              {loading ? t.places.loading : `${results.length} ${t.places.place}`}
+              {hasFilters && !loading && <span className="text-violet-500 ml-1 text-xs font-normal">{t.places.filtered}</span>}
             </h2>
           </div>
           <div className="flex items-center gap-2">
             {hasFilters && (
-              <button type="button" onClick={() => { setSearch(""); setCategory("All"); setSortBy("default"); setCityInput(""); setCity(""); }} className="text-[10px] font-bold text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-xl active:scale-95">Clear</button>
+              <button type="button" onClick={() => { setSearch(""); setCategory("All"); setSortBy("default"); setCityInput(""); setCity(""); }} className="text-[10px] font-bold text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-xl active:scale-95">{t.places.clear}</button>
             )}
             <button type="button" onClick={() => setSortOpen((v) => !v)}
               className={`flex items-center gap-1.5 border rounded-xl px-3 py-2 text-xs font-semibold active:scale-95 shadow-sm ${
@@ -161,14 +158,14 @@ export default function PlacesView() {
               }`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" /></svg>
-              {sortBy !== "default" ? activeSort.label : "Sort"}
+              {sortBy !== "default" ? activeSort.label : t.places.sort}
             </button>
           </div>
         </div>
 
         {error ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="font-bold text-red-500 mb-1">Couldn&apos;t load places</p>
+            <p className="font-bold text-red-500 mb-1">{t.places.couldNotLoad}</p>
             <p className="text-slate-400 text-sm text-center">{error}</p>
           </div>
         ) : loading ? (
@@ -182,8 +179,8 @@ export default function PlacesView() {
             <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center mb-4">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-8 h-8 text-slate-300"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
             </div>
-            <p className="font-bold text-slate-700 mb-1">No places found</p>
-            <p className="text-slate-400 text-sm text-center">Try a different city or filter</p>
+            <p className="font-bold text-slate-700 mb-1">{t.places.noPlacesFound}</p>
+            <p className="text-slate-400 text-sm text-center">{t.places.tryDifferentCity}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -207,10 +204,10 @@ export default function PlacesView() {
                         <p className="text-slate-500 text-[11px] leading-relaxed line-clamp-2 mb-2">{p.description}</p>
                       )}
                       <div className="flex items-center justify-between">
-                        <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>{p.type}</span>
+                        <span className={`text-[9px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>{t.places.categories[p.type as keyof typeof t.places.categories] ?? p.type}</span>
                         <a href={mapsLinkFor(p)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-violet-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl active:scale-95 shadow-sm shadow-violet-200">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
-                          Map
+                          {t.places.mapButton}
                         </a>
                       </div>
                     </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { registrationsApi } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
 
 // ── Country config ───────────────────────────────────────────────────────────
 const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: string[] }> = {
@@ -34,46 +35,9 @@ const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: strin
 };
 
 // ── Plans ────────────────────────────────────────────────────────────────────
-const PLANS = [
-  {
-    id: "basic" as const,
-    name: "Basic",
-    price: "£29",
-    period: "/month",
-    tagline: "Perfect for small hotels & B&Bs",
-    features: [
-      "QR code for guests",
-      "Local tours & attractions feed",
-      "Up to 50 places",
-      "Email support",
-    ],
-    accent: "blue",
-  },
-  {
-    id: "pro" as const,
-    name: "Pro",
-    price: "£79",
-    period: "/month",
-    tagline: "For hotels that want the full experience",
-    popular: true,
-    features: [
-      "Everything in Basic",
-      "Unlimited places",
-      "Custom branding & logo",
-      "Priority support",
-      "Analytics dashboard",
-      "WhatsApp concierge link",
-    ],
-    accent: "violet",
-  },
-];
-
-// ── Steps config ─────────────────────────────────────────────────────────────
-const STEPS = [
-  { label: "Your account", subtitle: "Login credentials" },
-  { label: "Hotel info",    subtitle: "Hotel details"    },
-  { label: "Choose plan",   subtitle: "Subscription" },
-  { label: "Payment proof", subtitle: "Bank transfer" },
+const PLAN_META = [
+  { id: "basic" as const, price: "£29", period: "/month", accent: "blue" },
+  { id: "pro" as const, price: "£79", period: "/month", popular: true, accent: "violet" },
 ];
 
 // ── Form state ───────────────────────────────────────────────────────────────
@@ -164,6 +128,7 @@ type BankDetails = {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function RegisterPage() {
+  const { t } = useLanguage();
   const [form, setForm] = useState<Form>(empty);
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
@@ -181,6 +146,18 @@ export default function RegisterPage() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [submittingProof, setSubmittingProof] = useState(false);
 
+  // Translated plan + step config (depends on hooks, so built inside the component)
+  const plans = [
+    { ...PLAN_META[0], name: t.register.plans.basic.name, tagline: t.register.plans.basic.tagline, features: t.register.plans.basic.features },
+    { ...PLAN_META[1], name: t.register.plans.pro.name, tagline: t.register.plans.pro.tagline, features: t.register.plans.pro.features },
+  ];
+  const steps = [
+    t.register.steps.account,
+    t.register.steps.hotel,
+    t.register.steps.plan,
+    t.register.steps.payment,
+  ];
+
   function set(key: keyof Form, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
@@ -189,29 +166,29 @@ export default function RegisterPage() {
   // ── Validation ──────────────────────────────────────────────────────────────
   function validateStep1(): boolean {
     const e: Partial<Record<keyof Form, string>> = {};
-    if (!form.owner_name.trim())       e.owner_name = "Full name is required.";
-    if (!form.email.trim())            e.email = "Email address is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email.";
-    if (!form.password)                e.password = "Password is required.";
-    else if (form.password.length < 8) e.password = "At least 8 characters.";
-    if (!form.confirm_password)        e.confirm_password = "Please confirm your password.";
-    else if (form.password !== form.confirm_password) e.confirm_password = "Passwords do not match.";
+    if (!form.owner_name.trim())       e.owner_name = t.register.errors.nameRequired;
+    if (!form.email.trim())            e.email = t.register.errors.emailRequired;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t.register.errors.emailInvalid;
+    if (!form.password)                e.password = t.register.errors.passwordRequired;
+    else if (form.password.length < 8) e.password = t.register.errors.passwordTooShort;
+    if (!form.confirm_password)        e.confirm_password = t.register.errors.confirmPasswordRequired;
+    else if (form.password !== form.confirm_password) e.confirm_password = t.register.errors.passwordMismatch;
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function validateStep2(): boolean {
     const e: Partial<Record<keyof Form, string>> = {};
-    if (!form.business_name.trim()) e.business_name = "Business name is required.";
-    if (!form.city.trim())          e.city = "City is required.";
+    if (!form.business_name.trim()) e.business_name = t.register.errors.businessNameRequired;
+    if (!form.city.trim())          e.city = t.register.errors.cityRequired;
 
     const phoneDigits = form.phone.replace(/\D/g, "");
     if (form.phone && phoneDigits.length < 7)
-      e.phone = "Enter at least 7 digits.";
+      e.phone = t.register.errors.phoneTooShort;
 
     const waDigits = form.whatsapp_number.replace(/\D/g, "");
     if (form.whatsapp_number && waDigits.length < 7)
-      e.whatsapp_number = "Enter at least 7 digits.";
+      e.whatsapp_number = t.register.errors.whatsappTooShort;
 
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -265,7 +242,7 @@ export default function RegisterPage() {
         window.location.href = `/register/success?${params}`;
       }
     } catch (e) {
-      setGlobalError(e instanceof Error ? e.message : "Registration failed. Please try again.");
+      setGlobalError(e instanceof Error ? e.message : t.register.errors.registrationFailed);
     }
     setLoading(false);
   }
@@ -273,7 +250,7 @@ export default function RegisterPage() {
   // Step 4 → submit payment proof
   async function handleSubmitProof() {
     if (!transactionId.trim() && !proofFile) {
-      setGlobalError("Please enter a transaction ID or upload a screenshot.");
+      setGlobalError(t.register.errors.proofRequired);
       return;
     }
     setSubmittingProof(true);
@@ -291,7 +268,7 @@ export default function RegisterPage() {
       });
       window.location.href = `/register/success?${params}`;
     } catch (e) {
-      setGlobalError(e instanceof Error ? e.message : "Submission failed. Please try again.");
+      setGlobalError(e instanceof Error ? e.message : t.register.errors.submissionFailed);
     }
     setSubmittingProof(false);
   }
@@ -304,7 +281,7 @@ export default function RegisterPage() {
   }
 
   // Step 4 only shows for bank_transfer — hide it from the indicator for other methods
-  const visibleSteps = form.payment_method === "bank_transfer" ? STEPS : STEPS.slice(0, 3);
+  const visibleSteps = form.payment_method === "bank_transfer" ? steps : steps.slice(0, 3);
   const progress = ((step - 1) / (visibleSteps.length - 1)) * 100;
 
   return (
@@ -318,12 +295,12 @@ export default function RegisterPage() {
             </svg>
           </div>
           <div>
-            <p className="font-bold text-slate-900 text-sm leading-none">Digital Concierge</p>
-            <p className="text-slate-400 text-[10px] mt-0.5">Hotel Registration</p>
+            <p className="font-bold text-slate-900 text-sm leading-none">{t.register.brandName}</p>
+            <p className="text-slate-400 text-[10px] mt-0.5">{t.register.brandSubtitle}</p>
           </div>
         </div>
         <Link href="/login" className="text-xs text-blue-600 font-semibold hover:underline hidden sm:block">
-          Already registered? Sign in →
+          {t.register.alreadyRegistered}
         </Link>
       </header>
 
@@ -378,44 +355,44 @@ export default function RegisterPage() {
           {step === 1 && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-blue-700">
-                <h1 className="text-lg font-bold text-white">Create your account</h1>
-                <p className="text-blue-200 text-sm mt-0.5">Enter your personal login details</p>
+                <h1 className="text-lg font-bold text-white">{t.register.step1.title}</h1>
+                <p className="text-blue-200 text-sm mt-0.5">{t.register.step1.subtitle}</p>
               </div>
               <div className="p-6 space-y-4">
                 <Input
-                  label="Your full name *"
+                  label={t.register.step1.fullNameLabel}
                   value={form.owner_name}
                   onChange={(v) => set("owner_name", v)}
-                  placeholder="Jane Smith"
+                  placeholder={t.register.step1.fullNamePlaceholder}
                   error={errors.owner_name}
                 />
 
                 <Input
-                  label="Email address *"
+                  label={t.register.step1.emailLabel}
                   type="email"
                   value={form.email}
                   onChange={(v) => set("email", v)}
-                  placeholder="jane@yourhotel.com"
+                  placeholder={t.register.step1.emailPlaceholder}
                   error={errors.email}
                 />
 
                 <Input
-                  label="Phone number"
+                  label={t.register.step1.phoneLabel}
                   type="tel"
                   value={form.phone}
                   onChange={(v) => set("phone", v)}
-                  placeholder="+44 7700 900 000"
+                  placeholder={t.register.step1.phonePlaceholder}
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Password *</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step1.passwordLabel}</label>
                     <div className="relative">
                       <input
                         type={showPw ? "text" : "password"}
                         value={form.password}
                         onChange={(e) => set("password", e.target.value)}
-                        placeholder="Min. 8 characters"
+                        placeholder={t.register.step1.passwordPlaceholder}
                         className={`w-full bg-slate-50 border rounded-xl px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
                           errors.password ? "border-red-300 focus:ring-red-100 focus:border-red-400" : "border-slate-200 focus:ring-blue-50 focus:border-blue-400"
                         }`}
@@ -448,13 +425,13 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Confirm password *</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step1.confirmPasswordLabel}</label>
                     <div className="relative">
                       <input
                         type={showCPw ? "text" : "password"}
                         value={form.confirm_password}
                         onChange={(e) => set("confirm_password", e.target.value)}
-                        placeholder="Repeat password"
+                        placeholder={t.register.step1.confirmPasswordPlaceholder}
                         className={`w-full bg-slate-50 border rounded-xl px-4 py-3 pr-12 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
                           errors.confirm_password ? "border-red-300 focus:ring-red-100 focus:border-red-400" : "border-slate-200 focus:ring-blue-50 focus:border-blue-400"
                         }`}
@@ -481,14 +458,14 @@ export default function RegisterPage() {
                   onClick={next}
                   className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all flex items-center justify-center gap-2"
                 >
-                  Continue to business details
+                  {t.register.step1.continueButton}
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                   </svg>
                 </button>
                 <p className="text-center text-slate-400 text-xs mt-4">
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-blue-600 font-semibold hover:underline">Sign in</Link>
+                  {t.register.step1.haveAccount}{" "}
+                  <Link href="/login" className="text-blue-600 font-semibold hover:underline">{t.register.step1.signIn}</Link>
                 </p>
               </div>
             </div>
@@ -498,13 +475,13 @@ export default function RegisterPage() {
           {step === 2 && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-violet-600 to-violet-700">
-                <h1 className="text-lg font-bold text-white">Your hotel details</h1>
-                <p className="text-violet-200 text-sm mt-0.5">Tell us about your hotel</p>
+                <h1 className="text-lg font-bold text-white">{t.register.step2.title}</h1>
+                <p className="text-violet-200 text-sm mt-0.5">{t.register.step2.subtitle}</p>
               </div>
               <div className="p-6 space-y-4">
                 {/* Business type — locked to Hotel */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Business Type</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step2.businessTypeLabel}</label>
                   <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
                     <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
                       <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-4 h-4">
@@ -512,24 +489,24 @@ export default function RegisterPage() {
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-blue-800">Hotel</p>
-                      <p className="text-[11px] text-blue-500 mt-0.5">This platform is for hotels only</p>
+                      <p className="text-sm font-bold text-blue-800">{t.register.step2.businessTypeHotel}</p>
+                      <p className="text-[11px] text-blue-500 mt-0.5">{t.register.step2.businessTypeNote}</p>
                     </div>
-                    <span className="text-[10px] font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full">Selected</span>
+                    <span className="text-[10px] font-bold bg-blue-600 text-white px-2.5 py-1 rounded-full">{t.register.step2.businessTypeSelected}</span>
                   </div>
                 </div>
 
                 <Input
-                  label="Hotel name *"
+                  label={t.register.step2.hotelNameLabel}
                   value={form.business_name}
                   onChange={(v) => set("business_name", v)}
-                  placeholder="The Grand Hotel"
+                  placeholder={t.register.step2.hotelNamePlaceholder}
                   error={errors.business_name}
                 />
 
                 {/* Country */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Country</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step2.countryLabel}</label>
                   <div className="grid grid-cols-3 gap-2">
                     {(["Italy", "United Kingdom", "Other"] as const).map((c) => {
                       const cfg = COUNTRY_CONFIG[c];
@@ -556,7 +533,7 @@ export default function RegisterPage() {
 
                 {/* City */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">City *</label>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step2.cityLabel}</label>
                   {getCities(form.country).length > 0 ? (
                     <select
                       value={form.city}
@@ -564,7 +541,7 @@ export default function RegisterPage() {
                       className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
                         errors.city ? "border-red-300" : "border-slate-200"
                       }`}>
-                      <option value="">Select city…</option>
+                      <option value="">{t.register.step2.citySelectPlaceholder}</option>
                       {getCities(form.country).map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -573,7 +550,7 @@ export default function RegisterPage() {
                     <input
                       value={form.city}
                       onChange={(e) => set("city", e.target.value)}
-                      placeholder="Enter your city"
+                      placeholder={t.register.step2.cityInputPlaceholder}
                       className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
                         errors.city ? "border-red-300" : "border-slate-200"
                       }`}
@@ -585,7 +562,7 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Phone with country code */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Phone number</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step2.phoneNumberLabel}</label>
                     <div className="relative flex items-center">
                       {getCode(form.country) && (
                         <span className="absolute left-3 text-sm font-bold text-slate-600 select-none pointer-events-none z-10 bg-slate-50 pr-1">
@@ -608,7 +585,7 @@ export default function RegisterPage() {
                     </div>
                     {form.phone && (
                       <p className="text-[10px] text-slate-400 mt-1">
-                        Full number: {getCode(form.country)} {form.phone}
+                        {t.register.step2.fullNumberPrefix} {getCode(form.country)} {form.phone}
                       </p>
                     )}
                     <FieldError msg={errors.phone} />
@@ -620,7 +597,7 @@ export default function RegisterPage() {
                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-emerald-500">
                           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                         </svg>
-                        WhatsApp number
+                        {t.register.step2.whatsappLabel}
                       </span>
                     </label>
                     <div className="relative flex items-center">
@@ -645,25 +622,25 @@ export default function RegisterPage() {
                     </div>
                     {form.whatsapp_number && (
                       <p className="text-[10px] text-slate-400 mt-1">
-                        Full number: {getCode(form.country)} {form.whatsapp_number}
+                        {t.register.step2.fullNumberPrefix} {getCode(form.country)} {form.whatsapp_number}
                       </p>
                     )}
                     <FieldError msg={errors.whatsapp_number} />
-                    <p className="text-[10px] text-slate-400 mt-1">Guests can contact you directly</p>
+                    <p className="text-[10px] text-slate-400 mt-1">{t.register.step2.whatsappHelper}</p>
                   </div>
 
                   <Input
-                    label="Website (optional)"
+                    label={t.register.step2.websiteLabel}
                     type="url"
                     value={form.website}
                     onChange={(v) => set("website", v)}
-                    placeholder="https://yourhotel.com"
+                    placeholder={t.register.step2.websitePlaceholder}
                   />
                 </div>
 
                 {/* Summary box */}
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mt-2">
-                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Account summary</p>
+                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">{t.register.step2.accountSummary}</p>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {form.owner_name.slice(0, 1).toUpperCase() || "?"}
@@ -680,13 +657,13 @@ export default function RegisterPage() {
                   onClick={back}
                   className="flex-1 sm:flex-none sm:w-28 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl text-sm hover:bg-slate-50 transition-colors"
                 >
-                  Back
+                  {t.register.step2.backButton}
                 </button>
                 <button
                   onClick={next}
                   className="flex-1 bg-violet-600 hover:bg-violet-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all flex items-center justify-center gap-2"
                 >
-                  Continue to plan selection
+                  {t.register.step2.continueButton}
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                   </svg>
@@ -699,8 +676,8 @@ export default function RegisterPage() {
           {step === 3 && (
             <div className="space-y-5">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-slate-900">Choose your plan</h2>
-                <p className="text-slate-500 text-sm mt-1">14-day free trial · Cancel anytime · No hidden fees</p>
+                <h2 className="text-2xl font-bold text-slate-900">{t.register.step3.title}</h2>
+                <p className="text-slate-500 text-sm mt-1">{t.register.step3.subtitle}</p>
               </div>
 
               {globalError && (
@@ -711,7 +688,7 @@ export default function RegisterPage() {
 
               {/* Plan cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {PLANS.map((plan) => {
+                {plans.map((plan) => {
                   const selected = form.plan === plan.id;
                   return (
                     <button
@@ -728,7 +705,7 @@ export default function RegisterPage() {
                     >
                       {plan.popular && (
                         <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
-                          ★ Most popular
+                          {t.register.step3.mostPopular}
                         </span>
                       )}
                       <div className="flex items-start justify-between mb-3">
@@ -753,12 +730,12 @@ export default function RegisterPage() {
                         <span className="text-slate-400 text-sm">{plan.period}</span>
                       </div>
                       <ul className="space-y-2">
-                        {plan.features.map((f) => (
-                          <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+                        {plan.features.map((feature) => (
+                          <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                             </svg>
-                            {f}
+                            {feature}
                           </li>
                         ))}
                       </ul>
@@ -770,8 +747,8 @@ export default function RegisterPage() {
               {/* ── Payment method ──────────────────────────────────────────── */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-                  <p className="text-sm font-bold text-slate-700">Payment method</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Select how you&apos;d like to pay</p>
+                  <p className="text-sm font-bold text-slate-700">{t.register.step3.paymentMethodTitle}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.paymentMethodSubtitle}</p>
                 </div>
 
                 <div className="divide-y divide-slate-100">
@@ -803,12 +780,12 @@ export default function RegisterPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>
-                            {isBank ? "Bank Transfer" : "Invoice / Pay Later"}
+                            {isBank ? t.register.step3.bankTransferName : t.register.step3.invoiceName}
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">
                             {isBank
-                              ? "We'll send bank details to your email after registration"
-                              : "Receive an invoice — pay within 7 days"}
+                              ? t.register.step3.bankTransferDesc
+                              : t.register.step3.invoiceDesc}
                           </p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -833,10 +810,10 @@ export default function RegisterPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-slate-500">Credit / Debit Card</p>
-                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Coming soon</span>
+                        <p className="text-sm font-bold text-slate-500">{t.register.step3.cardName}</p>
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{t.register.step3.cardComingSoon}</span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">Instant payment via Stripe — available soon</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.cardDesc}</p>
                     </div>
                     <div className="w-5 h-5 rounded-full border-2 border-slate-200 flex-shrink-0" />
                   </div>
@@ -856,10 +833,10 @@ export default function RegisterPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-bold text-slate-900">
-                    {PLANS.find((p) => p.id === form.plan)?.price}/mo
+                    {plans.find((p) => p.id === form.plan)?.price}{t.register.step3.perMonth}
                   </p>
                   <p className="text-[11px] text-slate-400 capitalize">
-                    {form.plan} plan · {form.payment_method === "bank_transfer" ? "Bank transfer" : "Invoice"}
+                    {plans.find((p) => p.id === form.plan)?.name} {t.register.step3.planLabelSuffix} · {form.payment_method === "bank_transfer" ? t.register.step3.bankTransferName : t.register.step3.invoiceName}
                   </p>
                 </div>
               </div>
@@ -869,7 +846,7 @@ export default function RegisterPage() {
                   onClick={back}
                   className="flex-none w-28 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl text-sm hover:bg-slate-50 transition-colors"
                 >
-                  Back
+                  {t.register.step3.backButton}
                 </button>
                 <button
                   onClick={handleSubmit}
@@ -882,11 +859,11 @@ export default function RegisterPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                       </svg>
-                      Submitting…
+                      {t.register.step3.submitting}
                     </>
                   ) : (
                     <>
-                      Confirm registration
+                      {t.register.step3.submitButton}
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                       </svg>
@@ -905,8 +882,8 @@ export default function RegisterPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Complete your bank transfer</h2>
-                <p className="text-slate-500 text-sm mt-1">Send payment to the account below, then upload your proof</p>
+                <h2 className="text-xl font-bold text-slate-900">{t.register.step4.title}</h2>
+                <p className="text-slate-500 text-sm mt-1">{t.register.step4.subtitle}</p>
               </div>
 
               {globalError && (
@@ -918,7 +895,7 @@ export default function RegisterPage() {
               {/* Bank account details */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-5 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-between">
-                  <p className="text-sm font-bold text-white">Bank Account Details</p>
+                  <p className="text-sm font-bold text-white">{t.register.step4.bankDetailsTitle}</p>
                   <button
                     type="button"
                     onClick={() => {
@@ -932,18 +909,18 @@ export default function RegisterPage() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
                     </svg>
-                    Copy all
+                    {t.register.step4.copyAll}
                   </button>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {[
-                    { label: "Account name",   value: bankDetails.account_name },
-                    { label: "Bank",           value: bankDetails.bank_name },
-                    { label: "Sort code",      value: bankDetails.sort_code },
-                    { label: "Account number", value: bankDetails.account_number },
-                    { label: "IBAN",           value: bankDetails.iban },
-                    { label: "SWIFT / BIC",    value: bankDetails.swift },
-                    { label: "Reference",      value: bankDetails.reference, highlight: true },
+                    { label: t.register.step4.accountName, value: bankDetails.account_name },
+                    { label: t.register.step4.bank,         value: bankDetails.bank_name },
+                    { label: t.register.step4.sortCode,     value: bankDetails.sort_code },
+                    { label: t.register.step4.accountNumber, value: bankDetails.account_number },
+                    { label: t.register.step4.iban,         value: bankDetails.iban },
+                    { label: t.register.step4.swift,        value: bankDetails.swift },
+                    { label: t.register.step4.reference,    value: bankDetails.reference, highlight: true },
                   ].map(({ label, value, highlight }) => (
                     <div key={label} className={`flex items-center justify-between px-5 py-3 ${highlight ? "bg-amber-50" : ""}`}>
                       <span className="text-xs font-semibold text-slate-500">{label}</span>
@@ -953,7 +930,7 @@ export default function RegisterPage() {
                           type="button"
                           onClick={() => navigator.clipboard.writeText(value)}
                           className="text-slate-300 hover:text-blue-500 transition-colors"
-                          title="Copy"
+                          title={t.register.step4.copy}
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
@@ -965,7 +942,10 @@ export default function RegisterPage() {
                 </div>
                 <div className="px-5 py-3 bg-amber-50 border-t border-amber-100">
                   <p className="text-[11px] text-amber-700">
-                    <span className="font-bold">Important:</span> Use your reference code <span className="font-bold">{bankDetails.reference}</span> so we can match your payment.
+                    <span className="font-bold">{t.register.step4.importantNote}</span>{" "}
+                    {t.register.step4.importantNoteBody.split("{ref}")[0]}
+                    <span className="font-bold">{bankDetails.reference}</span>
+                    {t.register.step4.importantNoteBody.split("{ref}")[1]}
                   </p>
                 </div>
               </div>
@@ -973,25 +953,25 @@ export default function RegisterPage() {
               {/* Proof upload form */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-5 py-3.5 border-b border-slate-100 bg-slate-50">
-                  <p className="text-sm font-bold text-slate-700">Confirm payment made</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Upload your transfer screenshot and/or enter the transaction ID</p>
+                  <p className="text-sm font-bold text-slate-700">{t.register.step4.confirmPaymentTitle}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{t.register.step4.confirmPaymentSubtitle}</p>
                 </div>
                 <div className="p-5 space-y-4">
                   {/* Transaction ID */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Transaction / Reference ID</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step4.transactionIdLabel}</label>
                     <input
                       type="text"
                       value={transactionId}
                       onChange={(e) => setTransactionId(e.target.value)}
-                      placeholder="e.g. TXN-20240101-123456"
+                      placeholder={t.register.step4.transactionIdPlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all"
                     />
                   </div>
 
                   {/* Screenshot upload */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Payment screenshot</label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step4.screenshotLabel}</label>
                     {proofPreview ? (
                       <div className="relative rounded-2xl overflow-hidden border border-slate-200">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1017,8 +997,8 @@ export default function RegisterPage() {
                           </svg>
                         </div>
                         <div className="text-center">
-                          <p className="text-sm font-semibold text-slate-600 group-hover:text-blue-600 transition-colors">Click to upload screenshot</p>
-                          <p className="text-xs text-slate-400 mt-0.5">PNG, JPG, PDF up to 10MB</p>
+                          <p className="text-sm font-semibold text-slate-600 group-hover:text-blue-600 transition-colors">{t.register.step4.uploadPrompt}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step4.uploadHint}</p>
                         </div>
                         <input
                           type="file"
@@ -1032,12 +1012,12 @@ export default function RegisterPage() {
 
                   {/* Optional note */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">Additional note <span className="text-slate-400 font-normal">(optional)</span></label>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step4.noteLabel} <span className="text-slate-400 font-normal">{t.register.step4.noteOptional}</span></label>
                     <textarea
                       value={paymentNote}
                       onChange={(e) => setPaymentNote(e.target.value)}
                       rows={2}
-                      placeholder="Any extra info for our team…"
+                      placeholder={t.register.step4.notePlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all resize-none"
                     />
                   </div>
@@ -1058,7 +1038,7 @@ export default function RegisterPage() {
                   }}
                   className="flex-none text-xs text-slate-400 hover:text-slate-600 underline self-center transition-colors px-2"
                 >
-                  Skip for now
+                  {t.register.step4.skipForNow}
                 </button>
                 <button
                   type="button"
@@ -1072,14 +1052,14 @@ export default function RegisterPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                       </svg>
-                      Submitting…
+                      {t.register.step4.submitting}
                     </>
                   ) : (
                     <>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
-                      I&apos;ve made the payment
+                      {t.register.step4.confirmButton}
                     </>
                   )}
                 </button>

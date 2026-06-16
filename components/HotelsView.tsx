@@ -8,6 +8,7 @@ import {
   Building2, X, SlidersHorizontal, Phone,
 } from "lucide-react";
 import { hotelsApi, type Hotel } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
 
 /* ── Palette ──────────────────────────────────────────────────────────────── */
 const PALETTE = [
@@ -31,23 +32,26 @@ function initials(name: string) {
   return name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 }
 
-const SORT_OPTIONS = [
-  { value: "default", label: "Default Order" },
-  { value: "name",    label: "Name A–Z" },
-  { value: "city",    label: "City A–Z" },
-];
-type SortValue = "default" | "name" | "city";
+const SORT_VALUES = ["default", "name", "city"] as const;
+type SortValue = (typeof SORT_VALUES)[number];
 
 const GOLD = "#C9A84C";
 const NAVY = "#0B1426";
 
 /* ── Component ────────────────────────────────────────────────────────────── */
 export default function HotelsView() {
+  const { t } = useLanguage();
   const [hotels,   setHotels]   = useState<Hotel[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [search,   setSearch]   = useState("");
   const [sortBy,   setSortBy]   = useState<SortValue>("default");
   const [sortOpen, setSortOpen] = useState(false);
+
+  const sortLabels: Record<SortValue, string> = {
+    default: t.hotels.defaultOrder,
+    name: t.hotels.nameAZ,
+    city: t.hotels.cityAZ,
+  };
 
   useEffect(() => {
     hotelsApi.list().then(setHotels).catch(() => {}).finally(() => setLoading(false));
@@ -79,16 +83,16 @@ export default function HotelsView() {
           <div className="flex items-center gap-2 mb-4">
             <div className="w-1 h-8 rounded-full" style={{ background: GOLD }} />
             <div>
-              <p className="text-[10px] font-black tracking-[0.25em] uppercase" style={{ color: GOLD }}>Amica International</p>
-              <p className="text-white text-[11px] font-medium opacity-60">Digital Concierge Platform</p>
+              <p className="text-[10px] font-black tracking-[0.25em] uppercase" style={{ color: GOLD }}>{t.hotels.brandLine}</p>
+              <p className="text-white text-[11px] font-medium opacity-60">{t.hotels.platformLine}</p>
             </div>
           </div>
 
           <h1 className="text-3xl font-black text-white leading-tight mb-1">
-            Our Hotels
+            {t.hotels.pageTitle}
           </h1>
           <p className="text-sm font-medium mb-6" style={{ color: "rgba(255,255,255,0.45)" }}>
-            {loading ? "Loading properties…" : `${hotels.length} premium propert${hotels.length !== 1 ? "ies" : "y"} available`}
+            {loading ? t.hotels.loadingProperties : `${hotels.length} ${hotels.length !== 1 ? t.hotels.propertiesAvailable : t.hotels.propertyAvailable}`}
           </p>
 
           {/* Search */}
@@ -96,7 +100,7 @@ export default function HotelsView() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "rgba(255,255,255,0.35)" }} />
             <input
               type="text"
-              placeholder="Search hotel name or city…"
+              placeholder={t.hotels.searchPlaceholder}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="w-full pl-12 pr-12 py-4 text-sm font-semibold rounded-2xl border-0 focus:outline-none"
@@ -140,12 +144,12 @@ export default function HotelsView() {
             <section className="pt-6 pb-2">
               <div className="flex items-center justify-between px-5 mb-4">
                 <div>
-                  <p className="text-[11px] font-black tracking-[0.18em] uppercase" style={{ color: GOLD }}>Featured</p>
-                  <h2 className="text-xl font-black" style={{ color: NAVY }}>Top Properties</h2>
+                  <p className="text-[11px] font-black tracking-[0.18em] uppercase" style={{ color: GOLD }}>{t.hotels.featuredTag}</p>
+                  <h2 className="text-xl font-black" style={{ color: NAVY }}>{t.hotels.topProperties}</h2>
                 </div>
                 <div className="px-3 py-1.5 rounded-full text-xs font-black"
                   style={{ background: NAVY, color: GOLD }}>
-                  {featured.length} Hotels
+                  {featured.length} {t.hotels.hotelsCount}
                 </div>
               </div>
 
@@ -167,7 +171,7 @@ export default function HotelsView() {
                         <div className="flex items-center justify-between relative z-10">
                           <span className="text-[10px] font-black tracking-widest uppercase px-2.5 py-1 rounded-full"
                             style={{ background: `rgba(201,168,76,0.2)`, color: GOLD, border: `1px solid rgba(201,168,76,0.35)` }}>
-                            #{idx + 1} Property
+                            #{idx + 1} {t.hotels.property}
                           </span>
                           {h.logo_url ? (
                             <Image unoptimized src={h.logo_url} alt={h.name} width={36} height={36}
@@ -199,10 +203,10 @@ export default function HotelsView() {
                               {h.amenities.slice(0, 2).join(" · ")}
                             </p>
                           ) : (
-                            <p className="text-xs font-semibold" style={{ color: "#8a7a6a" }}>Digital Concierge</p>
+                            <p className="text-xs font-semibold" style={{ color: "#8a7a6a" }}>{t.hotels.digitalConcierge}</p>
                           )}
                           <p className="text-xs font-black mt-0.5" style={{ color: NAVY }}>
-                            {h.is_24_7 ? "Open 24 / 7" : "View Details →"}
+                            {h.is_24_7 ? t.hotels.open247 : t.hotels.viewDetailsArrow}
                           </p>
                         </div>
                         <div className="w-9 h-9 rounded-full flex items-center justify-center ml-3 flex-shrink-0"
@@ -221,10 +225,10 @@ export default function HotelsView() {
           <div className="flex items-center justify-between px-5 pt-5 pb-3">
             <div>
               <p className="text-[11px] font-black tracking-[0.18em] uppercase" style={{ color: GOLD }}>
-                {hasFilters ? "Filtered Results" : "All Properties"}
+                {hasFilters ? t.hotels.filteredResults : t.hotels.allProperties}
               </p>
               <h2 className="text-xl font-black" style={{ color: NAVY }}>
-                {results.length} Hotel{results.length !== 1 ? "s" : ""}
+                {results.length} {t.hotels.hotelsCount}
               </h2>
             </div>
             <div className="flex gap-2.5">
@@ -232,7 +236,7 @@ export default function HotelsView() {
                 <button type="button" onClick={() => { setSearch(""); setSortBy("default"); }}
                   className="flex items-center gap-1.5 text-xs font-black px-3.5 py-2.5 rounded-xl"
                   style={{ background: "#fee2e2", color: "#dc2626" }}>
-                  <X className="w-3.5 h-3.5" /> Clear
+                  <X className="w-3.5 h-3.5" /> {t.hotels.clear}
                 </button>
               )}
               <button type="button" onClick={() => setSortOpen(v => !v)}
@@ -241,7 +245,7 @@ export default function HotelsView() {
                   ? { background: NAVY, color: GOLD, boxShadow: `0 4px 14px ${NAVY}55` }
                   : { background: "white", color: NAVY, boxShadow: "0 2px 10px rgba(0,0,0,0.09)" }}>
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                {sortBy !== "default" ? SORT_OPTIONS.find(o => o.value === sortBy)!.label : "Sort"}
+                {sortBy !== "default" ? sortLabels[sortBy] : t.hotels.sort}
               </button>
             </div>
           </div>
@@ -250,17 +254,17 @@ export default function HotelsView() {
           {sortOpen && (
             <div className="mx-5 mb-4 rounded-2xl overflow-hidden"
               style={{ background: "white", boxShadow: "0 8px 30px rgba(0,0,0,0.12)", border: "1px solid rgba(0,0,0,0.05)" }}>
-              {SORT_OPTIONS.map((opt, i) => (
-                <button key={opt.value} type="button"
-                  onClick={() => { setSortBy(opt.value as SortValue); setSortOpen(false); }}
+              {SORT_VALUES.map((value, i) => (
+                <button key={value} type="button"
+                  onClick={() => { setSortBy(value); setSortOpen(false); }}
                   className="w-full flex items-center justify-between px-5 py-4 text-sm font-bold active:bg-slate-50 transition-colors"
                   style={{
-                    color: sortBy === opt.value ? GOLD : NAVY,
+                    color: sortBy === value ? GOLD : NAVY,
                     borderTop: i > 0 ? "1px solid #f0ede8" : "none",
-                    background: sortBy === opt.value ? "#fdf8ef" : "white",
+                    background: sortBy === value ? "#fdf8ef" : "white",
                   }}>
-                  {opt.label}
-                  {sortBy === opt.value && <div className="w-2.5 h-2.5 rounded-full" style={{ background: GOLD }} />}
+                  {sortLabels[value]}
+                  {sortBy === value && <div className="w-2.5 h-2.5 rounded-full" style={{ background: GOLD }} />}
                 </button>
               ))}
             </div>
@@ -274,12 +278,12 @@ export default function HotelsView() {
                   style={{ background: "white", boxShadow: "0 8px 30px rgba(0,0,0,0.09)" }}>
                   <Building2 className="w-11 h-11" style={{ color: "#c4b9a8" }} />
                 </div>
-                <p className="text-xl font-black mb-2" style={{ color: NAVY }}>No Hotels Found</p>
-                <p className="text-sm mb-6" style={{ color: "#9a8a78" }}>Try a different search term</p>
+                <p className="text-xl font-black mb-2" style={{ color: NAVY }}>{t.hotels.noHotelsFound}</p>
+                <p className="text-sm mb-6" style={{ color: "#9a8a78" }}>{t.hotels.tryDifferentSearch}</p>
                 <button type="button" onClick={() => { setSearch(""); setSortBy("default"); }}
                   className="text-sm font-black px-8 py-3.5 rounded-2xl text-white"
                   style={{ background: `linear-gradient(135deg, ${NAVY}, #1a2f5c)`, boxShadow: `0 6px 20px ${NAVY}44` }}>
-                  Reset Search
+                  {t.hotels.resetSearch}
                 </button>
               </div>
             ) : results.map(h => {
@@ -364,7 +368,7 @@ export default function HotelsView() {
                         {h.amenities.length > 4 && (
                           <span className="text-xs font-bold px-3 py-1.5 rounded-full"
                             style={{ background: "#f0ede8", color: "#8a7a6a" }}>
-                            +{h.amenities.length - 4} more
+                            +{h.amenities.length - 4} {t.hotels.moreLabel}
                           </span>
                         )}
                       </div>
@@ -381,7 +385,7 @@ export default function HotelsView() {
                           <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                           </svg>
-                          WhatsApp
+                          {t.hotels.whatsapp}
                         </a>
                       )}
                       <Link href={`/h/${h.id}`}
@@ -390,7 +394,7 @@ export default function HotelsView() {
                           background: `linear-gradient(135deg, ${NAVY} 0%, #1a2f5c 100%)`,
                           boxShadow: `0 6px 20px ${NAVY}45`,
                         }}>
-                        View Concierge
+                        {t.hotels.viewConcierge}
                         <ChevronRight className="w-4 h-4" />
                       </Link>
                     </div>

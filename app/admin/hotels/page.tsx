@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, hotelsApi, servicesApi, type Hotel, type HotelService } from "@/lib/api";
 import Image from "next/image";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const empty = { name: "", city: "", whatsapp_number: "", language_default: "en" };
+const FORM_FIELDS = ["name", "city", "whatsapp_number"] as const;
 
 export default function AdminHotels() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [hotels, setHotels]           = useState<Hotel[]>([]);
   const [loading, setLoading]         = useState(true);
   const [showModal, setShowModal]     = useState(false);
@@ -71,18 +74,18 @@ export default function AdminHotels() {
       if (editing) { await hotelsApi.update(editing.id, fd); }
       else { await hotelsApi.create(fd); }
       setShowModal(false); setLogoFile(null); setLogoPreview(""); fetchHotels();
-      showToast(editing ? "Hotel updated" : "Hotel added");
-    } catch (err) { showToast(err instanceof Error ? err.message : "Save failed", true); }
+      showToast(editing ? t.adminHotels.hotelUpdated : t.adminHotels.hotelAdded);
+    } catch (err) { showToast(err instanceof Error ? err.message : t.adminHotels.saveFailed, true); }
     setSaving(false);
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this hotel?")) return;
+    if (!confirm(t.adminHotels.deleteConfirm)) return;
     try {
       await hotelsApi.delete(id);
-      showToast("Hotel deleted"); fetchHotels();
+      showToast(t.adminHotels.hotelDeleted); fetchHotels();
       if (viewHotel?.id === id) setViewHotel(null);
-    } catch (err) { showToast(err instanceof Error ? err.message : "Delete failed", true); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t.adminHotels.deleteFailed, true); }
   }
 
   function showToast(msg: string, error = false) {
@@ -112,8 +115,8 @@ export default function AdminHotels() {
       <div className="sticky top-0 z-40 bg-white border-b border-slate-100" style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.06)", paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex items-center justify-between px-4 h-14">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Admin</p>
-            <h1 className="font-bold text-slate-900 text-base leading-none">Hotels</h1>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.adminHotels.admin}</p>
+            <h1 className="font-bold text-slate-900 text-base leading-none">{t.adminHotels.pageTitle}</h1>
           </div>
           <button
             type="button"
@@ -123,7 +126,7 @@ export default function AdminHotels() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Add Hotel
+            {t.adminHotels.addHotel}
           </button>
         </div>
       </div>
@@ -136,21 +139,21 @@ export default function AdminHotels() {
           </svg>
           <input
             type="text"
-            placeholder="Search hotels or cities…"
+            placeholder={t.adminHotels.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
-        <p className="text-xs text-slate-400 font-medium px-1">{filtered.length} hotel{filtered.length !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-slate-400 font-medium px-1">{filtered.length} {filtered.length !== 1 ? t.adminHotels.hotelCountPlural : t.adminHotels.hotelCount}</p>
 
         {filtered.length === 0 ? (
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100 text-center">
-            <p className="text-slate-400 text-sm mb-3">{search ? "No hotels match your search." : "No hotels yet."}</p>
+            <p className="text-slate-400 text-sm mb-3">{search ? t.adminHotels.noHotelsMatch : t.adminHotels.noHotelsYet}</p>
             {!search && (
               <button type="button" onClick={openAdd} className="text-xs font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-xl">
-                Add First Hotel
+                {t.adminHotels.addFirstHotel}
               </button>
             )}
           </div>
@@ -195,7 +198,7 @@ export default function AdminHotels() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    View
+                    {t.adminHotels.view}
                   </button>
                   <button
                     type="button"
@@ -205,7 +208,7 @@ export default function AdminHotels() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                     </svg>
-                    Edit
+                    {t.adminHotels.edit}
                   </button>
                   <button
                     type="button"
@@ -215,7 +218,7 @@ export default function AdminHotels() {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-3.5 h-3.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                     </svg>
-                    Delete
+                    {t.adminHotels.delete}
                   </button>
                 </div>
               </div>
@@ -282,7 +285,7 @@ export default function AdminHotels() {
               <div className="space-y-3">
                 {/* Contact */}
                 <div className="bg-white rounded-2xl p-4 space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.adminHotels.contact}</p>
                   {viewHotel.whatsapp_number && (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
@@ -292,7 +295,7 @@ export default function AdminHotels() {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400 font-semibold">WhatsApp</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{t.adminHotels.whatsapp}</p>
                           <p className="text-sm font-bold text-slate-800">{viewHotel.whatsapp_number}</p>
                         </div>
                       </div>
@@ -301,7 +304,7 @@ export default function AdminHotels() {
                         target="_blank" rel="noopener noreferrer"
                         className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl active:scale-95"
                       >
-                        Open
+                        {t.adminHotels.open}
                       </a>
                     </div>
                   )}
@@ -313,7 +316,7 @@ export default function AdminHotels() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-semibold">Phone</p>
+                        <p className="text-[10px] text-slate-400 font-semibold">{t.adminHotels.phone}</p>
                         <p className="text-sm font-bold text-slate-800">{viewHotel.phone}</p>
                       </div>
                     </div>
@@ -326,7 +329,7 @@ export default function AdminHotels() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-400 font-semibold">Email</p>
+                        <p className="text-[10px] text-slate-400 font-semibold">{t.adminHotels.email}</p>
                         <p className="text-sm font-bold text-slate-800">{viewHotel.email}</p>
                       </div>
                     </div>
@@ -335,50 +338,50 @@ export default function AdminHotels() {
 
                 {/* Info */}
                 <div className="bg-white rounded-2xl p-4 space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hotel Info</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.adminHotels.hotelInfo}</p>
                   {viewHotel.description && (
                     <p className="text-sm text-slate-600 leading-relaxed">{viewHotel.description}</p>
                   )}
                   <div className="grid grid-cols-2 gap-2">
                     {viewHotel.address && (
                       <div className="col-span-2 bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Address</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">{t.adminHotels.address}</p>
                         <p className="text-xs font-bold text-slate-800">{viewHotel.address}</p>
                       </div>
                     )}
                     {!viewHotel.is_24_7 && viewHotel.check_in_time && (
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Check-in</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">{t.adminHotels.checkIn}</p>
                         <p className="text-xs font-bold text-slate-800">{viewHotel.check_in_time}</p>
                       </div>
                     )}
                     {!viewHotel.is_24_7 && viewHotel.check_out_time && (
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Check-out</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">{t.adminHotels.checkOut}</p>
                         <p className="text-xs font-bold text-slate-800">{viewHotel.check_out_time}</p>
                       </div>
                     )}
                     {viewHotel.is_24_7 && (
                       <div className="bg-emerald-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-emerald-600 font-semibold mb-0.5">Hours</p>
-                        <p className="text-xs font-bold text-emerald-700">Open 24/7</p>
+                        <p className="text-[10px] text-emerald-600 font-semibold mb-0.5">{t.adminHotels.hours}</p>
+                        <p className="text-xs font-bold text-emerald-700">{t.adminHotels.open247}</p>
                       </div>
                     )}
                     {!viewHotel.is_24_7 && viewHotel.open_time && (
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Opens</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">{t.adminHotels.opens}</p>
                         <p className="text-xs font-bold text-slate-800">{viewHotel.open_time}</p>
                       </div>
                     )}
                     {!viewHotel.is_24_7 && viewHotel.close_time && (
                       <div className="bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">Closes</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">{t.adminHotels.closes}</p>
                         <p className="text-xs font-bold text-slate-800">{viewHotel.close_time}</p>
                       </div>
                     )}
                     {viewHotel.wifi_info && (
                       <div className="col-span-2 bg-slate-50 rounded-xl px-3 py-2.5">
-                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">WiFi</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mb-0.5">{t.adminHotels.wifi}</p>
                         <p className="text-xs font-bold text-slate-800">{viewHotel.wifi_info}</p>
                       </div>
                     )}
@@ -388,7 +391,7 @@ export default function AdminHotels() {
                 {/* Amenities */}
                 {viewHotel.amenities && viewHotel.amenities.length > 0 && (
                   <div className="bg-white rounded-2xl p-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Amenities</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{t.adminHotels.amenities}</p>
                     <div className="flex flex-wrap gap-2">
                       {viewHotel.amenities.map((a) => (
                         <span key={a} className="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-50 text-blue-700">{a}</span>
@@ -400,14 +403,14 @@ export default function AdminHotels() {
                 {/* Services */}
                 <div className="bg-white rounded-2xl p-4">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                    Services {!loadingServices && `(${viewServices.length})`}
+                    {t.adminHotels.services} {!loadingServices && `(${viewServices.length})`}
                   </p>
                   {loadingServices ? (
                     <div className="flex items-center justify-center py-6">
                       <div className="w-5 h-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
                     </div>
                   ) : viewServices.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-2">No services added yet.</p>
+                    <p className="text-xs text-slate-400 py-2">{t.adminHotels.noServicesYet}</p>
                   ) : (
                     <div className="space-y-2">
                       {viewServices.map((svc) => (
@@ -428,7 +431,7 @@ export default function AdminHotels() {
                           <div className="text-right flex-shrink-0">
                             <p className="text-sm font-black text-slate-900">£{svc.price}</p>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${svc.is_available ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"}`}>
-                              {svc.is_available ? "Available" : "Unavailable"}
+                              {svc.is_available ? t.adminHotels.available : t.adminHotels.unavailable}
                             </span>
                           </div>
                         </div>
@@ -439,7 +442,7 @@ export default function AdminHotels() {
 
                 {/* Meta */}
                 <p className="text-center text-[10px] text-slate-300 py-1">
-                  Added {new Date(viewHotel.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+                  {t.adminHotels.added} {new Date(viewHotel.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
                 </p>
               </div>
             </div>
@@ -458,12 +461,12 @@ export default function AdminHotels() {
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
             <div className="px-5 pt-2 pb-4">
-              <h3 className="font-bold text-slate-900 text-lg mb-5">{editing ? "Edit Hotel" : "Add New Hotel"}</h3>
+              <h3 className="font-bold text-slate-900 text-lg mb-5">{editing ? t.adminHotels.editHotel : t.adminHotels.addNewHotel}</h3>
 
               <div className="space-y-4">
                 {/* Logo upload */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">Hotel Logo</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">{t.adminHotels.hotelLogo}</label>
                   <div className="flex items-center gap-4">
                     {logoPreview ? (
                       <Image unoptimized src={logoPreview} alt="Logo preview" width={56} height={56} className="w-14 h-14 rounded-2xl object-cover border border-slate-200" />
@@ -476,11 +479,11 @@ export default function AdminHotels() {
                     )}
                     <div className="flex gap-2">
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs font-bold text-blue-600 border border-blue-200 px-3 py-2 rounded-xl bg-blue-50 active:scale-95">
-                        {logoPreview ? "Change" : "Upload"}
+                        {logoPreview ? t.adminHotels.change : t.adminHotels.upload}
                       </button>
                       {logoPreview && (
                         <button type="button" onClick={() => { setLogoPreview(""); setLogoFile(null); }} className="text-xs font-bold text-red-500 border border-red-200 px-3 py-2 rounded-xl bg-red-50 active:scale-95">
-                          Remove
+                          {t.adminHotels.remove}
                         </button>
                       )}
                     </div>
@@ -488,15 +491,15 @@ export default function AdminHotels() {
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
                 </div>
 
-                {[
-                  { label: "Hotel Name", key: "name", placeholder: "The Grand London" },
-                  { label: "City", key: "city", placeholder: "London" },
-                  { label: "WhatsApp Number", key: "whatsapp_number", placeholder: "+44 7700 900000" },
-                ].map(({ label, key, placeholder }) => (
+                {([
+                  { label: t.adminHotels.hotelName, key: "name", placeholder: t.adminHotels.hotelNamePlaceholder },
+                  { label: t.adminHotels.city, key: "city", placeholder: t.adminHotels.cityPlaceholder },
+                  { label: t.adminHotels.whatsappNumber, key: "whatsapp_number", placeholder: t.adminHotels.whatsappPlaceholder },
+                ] satisfies { label: string; key: typeof FORM_FIELDS[number]; placeholder: string }[]).map(({ label, key, placeholder }) => (
                   <div key={key}>
                     <label className="block text-xs font-bold text-slate-700 mb-1.5">{label}</label>
                     <input
-                      value={form[key as keyof typeof form]}
+                      value={form[key]}
                       onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                       placeholder={placeholder}
                       className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -505,7 +508,7 @@ export default function AdminHotels() {
                 ))}
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Default Language</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t.adminHotels.defaultLanguage}</label>
                   <select
                     value={form.language_default}
                     onChange={(e) => setForm({ ...form, language_default: e.target.value })}
@@ -520,10 +523,10 @@ export default function AdminHotels() {
 
               <div className="flex gap-3 mt-6">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3 rounded-2xl bg-slate-50 active:scale-95 text-sm">
-                  Cancel
+                  {t.adminHotels.cancel}
                 </button>
                 <button type="button" onClick={handleSave} disabled={saving} className="flex-1 bg-blue-600 disabled:opacity-60 text-white font-bold py-3 rounded-2xl active:scale-95 text-sm shadow-sm shadow-blue-200">
-                  {saving ? "Saving…" : "Save Hotel"}
+                  {saving ? t.adminHotels.saving : t.adminHotels.saveHotel}
                 </button>
               </div>
             </div>

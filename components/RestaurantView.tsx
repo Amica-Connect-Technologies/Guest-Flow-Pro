@@ -4,27 +4,29 @@ import { useState } from "react";
 import Image from "next/image";
 import { MapPin, Navigation, Phone, Star, SlidersHorizontal, ChevronLeft, X, Utensils, Search } from "lucide-react";
 import { placesApi, type Hotel, type NearbyPlace } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
+import type { Translations } from "@/lib/i18n";
 
 // ── Food categories ───────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { id: "italian",    emoji: "🍝", label: "Italian",          keyword: "italian restaurant",      color: "#DC2626", bg: "#FEF2F2" },
-  { id: "pizza",      emoji: "🍕", label: "Pizzeria",         keyword: "pizza",                   color: "#EA580C", bg: "#FFF7ED" },
-  { id: "halal",      emoji: "☪️", label: "Halal Food",       keyword: "halal",                   color: "#16A34A", bg: "#F0FDF4" },
-  { id: "turkish",    emoji: "🥙", label: "Turkish",          keyword: "turkish restaurant",      color: "#D97706", bg: "#FFFBEB" },
-  { id: "burgers",    emoji: "🍔", label: "Burgers & Chicken",keyword: "burger fried chicken",    color: "#F59E0B", bg: "#FEFCE8" },
-  { id: "japanese",   emoji: "🍣", label: "Japanese / Sushi", keyword: "japanese sushi",          color: "#EC4899", bg: "#FDF2F8" },
-  { id: "chinese",    emoji: "🥡", label: "Chinese Food",     keyword: "chinese restaurant",      color: "#EF4444", bg: "#FEF2F2" },
-  { id: "thai",       emoji: "🍜", label: "Thai Food",        keyword: "thai restaurant",         color: "#10B981", bg: "#ECFDF5" },
-  { id: "steak",      emoji: "🥩", label: "Steak House",      keyword: "steak house grill",       color: "#7C3AED", bg: "#F5F3FF" },
-  { id: "vegan",      emoji: "🥗", label: "Vegetarian / Vegan",keyword: "vegetarian vegan",      color: "#22C55E", bg: "#F0FDF4" },
-  { id: "cafe",       emoji: "☕", label: "Cafés & Breakfast",keyword: "cafe breakfast brunch",   color: "#A16207", bg: "#FEFCE8" },
-  { id: "finedining", emoji: "🍷", label: "Fine Dining",      keyword: "fine dining restaurant",  color: "#9333EA", bg: "#FAF5FF" },
-  { id: "bars",       emoji: "🍺", label: "Bars & Pubs",      keyword: "bar pub",                 color: "#F59E0B", bg: "#FFFBEB" },
-  { id: "grocery",    emoji: "🛒", label: "Grocery & Market", keyword: "supermarket grocery",     color: "#0EA5E9", bg: "#F0F9FF" },
-  { id: "desserts",   emoji: "🍨", label: "Desserts & Gelato",keyword: "dessert gelato ice cream",color: "#DB2777", bg: "#FDF2F8" },
+const CATEGORIES_META = [
+  { id: "italian",    emoji: "🍝", keyword: "italian restaurant",      color: "#DC2626", bg: "#FEF2F2" },
+  { id: "pizza",      emoji: "🍕", keyword: "pizza",                   color: "#EA580C", bg: "#FFF7ED" },
+  { id: "halal",      emoji: "☪️", keyword: "halal",                   color: "#16A34A", bg: "#F0FDF4" },
+  { id: "turkish",    emoji: "🥙", keyword: "turkish restaurant",      color: "#D97706", bg: "#FFFBEB" },
+  { id: "burgers",    emoji: "🍔", keyword: "burger fried chicken",    color: "#F59E0B", bg: "#FEFCE8" },
+  { id: "japanese",   emoji: "🍣", keyword: "japanese sushi",          color: "#EC4899", bg: "#FDF2F8" },
+  { id: "chinese",    emoji: "🥡", keyword: "chinese restaurant",      color: "#EF4444", bg: "#FEF2F2" },
+  { id: "thai",       emoji: "🍜", keyword: "thai restaurant",         color: "#10B981", bg: "#ECFDF5" },
+  { id: "steak",      emoji: "🥩", keyword: "steak house grill",       color: "#7C3AED", bg: "#F5F3FF" },
+  { id: "vegan",      emoji: "🥗", keyword: "vegetarian vegan",        color: "#22C55E", bg: "#F0FDF4" },
+  { id: "cafe",       emoji: "☕", keyword: "cafe breakfast brunch",   color: "#A16207", bg: "#FEFCE8" },
+  { id: "finedining", emoji: "🍷", keyword: "fine dining restaurant",  color: "#9333EA", bg: "#FAF5FF" },
+  { id: "bars",       emoji: "🍺", keyword: "bar pub",                 color: "#F59E0B", bg: "#FFFBEB" },
+  { id: "grocery",    emoji: "🛒", keyword: "supermarket grocery",     color: "#0EA5E9", bg: "#F0F9FF" },
+  { id: "desserts",   emoji: "🍨", keyword: "dessert gelato ice cream",color: "#DB2777", bg: "#FDF2F8" },
 ] as const;
 
-type Category = typeof CATEGORIES[number];
+type Category = (typeof CATEGORIES_META)[number] & { label: string };
 
 type Filters = {
   openNow: boolean;
@@ -36,13 +38,13 @@ type Filters = {
 const DEFAULT_FILTERS: Filters = { openNow: false, distance: 1000, familyFriendly: false, takeaway: false };
 
 // ── Badge logic ───────────────────────────────────────────────────────────────
-function getBadge(place: NearbyPlace, index: number): { label: string; color: string; bg: string } | null {
+function getBadge(place: NearbyPlace, index: number, t: Translations): { label: string; color: string; bg: string } | null {
   if (index === 0 && (place.rating ?? 0) >= 4.2)
-    return { label: "⭐ Recommended by Hotel", color: "#7C3AED", bg: "#F5F3FF" };
+    return { label: t.restaurant.recommendedByHotel, color: "#7C3AED", bg: "#F5F3FF" };
   if ((place.rating ?? 0) >= 4.5 && place.user_ratings_total >= 200)
-    return { label: "❤️ Guest Favourite",       color: "#DB2777", bg: "#FDF2F8" };
+    return { label: t.restaurant.guestFavourite,       color: "#DB2777", bg: "#FDF2F8" };
   if (place.open_now && (place.rating ?? 0) >= 4.0 && place.user_ratings_total >= 100)
-    return { label: "🔥 Most Popular Tonight",  color: "#EA580C", bg: "#FFF7ED" };
+    return { label: t.restaurant.mostPopularTonight,  color: "#EA580C", bg: "#FFF7ED" };
   return null;
 }
 
@@ -56,6 +58,11 @@ interface Props {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function RestaurantView({ hotel }: Props) {
+  const { t } = useLanguage();
+  const CATEGORIES: Category[] = CATEGORIES_META.map(c => ({
+    ...c,
+    label: t.restaurant.categories[c.id as keyof typeof t.restaurant.categories],
+  }));
   const [view,        setView]        = useState<"discovery" | "results">("discovery");
   const [selectedCat, setSelectedCat] = useState<Category | null>(null);
   const [filters,     setFilters]     = useState<Filters>(DEFAULT_FILTERS);
@@ -80,7 +87,7 @@ export default function RestaurantView({ hotel }: Props) {
       const data = await placesApi.nearby(hotel.id, "restaurant", kw, f.distance);
       setResults(data.places);
     } catch {
-      setError("Could not load restaurants. Please try again.");
+      setError(t.restaurant.couldNotLoad);
     }
     setLoading(false);
   }
@@ -125,14 +132,14 @@ export default function RestaurantView({ hotel }: Props) {
                 <Utensils className="w-4 h-4 text-white" />
               </div>
               <span className="text-pink-200/90 text-[11px] font-black uppercase tracking-[0.15em]">
-                Digital Concierge
+                {t.restaurant.digitalConcierge}
               </span>
             </div>
             <p className="text-white font-black text-2xl leading-tight mb-1.5 drop-shadow-sm">
-              What would you like<br/>to eat today?
+              {t.restaurant.whatToEat}
             </p>
             <p className="text-pink-200/70 text-sm leading-relaxed">
-              Choose a cuisine — we&apos;ll find the best spots near your hotel.
+              {t.restaurant.chooseHint}
             </p>
           </div>
         </div>
@@ -140,11 +147,11 @@ export default function RestaurantView({ hotel }: Props) {
         {/* Active filters strip */}
         {activeFilterCount > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Filters:</span>
-            {filters.openNow && <Chip label="Open Now" onRemove={() => setFilters(f => ({ ...f, openNow: false }))} />}
-            {filters.distance !== 1000 && <Chip label={`${filters.distance}m radius`} onRemove={() => setFilters(f => ({ ...f, distance: 1000 }))} />}
-            {filters.familyFriendly && <Chip label="Family Friendly" onRemove={() => setFilters(f => ({ ...f, familyFriendly: false }))} />}
-            {filters.takeaway && <Chip label="Takeaway" onRemove={() => setFilters(f => ({ ...f, takeaway: false }))} />}
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{t.restaurant.filtersLabel}</span>
+            {filters.openNow && <Chip label={t.restaurant.openNowChip} onRemove={() => setFilters(f => ({ ...f, openNow: false }))} />}
+            {filters.distance !== 1000 && <Chip label={t.restaurant.radiusChip.replace("{distance}", String(filters.distance))} onRemove={() => setFilters(f => ({ ...f, distance: 1000 }))} />}
+            {filters.familyFriendly && <Chip label={t.restaurant.familyFriendlyChip} onRemove={() => setFilters(f => ({ ...f, familyFriendly: false }))} />}
+            {filters.takeaway && <Chip label={t.restaurant.takeawayChip} onRemove={() => setFilters(f => ({ ...f, takeaway: false }))} />}
           </div>
         )}
 
@@ -165,20 +172,20 @@ export default function RestaurantView({ hotel }: Props) {
               <SlidersHorizontal className={`w-4 h-4 ${activeFilterCount > 0 ? "text-white" : "text-blue-600"}`} />
             </div>
             <span className={`font-black text-sm ${activeFilterCount > 0 ? "text-white" : "text-slate-700"}`}>
-              Filter Results
+              {t.restaurant.filterResults}
             </span>
             {activeFilterCount > 0 && (
               <span className="bg-white/25 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{activeFilterCount}</span>
             )}
           </div>
           <span className={`text-xs font-semibold ${activeFilterCount > 0 ? "text-blue-200" : "text-slate-400"}`}>
-            Tap to customise
+            {t.restaurant.tapToCustomise}
           </span>
         </button>
 
         {/* Category grid */}
         <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-3.5 px-1">Choose a Cuisine</p>
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-3.5 px-1">{t.restaurant.chooseACuisine}</p>
           <div className="grid grid-cols-3 gap-3">
             {CATEGORIES.map(cat => (
               <button key={cat.id} onClick={() => loadCategory(cat)}
@@ -224,7 +231,7 @@ export default function RestaurantView({ hotel }: Props) {
           <p className="font-black text-slate-900 text-base truncate">
             {selectedCat?.emoji} {selectedCat?.label}
           </p>
-          <p className="text-xs text-slate-400 font-semibold">Near {hotel.city}</p>
+          <p className="text-xs text-slate-400 font-semibold">{t.restaurant.near.replace("{city}", hotel.city)}</p>
         </div>
         <button onClick={() => setShowFilters(true)}
           style={{
@@ -235,7 +242,7 @@ export default function RestaurantView({ hotel }: Props) {
             activeFilterCount > 0 ? "bg-blue-600 text-white" : "bg-white text-slate-700"
           }`}>
           <SlidersHorizontal className="w-3.5 h-3.5" />
-          Filter
+          {t.restaurant.filter}
           {activeFilterCount > 0 && <span className="bg-white/25 text-white font-black px-1.5 py-0.5 rounded-full text-[10px]">{activeFilterCount}</span>}
         </button>
       </div>
@@ -246,7 +253,7 @@ export default function RestaurantView({ hotel }: Props) {
         <input
           value={searchQ}
           onChange={e => setSearchQ(e.target.value)}
-          placeholder={`Search ${selectedCat?.label ?? "restaurants"}…`}
+          placeholder={t.restaurant.searchPlaceholder.replace("{category}", selectedCat?.label ?? t.restaurant.restaurantsFallback)}
           className="w-full bg-white rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
           style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}
         />
@@ -255,10 +262,10 @@ export default function RestaurantView({ hotel }: Props) {
       {/* Active filters chips */}
       {activeFilterCount > 0 && (
         <div className="flex gap-2 flex-wrap">
-          {filters.openNow && <Chip label="Open Now" onRemove={() => setFilters(f => ({ ...f, openNow: false }))} />}
+          {filters.openNow && <Chip label={t.restaurant.openNowChip} onRemove={() => setFilters(f => ({ ...f, openNow: false }))} />}
           {filters.distance !== 1000 && <Chip label={filters.distance === 500 ? "500m" : "2km"} onRemove={() => setFilters(f => ({ ...f, distance: 1000 }))} />}
-          {filters.familyFriendly && <Chip label="Family" onRemove={() => setFilters(f => ({ ...f, familyFriendly: false }))} />}
-          {filters.takeaway && <Chip label="Takeaway" onRemove={() => setFilters(f => ({ ...f, takeaway: false }))} />}
+          {filters.familyFriendly && <Chip label={t.restaurant.familyFriendlyChip} onRemove={() => setFilters(f => ({ ...f, familyFriendly: false }))} />}
+          {filters.takeaway && <Chip label={t.restaurant.takeawayChip} onRemove={() => setFilters(f => ({ ...f, takeaway: false }))} />}
         </div>
       )}
 
@@ -286,7 +293,7 @@ export default function RestaurantView({ hotel }: Props) {
           <p className="font-bold text-red-700 text-base">{error}</p>
           <button onClick={() => selectedCat && loadCategory(selectedCat)}
             className="mt-3 text-sm font-bold text-red-500 underline underline-offset-2">
-            Try again
+            {t.restaurant.tryAgain}
           </button>
         </div>
       )}
@@ -295,15 +302,15 @@ export default function RestaurantView({ hotel }: Props) {
       {!loading && !error && displayed.length === 0 && results.length > 0 && (
         <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
           <span className="text-5xl">{selectedCat?.emoji}</span>
-          <p className="font-black text-slate-700 text-lg mt-4">No matches</p>
-          <p className="text-sm text-slate-400 mt-1">Try removing some filters</p>
+          <p className="font-black text-slate-700 text-lg mt-4">{t.restaurant.noMatches}</p>
+          <p className="text-sm text-slate-400 mt-1">{t.restaurant.tryRemovingFilters}</p>
         </div>
       )}
       {!loading && !error && results.length === 0 && !loading && displayed.length === 0 && (
         <div className="bg-white rounded-3xl p-10 text-center" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
           <span className="text-5xl">{selectedCat?.emoji}</span>
-          <p className="font-black text-slate-700 text-lg mt-4">No {selectedCat?.label} found nearby</p>
-          <p className="text-sm text-slate-400 mt-1">Ask reception for recommendations</p>
+          <p className="font-black text-slate-700 text-lg mt-4">{t.restaurant.noResultsFound.replace("{category}", selectedCat?.label ?? "")}</p>
+          <p className="text-sm text-slate-400 mt-1">{t.restaurant.askReceptionRecommendations}</p>
         </div>
       )}
 
@@ -315,7 +322,9 @@ export default function RestaurantView({ hotel }: Props) {
       {/* Count */}
       {!loading && displayed.length > 0 && (
         <p className="text-center text-xs text-slate-300 font-semibold pt-2 pb-1">
-          Showing {displayed.length} restaurant{displayed.length !== 1 ? "s" : ""} near {hotel.city}
+          {t.restaurant.showingResults
+            .replace("{count}", String(displayed.length))
+            .replace("{city}", hotel.city)}
         </p>
       )}
 
@@ -350,7 +359,8 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 function RestaurantCard({ place, index, accentColor, accentBg }: {
   place: NearbyPlace; index: number; accentColor: string; accentBg: string;
 }) {
-  const badge = getBadge(place, index);
+  const { t } = useLanguage();
+  const badge = getBadge(place, index, t);
   const priceLabel = place.price_level != null ? (PRICE[place.price_level] ?? "") : "";
 
   return (
@@ -373,7 +383,7 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
             <div className="flex items-center gap-1.5 ml-auto">
               {place.open_now != null && (
                 <span className={`text-xs font-black px-2.5 py-1 rounded-xl shadow ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
-                  {place.open_now ? "Open" : "Closed"}
+                  {place.open_now ? t.restaurant.open : t.restaurant.closed}
                 </span>
               )}
               {priceLabel && (
@@ -454,7 +464,7 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
           style={{ touchAction: "manipulation", color: accentColor }}
           className="flex flex-col items-center justify-center gap-1.5 py-4 active:opacity-70 transition-opacity border-r border-slate-100">
           <Navigation className="w-5 h-5" />
-          <span className="text-xs font-black">Directions</span>
+          <span className="text-xs font-black">{t.restaurant.directions}</span>
         </a>
 
         {/* Call */}
@@ -463,7 +473,7 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
           style={{ touchAction: "manipulation" }}
           className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-500 active:opacity-70 transition-opacity border-r border-slate-100">
           <Phone className="w-5 h-5" />
-          <span className="text-xs font-black">Call</span>
+          <span className="text-xs font-black">{t.restaurant.call}</span>
         </a>
 
         {/* View on Maps */}
@@ -471,7 +481,7 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
           style={{ touchAction: "manipulation" }}
           className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-500 active:opacity-70 transition-opacity">
           <MapPin className="w-5 h-5" />
-          <span className="text-xs font-black">View</span>
+          <span className="text-xs font-black">{t.restaurant.view}</span>
         </a>
       </div>
     </div>
@@ -486,6 +496,7 @@ function FiltersSheet({
   onChange: (f: Filters) => void;
   onClose: () => void;
 }) {
+  const { t } = useLanguage();
   const [local, setLocal] = useState<Filters>(filters);
 
   function apply() {
@@ -513,8 +524,8 @@ function FiltersSheet({
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-2 pb-5">
           <div>
-            <p className="font-black text-slate-900 text-xl">Filter Results</p>
-            <p className="text-slate-400 text-sm mt-0.5">Customise your restaurant search</p>
+            <p className="font-black text-slate-900 text-xl">{t.restaurant.filtersSheetTitle}</p>
+            <p className="text-slate-400 text-sm mt-0.5">{t.restaurant.customiseSearch}</p>
           </div>
           <button onClick={onClose}
             className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center"
@@ -527,7 +538,7 @@ function FiltersSheet({
 
           {/* Distance */}
           <div className="bg-white rounded-3xl p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-            <p className="font-black text-slate-800 text-base mb-4">Search Radius</p>
+            <p className="font-black text-slate-800 text-base mb-4">{t.restaurant.searchRadius}</p>
             <div className="grid grid-cols-3 gap-2">
               {([500, 1000, 2000] as const).map(d => (
                 <button key={d} onClick={() => setLocal(f => ({ ...f, distance: d }))}
@@ -543,12 +554,12 @@ function FiltersSheet({
 
           {/* Toggles */}
           <div className="bg-white rounded-3xl p-5 space-y-4" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-            <p className="font-black text-slate-800 text-base">Preferences</p>
+            <p className="font-black text-slate-800 text-base">{t.restaurant.preferences}</p>
 
             {[
-              { key: "openNow"       as const, emoji: "🕐", label: "Open Now",       sub: "Show only open restaurants"    },
-              { key: "familyFriendly"as const, emoji: "👨‍👩‍👧", label: "Family Friendly", sub: "Suitable for children"         },
-              { key: "takeaway"      as const, emoji: "📦", label: "Takeaway / Delivery", sub: "Offers delivery or collection" },
+              { key: "openNow"       as const, emoji: "🕐", label: t.restaurant.openNowPrefLabel,       sub: t.restaurant.openNowPrefSub    },
+              { key: "familyFriendly"as const, emoji: "👨‍👩‍👧", label: t.restaurant.familyFriendlyLabel, sub: t.restaurant.familyFriendlySub },
+              { key: "takeaway"      as const, emoji: "📦", label: t.restaurant.takeawayLabel, sub: t.restaurant.takeawaySub },
             ].map(({ key, emoji, label, sub }) => (
               <div key={key} className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -574,12 +585,12 @@ function FiltersSheet({
           <button onClick={reset}
             style={{ touchAction: "manipulation", boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}
             className="py-4 rounded-2xl bg-white text-slate-700 font-black text-base active:scale-[0.98] transition-transform">
-            Reset
+            {t.restaurant.reset}
           </button>
           <button onClick={apply}
             style={{ touchAction: "manipulation", boxShadow: "0 6px 20px rgba(37,99,235,0.3)" }}
             className="py-4 rounded-2xl bg-blue-600 text-white font-black text-base active:scale-[0.98] transition-transform">
-            Apply Filters
+            {t.restaurant.applyFilters}
           </button>
         </div>
       </div>

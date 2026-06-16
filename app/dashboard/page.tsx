@@ -7,46 +7,31 @@ import {
   auth, hotelsApi, servicesApi, bookingsApi,
   type Hotel, type HotelService, type ServiceBooking,
 } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
 import Image from "next/image";
 import QRCode from "react-qr-code";
 
-// ── Amenity/benefit tags ──────────────────────────────────────────────────────
-const AMENITIES = [
-  { key: "reservations",    label: "Reservations",       emoji: "📅" },
-  { key: "about_hotel",     label: "About the Hotel",    emoji: "🏨" },
-  { key: "location",        label: "Location",           emoji: "📍" },
-  { key: "pre_arrival",     label: "Pre-arrival",        emoji: "⏱" },
-  { key: "weddings_events", label: "Weddings & Events",  emoji: "💒" },
-  { key: "tours_travel",    label: "Tours & Travel",     emoji: "✈️" },
-  { key: "spa",             label: "Spa",                emoji: "💆" },
-  { key: "restaurant",      label: "Restaurant",         emoji: "🍽️" },
-  { key: "day_use",         label: "Day Use",            emoji: "🌞" },
-  { key: "events",          label: "Events",             emoji: "🎤" },
-  { key: "parking",         label: "Parking",            emoji: "🅿️" },
-  { key: "night_life",      label: "Night Life",         emoji: "🌙" },
-  { key: "wifi",            label: "Free WiFi",          emoji: "📶" },
-  { key: "gym",             label: "Gym / Fitness",      emoji: "🏋️" },
-  { key: "pool",            label: "Swimming Pool",      emoji: "🏊" },
-  { key: "bar",             label: "Bar / Lounge",       emoji: "🍸" },
+// ── Amenity/benefit tags (emoji/key are non-translatable metadata; labels come from t.dashboard.amenities) ──
+const AMENITY_META = [
+  { key: "reservations",    emoji: "📅" },
+  { key: "about_hotel",     emoji: "🏨" },
+  { key: "location",        emoji: "📍" },
+  { key: "pre_arrival",     emoji: "⏱" },
+  { key: "weddings_events", emoji: "💒" },
+  { key: "tours_travel",    emoji: "✈️" },
+  { key: "spa",             emoji: "💆" },
+  { key: "restaurant",      emoji: "🍽️" },
+  { key: "day_use",         emoji: "🌞" },
+  { key: "events",          emoji: "🎤" },
+  { key: "parking",         emoji: "🅿️" },
+  { key: "night_life",      emoji: "🌙" },
+  { key: "wifi",            emoji: "📶" },
+  { key: "gym",             emoji: "🏋️" },
+  { key: "pool",            emoji: "🏊" },
+  { key: "bar",             emoji: "🍸" },
 ] as const;
 
 // ── helpers ───────────────────────────────────────────────────────────────────
-const CAT_LABEL: Record<string, string> = {
-  food:         "Food & Drinks",
-  room:         "Room Service",
-  breakfast:    "Breakfast",
-  bar:          "Bar & Drinks",
-  nightlife:    "Night Life",
-  massage:      "Massage & Wellness",
-  spa:          "Spa & Beauty",
-  gym:          "Gym & Fitness",
-  transport:    "Transport",
-  laundry:      "Laundry",
-  housekeeping: "Housekeeping",
-  concierge:    "Concierge",
-  business:     "Business Services",
-  other:        "Other",
-};
 const CAT_ICON: Record<string, LucideIcon> = {
   food:         Utensils,
   room:         BedDouble,
@@ -155,9 +140,15 @@ const SERVICE_SUGGESTIONS: SvcSug[] = [
 
 export default function HotelDashboard() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [hotel, setHotel]     = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
+
+  // ── translated category labels & amenity meta (must live inside component — hooks can't run at module scope)
+  const CAT_LABEL: Record<string, string> = t.dashboard.services.categories;
+  const AMENITIES = AMENITY_META.map(a => ({ ...a, label: t.dashboard.amenities[a.key] }));
+  const bookStatusLabels: Record<string, string> = t.dashboard.bookings.filters;
 
   // ── active section
   const [section, setSection] = useState<"qr" | "services" | "bookings" | "profile">("qr");
@@ -265,7 +256,7 @@ export default function HotelDashboard() {
   }
 
   async function saveService() {
-    if (!svcForm.name.trim() || !svcForm.price) { setSvcError("Name and price are required."); return; }
+    if (!svcForm.name.trim() || !svcForm.price) { setSvcError(t.dashboard.services.nameRequired); return; }
     setSvcSaving(true); setSvcError("");
     const fd = new FormData();
     fd.append("name",         svcForm.name.trim());
@@ -277,28 +268,28 @@ export default function HotelDashboard() {
     try {
       if (editingId) {
         await servicesApi.update(editingId, fd);
-        showToast("Service updated.");
+        showToast(t.dashboard.services.updated);
       } else {
         await servicesApi.create(fd);
-        showToast("Service added.");
+        showToast(t.dashboard.services.added);
       }
       setShowSvcForm(false);
       fetchServices();
     } catch (e) {
-      setSvcError(e instanceof Error ? e.message : "Save failed");
+      setSvcError(e instanceof Error ? e.message : t.dashboard.services.saveFailed);
     }
     setSvcSaving(false);
   }
 
   async function deleteService(id: string) {
-    if (!confirm("Delete this service?")) return;
+    if (!confirm(t.dashboard.services.deleteConfirm)) return;
     setDeletingId(id);
     try {
       await servicesApi.delete(id);
       setServices(s => s.filter(x => x.id !== id));
-      showToast("Service deleted.");
+      showToast(t.dashboard.services.deleted);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Delete failed", false);
+      showToast(e instanceof Error ? e.message : t.dashboard.services.deleteFailed, false);
     }
     setDeletingId(null);
   }
@@ -322,7 +313,7 @@ export default function HotelDashboard() {
   }
 
   async function saveProfile() {
-    if (!profileForm.name.trim()) { setProfileError("Hotel name is required."); return; }
+    if (!profileForm.name.trim()) { setProfileError(t.dashboard.profileForm.hotelNameRequired); return; }
     setProfileSaving(true); setProfileError("");
     try {
       const fd = new FormData();
@@ -345,9 +336,9 @@ export default function HotelDashboard() {
       const updated = await hotelsApi.updateProfile(fd);
       setHotel(updated);
       setShowProfileForm(false);
-      showToast("Profile saved.");
+      showToast(t.dashboard.profileForm.saved);
     } catch (e) {
-      setProfileError(e instanceof Error ? e.message : "Save failed");
+      setProfileError(e instanceof Error ? e.message : t.dashboard.profileForm.saveFailed);
     }
     setProfileSaving(false);
   }
@@ -367,19 +358,19 @@ export default function HotelDashboard() {
     try {
       const updated = await bookingsApi.updateStatus(id, data);
       setBookings(b => b.map(x => x.id === id ? updated : x));
-      showToast("Updated.");
+      showToast(t.dashboard.bookings.updated);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Update failed", false);
+      showToast(e instanceof Error ? e.message : t.dashboard.bookings.updateFailed, false);
     }
     setUpdatingId(null);
   }
 
   // ── guards ────────────────────────────────────────────────────────────────
-  if (loading) return <div className="flex items-center justify-center h-screen text-slate-400 text-sm">Loading…</div>;
+  if (loading) return <div className="flex items-center justify-center h-screen text-slate-400 text-sm">{t.dashboard.loading}</div>;
   if (!hotel) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">
-      <p className="text-slate-500">No hotel linked to your account.</p>
-      <button onClick={() => { auth.logout(); router.push("/login"); }} className="text-sm text-blue-600 hover:underline">Sign out</button>
+      <p className="text-slate-500">{t.dashboard.noHotelLinked}</p>
+      <button onClick={() => { auth.logout(); router.push("/login"); }} className="text-sm text-blue-600 hover:underline">{t.dashboard.signOut}</button>
     </div>
   );
 
@@ -423,7 +414,7 @@ export default function HotelDashboard() {
             <button onClick={() => { auth.logout(); router.push("/login"); }}
               className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
               style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.75)", border: "1px solid rgba(255,255,255,0.15)" }}>
-              Sign out
+              {t.dashboard.signOut}
             </button>
           </div>
         </div>
@@ -432,10 +423,10 @@ export default function HotelDashboard() {
         <div className="px-4 pb-3 max-w-2xl mx-auto">
           <div className="flex gap-2">
             {([
-              { key: "qr",       label: "QR Code",  emoji: "◻" },
-              { key: "services", label: "Services",  emoji: "🛎" },
-              { key: "bookings", label: "Bookings",  emoji: "📋" },
-              { key: "profile",  label: "Profile",   emoji: "🏨" },
+              { key: "qr",       label: t.dashboard.nav.qrCode,   emoji: "◻" },
+              { key: "services", label: t.dashboard.nav.services, emoji: "🛎" },
+              { key: "bookings", label: t.dashboard.nav.bookings, emoji: "📋" },
+              { key: "profile",  label: t.dashboard.nav.profile,  emoji: "🏨" },
             ] as const).map(({ key, label, emoji }) => {
               const active = section === key;
               const pendingCount = key === "bookings" ? bookings.filter(b => b.status === "pending").length : 0;
@@ -476,9 +467,9 @@ export default function HotelDashboard() {
               <div className="absolute -bottom-16 -left-8 w-40 h-40 rounded-full pointer-events-none"
                 style={{ background: "radial-gradient(circle, rgba(8,145,178,0.22) 0%, transparent 65%)" }} />
               <div className="relative z-10">
-                <p className="text-cyan-300/80 text-[11px] font-black uppercase tracking-[0.15em] mb-1">Digital Concierge</p>
-                <h2 className="font-black text-white text-xl mb-1">Guest QR Code</h2>
-                <p className="text-cyan-200/70 text-sm">Guests scan this to access your services, tours &amp; local attractions.</p>
+                <p className="text-cyan-300/80 text-[11px] font-black uppercase tracking-[0.15em] mb-1">{t.dashboard.qr.kicker}</p>
+                <h2 className="font-black text-white text-xl mb-1">{t.dashboard.qr.title}</h2>
+                <p className="text-cyan-200/70 text-sm">{t.dashboard.qr.subtitle}</p>
               </div>
             </div>
 
@@ -490,19 +481,19 @@ export default function HotelDashboard() {
                   <QRCode value={guestUrl} size={136} />
                 </div>
                 <div className="flex-1 min-w-0 text-center sm:text-left">
-                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">Concierge Link</p>
+                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">{t.dashboard.qr.linkLabel}</p>
                   <a href={guestUrl} target="_blank" rel="noopener noreferrer"
                     className="text-sm font-semibold break-all" style={{ color: "#0E7490" }}>{guestUrl}</a>
                   <div className="flex flex-col sm:flex-row gap-2.5 mt-5">
-                    <button onClick={() => { navigator.clipboard.writeText(guestUrl); showToast("Link copied!"); }}
+                    <button onClick={() => { navigator.clipboard.writeText(guestUrl); showToast(t.dashboard.qr.linkCopied); }}
                       className="flex-1 text-sm font-black py-3 rounded-2xl transition-all active:scale-95"
                       style={{ background: "#ECFEFF", color: "#0E7490", border: "1.5px solid #A5F3FC", touchAction: "manipulation" }}>
-                      Copy Link
+                      {t.dashboard.qr.copyLink}
                     </button>
                     <a href={guestUrl} target="_blank" rel="noopener noreferrer"
                       className="flex-1 text-sm font-black py-3 rounded-2xl text-center text-white transition-all active:scale-95"
                       style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}>
-                      Preview as Guest
+                      {t.dashboard.qr.previewAsGuest}
                     </a>
                   </div>
                 </div>
@@ -516,15 +507,15 @@ export default function HotelDashboard() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-black text-slate-800 text-base">Services</p>
-                <p className="text-slate-400 text-xs font-medium">{services.length} total</p>
+                <p className="font-black text-slate-800 text-base">{t.dashboard.services.title}</p>
+                <p className="text-slate-400 text-xs font-medium">{services.length} {t.dashboard.services.total}</p>
               </div>
               <button onClick={openAddService} style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}
                 className="flex items-center gap-2 text-white text-xs font-black px-4 py-3 rounded-2xl active:scale-95 transition-all">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
-                Add Service
+                {t.dashboard.services.addService}
               </button>
             </div>
 
@@ -537,11 +528,11 @@ export default function HotelDashboard() {
                 <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "#ECFEFF" }}>
                   <Bell className="w-8 h-8" style={{ color: "#0E7490" }} />
                 </div>
-                <p className="font-black text-slate-800 text-base">No services yet</p>
-                <p className="text-slate-400 text-sm mt-1.5">Add food, room service, spa, tours &amp; more.</p>
+                <p className="font-black text-slate-800 text-base">{t.dashboard.services.emptyTitle}</p>
+                <p className="text-slate-400 text-sm mt-1.5">{t.dashboard.services.emptySubtitle}</p>
                 <button onClick={openAddService} style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}
                   className="mt-5 text-white text-sm font-black px-6 py-3 rounded-2xl active:scale-95 transition-all">
-                  Add First Service
+                  {t.dashboard.services.addFirstService}
                 </button>
               </div>
             ) : (
@@ -565,7 +556,7 @@ export default function HotelDashboard() {
                         <div className="flex items-start justify-between gap-1">
                           <p className="font-black text-slate-900 text-sm leading-snug">{svc.name}</p>
                           {!svc.is_available && (
-                            <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full flex-shrink-0">Hidden</span>
+                            <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full flex-shrink-0">{t.dashboard.services.hidden}</span>
                           )}
                         </div>
                         <p className="text-[11px] font-semibold mt-0.5" style={{ color: "#0E7490" }}>{CAT_LABEL[svc.category] ?? svc.category}</p>
@@ -574,11 +565,11 @@ export default function HotelDashboard() {
                     </div>
                     <div className="flex border-t border-slate-100">
                       <button onClick={() => openEditService(svc)} style={{ touchAction: "manipulation", color: "#0E7490" }}
-                        className="flex-1 py-3 text-xs font-black hover:bg-cyan-50 transition-colors">Edit</button>
+                        className="flex-1 py-3 text-xs font-black hover:bg-cyan-50 transition-colors">{t.dashboard.services.edit}</button>
                       <button onClick={() => deleteService(svc.id)} disabled={deletingId === svc.id}
                         style={{ touchAction: "manipulation" }}
                         className="flex-1 py-3 text-xs font-black text-red-500 hover:bg-red-50 transition-colors border-l border-slate-100 disabled:opacity-50">
-                        {deletingId === svc.id ? "Deleting…" : "Delete"}
+                        {deletingId === svc.id ? t.dashboard.services.deleting : t.dashboard.services.delete}
                       </button>
                     </div>
                   </div>
@@ -594,24 +585,24 @@ export default function HotelDashboard() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-black text-slate-800 text-base">Bookings</p>
-                <p className="text-slate-400 text-xs font-medium">{bookings.length} total</p>
+                <p className="font-black text-slate-800 text-base">{t.dashboard.bookings.title}</p>
+                <p className="text-slate-400 text-xs font-medium">{bookings.length} {t.dashboard.bookings.total}</p>
               </div>
               <button onClick={fetchBookings}
                 className="text-xs font-black px-3 py-2 rounded-xl bg-white active:scale-95 transition-all"
                 style={{ touchAction: "manipulation", color: "#0E7490", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                ↻ Refresh
+                ↻ {t.dashboard.bookings.refresh}
               </button>
             </div>
 
             {/* Filter chips */}
             <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
               {[
-                { k: "all",       label: "All"       },
-                { k: "pending",   label: "Pending"   },
-                { k: "confirmed", label: "Confirmed" },
-                { k: "completed", label: "Completed" },
-                { k: "cancelled", label: "Cancelled" },
+                { k: "all",       label: t.dashboard.bookings.filters.all       },
+                { k: "pending",   label: t.dashboard.bookings.filters.pending   },
+                { k: "confirmed", label: t.dashboard.bookings.filters.confirmed },
+                { k: "completed", label: t.dashboard.bookings.filters.completed },
+                { k: "cancelled", label: t.dashboard.bookings.filters.cancelled },
               ].map(({ k, label }) => (
                 <button key={k} onClick={() => setBookFilter(k)}
                   className={`flex-shrink-0 text-xs font-black px-4 py-2 rounded-xl transition-all active:scale-95 ${
@@ -635,8 +626,8 @@ export default function HotelDashboard() {
                 <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style={{ background: "#ECFEFF" }}>
                   <ClipboardList className="w-8 h-8" style={{ color: "#0E7490" }} />
                 </div>
-                <p className="font-black text-slate-800 text-base">No bookings yet</p>
-                <p className="text-slate-400 text-sm mt-1.5">Guest bookings will appear here.</p>
+                <p className="font-black text-slate-800 text-base">{t.dashboard.bookings.emptyTitle}</p>
+                <p className="text-slate-400 text-sm mt-1.5">{t.dashboard.bookings.emptySubtitle}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -648,14 +639,14 @@ export default function HotelDashboard() {
                           <p className="font-black text-slate-900 text-sm mb-1.5">{b.service_name}</p>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl capitalize ${BOOKING_STATUS_COLORS[b.status] ?? ""}`}>
-                              {b.status}
+                              {bookStatusLabels[b.status] ?? b.status}
                             </span>
                             <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl ${PAY_STATUS_COLORS[b.payment_status] ?? ""}`}>
-                              {b.payment_status === "paid" ? "Paid" : b.payment_method === "cod" ? "Cash on Delivery" : "Unpaid"}
+                              {b.payment_status === "paid" ? t.dashboard.bookings.paid : b.payment_method === "cod" ? t.dashboard.bookings.cashOnDelivery : t.dashboard.bookings.unpaid}
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-2 font-semibold">{b.guest_name}
-                            {b.guest_room && <span className="text-slate-400 font-normal"> · Room {b.guest_room}</span>}
+                            {b.guest_room && <span className="text-slate-400 font-normal"> · {t.dashboard.bookings.roomLabel} {b.guest_room}</span>}
                             {b.guest_phone && <span className="text-slate-400 font-normal"> · {b.guest_phone}</span>}
                           </p>
                           {b.notes && <p className="text-xs text-slate-400 mt-1 italic">&ldquo;{b.notes}&rdquo;</p>}
@@ -676,27 +667,27 @@ export default function HotelDashboard() {
                           <button onClick={() => updateBooking(b.id, { status: "confirmed" })}
                             disabled={updatingId === b.id} style={{ touchAction: "manipulation", color: "#0E7490" }}
                             className="flex-1 py-3 text-xs font-black hover:bg-cyan-50 disabled:opacity-50 transition-colors">
-                            Confirm
+                            {t.dashboard.bookings.confirm}
                           </button>
                         )}
                         {b.status === "confirmed" && (
                           <button onClick={() => updateBooking(b.id, { status: "completed" })}
                             disabled={updatingId === b.id} style={{ touchAction: "manipulation" }}
                             className="flex-1 py-3 text-xs font-black text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
-                            Mark Done
+                            {t.dashboard.bookings.markDone}
                           </button>
                         )}
                         {b.payment_status === "pending" && b.payment_method !== "stripe" && (
                           <button onClick={() => updateBooking(b.id, { payment_status: "paid" })}
                             disabled={updatingId === b.id} style={{ touchAction: "manipulation" }}
                             className="flex-1 py-3 text-xs font-black text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors">
-                            Mark Paid
+                            {t.dashboard.bookings.markPaid}
                           </button>
                         )}
                         <button onClick={() => updateBooking(b.id, { status: "cancelled" })}
                           disabled={updatingId === b.id} style={{ touchAction: "manipulation" }}
                           className="flex-1 py-3 text-xs font-black text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
-                          Cancel
+                          {t.dashboard.bookings.cancel}
                         </button>
                       </div>
                     )}
@@ -740,21 +731,21 @@ export default function HotelDashboard() {
                   className="relative z-10 flex items-center gap-1.5 text-white text-xs font-black px-3.5 py-2.5 rounded-xl transition-all active:scale-95"
                   style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.22)", touchAction: "manipulation" }}>
                   <User className="w-3.5 h-3.5" />
-                  Edit Profile
+                  {t.dashboard.profile.editProfile}
                 </button>
               </div>
 
               {/* Info rows */}
               <div style={{ background: "#F0F8FA" }} className="px-4 py-4 grid grid-cols-1 gap-2.5">
                 {[
-                  { label: "Phone",     val: hotel.phone             || "—", Icon: Phone,      color: "#0E7490", bg: "#ECFEFF" },
-                  { label: "Email",     val: hotel.email             || "—", Icon: Mail,       color: "#0E7490", bg: "#ECFEFF" },
-                  { label: "WhatsApp",  val: hotel.whatsapp_number   || "—", Icon: MessageCircle, color: "#059669", bg: "#ECFDF5" },
-                  { label: "Address",   val: hotel.address           || "—", Icon: MapPin,     color: "#7C3AED", bg: "#F5F3FF" },
-                  { label: "Check-in",  val: hotel.check_in_time     || "14:00", Icon: LogIn,  color: "#0E7490", bg: "#ECFEFF" },
-                  { label: "Check-out", val: hotel.check_out_time    || "11:00", Icon: LogOut, color: "#B45309", bg: "#FFFBEB" },
-                  { label: "Hours",     val: hotel.is_24_7 ? "24/7 Always Open" : `${hotel.open_time || "09:00"} – ${hotel.close_time || "22:00"}`, Icon: Clock, color: "#0E7490", bg: "#ECFEFF" },
-                  { label: "WiFi",      val: hotel.wifi_info         || "Ask Reception", Icon: Wifi, color: "#0E7490", bg: "#ECFEFF" },
+                  { label: t.dashboard.profile.phone,     val: hotel.phone             || "—", Icon: Phone,      color: "#0E7490", bg: "#ECFEFF" },
+                  { label: t.dashboard.profile.email,     val: hotel.email             || "—", Icon: Mail,       color: "#0E7490", bg: "#ECFEFF" },
+                  { label: t.dashboard.profile.whatsapp,  val: hotel.whatsapp_number   || "—", Icon: MessageCircle, color: "#059669", bg: "#ECFDF5" },
+                  { label: t.dashboard.profile.address,   val: hotel.address           || "—", Icon: MapPin,     color: "#7C3AED", bg: "#F5F3FF" },
+                  { label: t.dashboard.profile.checkIn,   val: hotel.check_in_time     || "14:00", Icon: LogIn,  color: "#0E7490", bg: "#ECFEFF" },
+                  { label: t.dashboard.profile.checkOut,  val: hotel.check_out_time    || "11:00", Icon: LogOut, color: "#B45309", bg: "#FFFBEB" },
+                  { label: t.dashboard.profile.hours,     val: hotel.is_24_7 ? t.dashboard.profile.always247 : `${hotel.open_time || "09:00"} – ${hotel.close_time || "22:00"}`, Icon: Clock, color: "#0E7490", bg: "#ECFEFF" },
+                  { label: t.dashboard.profile.wifi,      val: hotel.wifi_info         || t.dashboard.profile.askReception, Icon: Wifi, color: "#0E7490", bg: "#ECFEFF" },
                 ].map(({ label, val, Icon, color, bg }) => (
                   <div key={label} className="flex items-center gap-3 bg-white rounded-2xl px-3.5 py-3"
                     style={{ boxShadow: "0 1px 6px rgba(14,116,144,0.08)" }}>
@@ -777,7 +768,7 @@ export default function HotelDashboard() {
                 <div className="px-4 py-3 flex items-center gap-2"
                   style={{ background: "linear-gradient(135deg, #083344 0%, #0E7490 100%)" }}>
                   <span className="text-base">🏨</span>
-                  <p className="text-xs font-black text-white/90 uppercase tracking-widest">About</p>
+                  <p className="text-xs font-black text-white/90 uppercase tracking-widest">{t.dashboard.profile.about}</p>
                 </div>
                 <div className="bg-white px-5 py-4">
                   <p className="text-sm text-slate-600 leading-relaxed">{hotel.description}</p>
@@ -791,14 +782,14 @@ export default function HotelDashboard() {
                 style={{ background: "linear-gradient(135deg, #083344 0%, #0E7490 100%)" }}>
                 <div className="flex items-center gap-2">
                   <span className="text-base">✨</span>
-                  <p className="text-xs font-black text-white/90 uppercase tracking-widest">Services &amp; Benefits</p>
+                  <p className="text-xs font-black text-white/90 uppercase tracking-widest">{t.dashboard.profile.servicesAndBenefits}</p>
                 </div>
                 <button onClick={openProfileForm} style={{ touchAction: "manipulation", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.28)" }}
-                  className="text-xs text-white font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-transform">Edit</button>
+                  className="text-xs text-white font-bold px-3 py-1.5 rounded-xl active:scale-95 transition-transform">{t.dashboard.services.edit}</button>
               </div>
               <div className="bg-white px-5 py-4">
                 {(hotel.amenities ?? []).length === 0 ? (
-                  <p className="text-xs text-slate-400">No services selected yet. <button onClick={openProfileForm} style={{ touchAction: "manipulation" }} className="text-cyan-600 font-bold hover:underline">Add now</button></p>
+                  <p className="text-xs text-slate-400">{t.dashboard.profile.noServicesYet} <button onClick={openProfileForm} style={{ touchAction: "manipulation" }} className="text-cyan-600 font-bold hover:underline">{t.dashboard.profile.addNow}</button></p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {(hotel.amenities ?? []).map(key => {
@@ -828,13 +819,13 @@ export default function HotelDashboard() {
             maxHeight: "94vh", overflowY: "auto" }}>
             <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
             <div className="px-5 pb-2">
-              <h3 className="font-bold text-slate-900 text-base mb-4">Edit Hotel Profile</h3>
+              <h3 className="font-bold text-slate-900 text-base mb-4">{t.dashboard.profileForm.title}</h3>
 
               <div className="space-y-4">
 
                 {/* Logo upload */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">Hotel Logo</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">{t.dashboard.profileForm.hotelLogo}</label>
                   <div className="flex items-center gap-3">
                     <div onClick={() => logoRef.current?.click()}
                       className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-400 transition-colors flex-shrink-0">
@@ -846,7 +837,7 @@ export default function HotelDashboard() {
                     </div>
                     <button type="button" onClick={() => logoRef.current?.click()}
                       className="text-xs font-semibold text-blue-600 hover:underline">
-                      {profileForm.logoPreview ? "Change logo" : "Upload logo"}
+                      {profileForm.logoPreview ? t.dashboard.profileForm.changeLogo : t.dashboard.profileForm.uploadLogo}
                     </button>
                     <input ref={logoRef} type="file" accept="image/*" className="hidden"
                       onChange={e => {
@@ -859,84 +850,84 @@ export default function HotelDashboard() {
                 {/* Name + City */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Hotel Name <span className="text-red-400">*</span></label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.hotelName} <span className="text-red-400">*</span></label>
                     <input value={profileForm.name} onChange={e => setProfileForm(s => ({ ...s, name: e.target.value }))}
-                      placeholder="The Grand Hotel"
+                      placeholder={t.dashboard.profileForm.hotelNamePlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">City</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.city}</label>
                     <input value={profileForm.city} onChange={e => setProfileForm(s => ({ ...s, city: e.target.value }))}
-                      placeholder="London"
+                      placeholder={t.dashboard.profileForm.cityPlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                 </div>
 
                 {/* About */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">About / Description</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.aboutDescription}</label>
                   <textarea value={profileForm.description} onChange={e => setProfileForm(s => ({ ...s, description: e.target.value }))}
-                    rows={3} placeholder="A short description of your hotel…"
+                    rows={3} placeholder={t.dashboard.profileForm.aboutPlaceholder}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all resize-none" />
                 </div>
 
                 {/* Address */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Address</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.address}</label>
                   <input value={profileForm.address} onChange={e => setProfileForm(s => ({ ...s, address: e.target.value }))}
-                    placeholder="123 High Street, London"
+                    placeholder={t.dashboard.profileForm.addressPlaceholder}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                 </div>
 
                 {/* Phone + Email */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Phone</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.phone}</label>
                     <input value={profileForm.phone} onChange={e => setProfileForm(s => ({ ...s, phone: e.target.value }))}
-                      placeholder="+44 20 1234 5678"
+                      placeholder={t.dashboard.profileForm.phonePlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Email</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.email}</label>
                     <input type="email" value={profileForm.email} onChange={e => setProfileForm(s => ({ ...s, email: e.target.value }))}
-                      placeholder="info@hotel.com"
+                      placeholder={t.dashboard.profileForm.emailPlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                 </div>
 
                 {/* WhatsApp */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">WhatsApp Number</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.whatsappNumber}</label>
                   <input value={profileForm.whatsapp_number} onChange={e => setProfileForm(s => ({ ...s, whatsapp_number: e.target.value }))}
-                    placeholder="+44 7700 000000"
+                    placeholder={t.dashboard.profileForm.whatsappPlaceholder}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                 </div>
 
                 {/* Check-in / Check-out / WiFi */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Check-in</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.checkIn}</label>
                     <input value={profileForm.check_in_time} onChange={e => setProfileForm(s => ({ ...s, check_in_time: e.target.value }))}
-                      placeholder="14:00"
+                      placeholder={t.dashboard.profileForm.checkInPlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Check-out</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.checkOut}</label>
                     <input value={profileForm.check_out_time} onChange={e => setProfileForm(s => ({ ...s, check_out_time: e.target.value }))}
-                      placeholder="11:00"
+                      placeholder={t.dashboard.profileForm.checkOutPlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">WiFi Info</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.profileForm.wifiInfo}</label>
                     <input value={profileForm.wifi_info} onChange={e => setProfileForm(s => ({ ...s, wifi_info: e.target.value }))}
-                      placeholder="Password123"
+                      placeholder={t.dashboard.profileForm.wifiPlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                 </div>
 
                 {/* Opening Hours */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-2">Opening Hours</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">{t.dashboard.profileForm.openingHours}</label>
                   {/* 24/7 toggle */}
                   <button type="button"
                     onClick={() => setProfileForm(s => ({ ...s, is_24_7: !s.is_24_7 }))}
@@ -951,12 +942,12 @@ export default function HotelDashboard() {
                     </div>
                     <div className="text-left">
                       <p className={`text-sm font-bold ${profileForm.is_24_7 ? "text-emerald-700" : "text-slate-600"}`}>
-                        Open 24 / 7
+                        {t.dashboard.profileForm.open247}
                       </p>
-                      <p className="text-[11px] text-slate-400">Always open — no closing time</p>
+                      <p className="text-[11px] text-slate-400">{t.dashboard.profileForm.open247Hint}</p>
                     </div>
                     {profileForm.is_24_7 && (
-                      <span className="ml-auto text-[10px] font-black bg-emerald-500 text-white px-2.5 py-1 rounded-full">Active</span>
+                      <span className="ml-auto text-[10px] font-black bg-emerald-500 text-white px-2.5 py-1 rounded-full">{t.dashboard.profileForm.active}</span>
                     )}
                   </button>
 
@@ -964,7 +955,7 @@ export default function HotelDashboard() {
                   {!profileForm.is_24_7 && (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-slate-500 block mb-1">Opens at</label>
+                        <label className="text-xs font-bold text-slate-500 block mb-1">{t.dashboard.profileForm.opensAt}</label>
                         <div className="relative">
                           <input
                             type="time"
@@ -986,7 +977,7 @@ export default function HotelDashboard() {
                         )}
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-slate-500 block mb-1">Closes at</label>
+                        <label className="text-xs font-bold text-slate-500 block mb-1">{t.dashboard.profileForm.closesAt}</label>
                         <div className="relative">
                           <input
                             type="time"
@@ -1012,7 +1003,7 @@ export default function HotelDashboard() {
 
                 {/* Services & Benefits */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-2">Services &amp; Benefits</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">{t.dashboard.profileForm.servicesAndBenefits}</label>
                   <div className="flex flex-wrap gap-2">
                     {AMENITIES.map(({ key, label, emoji }) => {
                       const active = profileForm.amenities.includes(key);
@@ -1039,11 +1030,11 @@ export default function HotelDashboard() {
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setShowProfileForm(false)} disabled={profileSaving}
                   className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl text-sm">
-                  Cancel
+                  {t.dashboard.profileForm.cancel}
                 </button>
                 <button onClick={saveProfile} disabled={profileSaving}
                   className="flex-1 bg-blue-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl text-sm">
-                  {profileSaving ? "Saving…" : "Save Profile"}
+                  {profileSaving ? t.dashboard.profileForm.saving : t.dashboard.profileForm.save}
                 </button>
               </div>
             </div>
@@ -1061,12 +1052,12 @@ export default function HotelDashboard() {
             maxHeight: "92vh", overflowY: "auto" }}>
             <div className="flex justify-center pt-3 pb-2"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
             <div className="px-5 pb-2">
-              <h3 className="font-bold text-slate-900 text-base mb-4">{editingId ? "Edit Service" : "Add Service"}</h3>
+              <h3 className="font-bold text-slate-900 text-base mb-4">{editingId ? t.dashboard.serviceForm.editTitle : t.dashboard.serviceForm.addTitle}</h3>
 
               <div className="space-y-3">
                 {/* Image upload */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1.5">Photo</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1.5">{t.dashboard.serviceForm.photo}</label>
                   <div className="flex items-center gap-3">
                     <div onClick={() => imgRef.current?.click()}
                       className="w-16 h-16 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer overflow-hidden hover:border-blue-400 transition-colors flex-shrink-0">
@@ -1080,7 +1071,7 @@ export default function HotelDashboard() {
                     </div>
                     <button type="button" onClick={() => imgRef.current?.click()}
                       className="text-xs font-semibold text-blue-600 hover:underline">
-                      {svcForm.previewUrl ? "Change photo" : "Upload photo"}
+                      {svcForm.previewUrl ? t.dashboard.serviceForm.changePhoto : t.dashboard.serviceForm.uploadPhoto}
                     </button>
                     <input ref={imgRef} type="file" accept="image/*" className="hidden"
                       onChange={e => {
@@ -1092,13 +1083,13 @@ export default function HotelDashboard() {
 
                 {/* Name + Suggestions */}
                 <div className="relative">
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Name <span className="text-red-400">*</span></label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.serviceForm.name} <span className="text-red-400">*</span></label>
                   <input
                     value={svcForm.name}
                     onChange={e => { setSvcForm(s => ({ ...s, name: e.target.value })); setShowSug(true); }}
                     onFocus={() => setShowSug(true)}
                     onBlur={() => setTimeout(() => setShowSug(false), 160)}
-                    placeholder="Type to search or pick a suggestion…"
+                    placeholder={t.dashboard.serviceForm.namePlaceholder}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all"
                   />
                   {showSug && (() => {
@@ -1110,7 +1101,7 @@ export default function HotelDashboard() {
                     return (
                       <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
                         <p className="px-4 pt-2.5 pb-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          {q ? "Matching services" : `Suggestions for ${CAT_LABEL[svcForm.category] ?? svcForm.category}`}
+                          {q ? t.dashboard.serviceForm.matchingServices : `${t.dashboard.serviceForm.suggestionsFor} ${CAT_LABEL[svcForm.category] ?? svcForm.category}`}
                         </p>
                         {sugs.map((s, i) => {
                           const Icon = CAT_ICON[s.category] ?? Sparkles;
@@ -1141,16 +1132,16 @@ export default function HotelDashboard() {
 
                 {/* Description */}
                 <div>
-                  <label className="text-xs font-bold text-slate-600 block mb-1">Description</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.serviceForm.description}</label>
                   <textarea value={svcForm.description} onChange={e => setSvcForm(s => ({ ...s, description: e.target.value }))}
-                    rows={2} placeholder="Brief description…"
+                    rows={2} placeholder={t.dashboard.serviceForm.descriptionPlaceholder}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all resize-none" />
                 </div>
 
                 {/* Category + Price row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Category</label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.serviceForm.category}</label>
                     <select value={svcForm.category} onChange={e => setSvcForm(s => ({ ...s, category: e.target.value }))}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all">
                       {Object.entries(CAT_LABEL).map(([k, v]) => (
@@ -1159,10 +1150,10 @@ export default function HotelDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-slate-600 block mb-1">Price (£) <span className="text-red-400">*</span></label>
+                    <label className="text-xs font-bold text-slate-600 block mb-1">{t.dashboard.serviceForm.price} <span className="text-red-400">*</span></label>
                     <input type="number" min="0" step="0.01" value={svcForm.price}
                       onChange={e => setSvcForm(s => ({ ...s, price: e.target.value }))}
-                      placeholder="9.99"
+                      placeholder={t.dashboard.serviceForm.pricePlaceholder}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 transition-all" />
                   </div>
                 </div>
@@ -1171,7 +1162,7 @@ export default function HotelDashboard() {
                 {svcForm.category === "food" && (
                   <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-2.5 flex items-center gap-2">
                     <Banknote className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                    <p className="text-xs text-orange-700 font-medium">Food items use <strong>Cash on Delivery</strong> automatically.</p>
+                    <p className="text-xs text-orange-700 font-medium">{t.dashboard.serviceForm.foodPaymentHint} <strong>{t.dashboard.serviceForm.cashOnDelivery}</strong> {t.dashboard.serviceForm.foodPaymentHintSuffix}</p>
                   </div>
                 )}
 
@@ -1181,7 +1172,7 @@ export default function HotelDashboard() {
                   <div className={`w-10 h-5 rounded-full transition-colors relative ${svcForm.is_available ? "bg-blue-600" : "bg-slate-200"}`}>
                     <div className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform shadow ${svcForm.is_available ? "translate-x-5" : "translate-x-0.5"}`} />
                   </div>
-                  <span className="text-sm font-semibold text-slate-700">Available to guests</span>
+                  <span className="text-sm font-semibold text-slate-700">{t.dashboard.serviceForm.availableToGuests}</span>
                 </button>
               </div>
 
@@ -1194,11 +1185,11 @@ export default function HotelDashboard() {
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setShowSvcForm(false)} disabled={svcSaving}
                   className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl text-sm">
-                  Cancel
+                  {t.dashboard.serviceForm.cancel}
                 </button>
                 <button onClick={saveService} disabled={svcSaving}
                   className="flex-1 bg-blue-600 disabled:opacity-60 text-white font-bold py-3.5 rounded-2xl text-sm">
-                  {svcSaving ? "Saving…" : editingId ? "Save Changes" : "Add Service"}
+                  {svcSaving ? t.dashboard.serviceForm.saving : editingId ? t.dashboard.serviceForm.save : t.dashboard.serviceForm.add}
                 </button>
               </div>
             </div>

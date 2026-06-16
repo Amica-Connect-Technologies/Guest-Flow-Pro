@@ -6,13 +6,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileHeader from "@/components/MobileHeader";
 import BottomNav from "@/components/BottomNav";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const languages = [
   { code: "EN", label: "English", flag: "🇬🇧" },
   { code: "IT", label: "Italiano", flag: "🇮🇹" },
-];
-
-type Lang = (typeof languages)[number];
+] as const;
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -32,7 +31,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   const showFooter = !isDashAdmin && !isHotelPage && !isAuthPage;
 
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [activeLang, setActiveLang] = useState<Lang>(languages[0]);
+  const { lang, setLang } = useLanguage();
+  const activeLang = languages.find((l) => l.code.toLowerCase() === lang) ?? languages[0];
 
   return (
     <>
@@ -95,15 +95,15 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
             </p>
 
             <div className="px-4 pt-3 space-y-2">
-              {languages.map((lang) => {
-                const active = activeLang.code === lang.code;
+              {languages.map((opt) => {
+                const active = activeLang.code === opt.code;
                 return (
                   <button
-                    key={lang.code}
+                    key={opt.code}
                     type="button"
                     style={{ touchAction: "manipulation" }}
                     onClick={() => {
-                      setActiveLang(lang);
+                      setLang(opt.code.toLowerCase() as "en" | "it");
                       setSheetOpen(false);
                     }}
                     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-colors ${
@@ -112,16 +112,16 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                         : "bg-slate-50 border border-slate-100"
                     }`}
                   >
-                    <span className="text-3xl leading-none">{lang.flag}</span>
+                    <span className="text-3xl leading-none">{opt.flag}</span>
                     <div className="text-left flex-1">
                       <p
                         className={`font-bold text-base ${
                           active ? "text-blue-700" : "text-slate-900"
                         }`}
                       >
-                        {lang.label}
+                        {opt.label}
                       </p>
-                      <p className="text-sm text-slate-400 mt-0.5">{lang.code}</p>
+                      <p className="text-sm text-slate-400 mt-0.5">{opt.code}</p>
                     </div>
                     {active && (
                       <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">

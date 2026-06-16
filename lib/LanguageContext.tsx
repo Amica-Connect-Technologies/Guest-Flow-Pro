@@ -1,9 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { translations, type Lang } from "./i18n";
-
-type Translations = typeof translations.en | typeof translations.it;
+import { translations, type Lang, type Translations } from "./i18n";
 
 interface LanguageContextType {
   lang: Lang;
@@ -18,15 +16,12 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
+  const [lang, setLangState] = useState<Lang>("it");
 
   useEffect(() => {
     const stored = localStorage.getItem("lang") as Lang | null;
     if (stored === "it" || stored === "en") {
       setLangState(stored);
-    } else {
-      const browserLang = navigator.language || "";
-      setLangState(browserLang.toLowerCase().startsWith("it") ? "it" : "en");
     }
   }, []);
 

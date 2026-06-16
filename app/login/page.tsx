@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/api";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +26,7 @@ export default function LoginPage() {
       const { user } = await auth.login(email, password);
       router.push(user.role === "admin" ? "/admin" : "/dashboard");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Login failed";
+      const msg = err instanceof Error ? err.message : t.login.loginFailed;
       if (msg.startsWith("pending_approval:")) {
         setIsPending(true);
         setError(msg.replace("pending_approval:", ""));
@@ -55,15 +57,15 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Digital Concierge</h1>
-          <p className="text-blue-300 text-sm mt-1">Admin &amp; Partner Portal</p>
+          <h1 className="text-2xl font-bold text-white">{t.login.brandTitle}</h1>
+          <p className="text-blue-300 text-sm mt-1">{t.login.brandSubtitle}</p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
           {/* Card header */}
           <div className="px-8 pt-8 pb-6">
-            <h2 className="text-xl font-bold text-slate-900">Sign In</h2>
-            <p className="text-slate-500 text-sm mt-1">Enter your credentials to continue</p>
+            <h2 className="text-xl font-bold text-slate-900">{t.login.signIn}</h2>
+            <p className="text-slate-500 text-sm mt-1">{t.login.signInSubtitle}</p>
           </div>
 
           {/* ── Pending approval notice ── */}
@@ -76,17 +78,17 @@ export default function LoginPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-amber-800">Account pending approval</p>
+                  <p className="text-sm font-bold text-amber-800">{t.login.pendingTitle}</p>
                   <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">{error}</p>
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-amber-200">
-                <p className="text-[11px] text-amber-600 font-semibold uppercase tracking-wide mb-2">What to do next</p>
+                <p className="text-[11px] text-amber-600 font-semibold uppercase tracking-wide mb-2">{t.login.whatToDoNext}</p>
                 <div className="space-y-1.5">
                   {[
-                    "Check your email for a confirmation",
-                    "Our team reviews applications within 24 hours",
-                    "You'll receive an email when approved",
+                    t.login.pendingStep1,
+                    t.login.pendingStep2,
+                    t.login.pendingStep3,
                   ].map((s, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <div className="w-4 h-4 rounded-full bg-amber-200 text-amber-800 text-[9px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</div>
@@ -111,20 +113,20 @@ export default function LoginPage() {
           {/* ── Form ── */}
           <form onSubmit={handleLogin} className="px-8 pb-8 space-y-4 pt-2">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">{t.login.emailLabel}</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(""); setIsPending(false); }}
                 required
-                placeholder="you@yourhotel.com"
+                placeholder={t.login.emailPlaceholder}
                 className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 bg-slate-50 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-slate-700">Password</label>
+                <label className="text-xs font-semibold text-slate-700">{t.login.passwordLabel}</label>
               </div>
               <div className="relative">
                 <input
@@ -165,16 +167,16 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                   </svg>
-                  Signing in…
+                  {t.login.signingIn}
                 </>
-              ) : "Sign In"}
+              ) : t.login.signIn}
             </button>
 
             <div className="text-center pt-2 border-t border-slate-100">
               <p className="text-xs text-slate-400">
-                Not registered yet?{" "}
+                {t.login.notRegistered}{" "}
                 <Link href="/register" className="text-blue-600 font-semibold hover:underline">
-                  Create an account
+                  {t.login.createAccount}
                 </Link>
               </p>
             </div>

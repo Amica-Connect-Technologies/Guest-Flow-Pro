@@ -15,25 +15,26 @@ import {
   type Hotel, type Tour, type HotelService, type NearbyPlace,
 } from "@/lib/api";
 import RestaurantView from "@/components/RestaurantView";
+import { useLanguage } from "@/lib/LanguageContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
-const CAT_META: Record<string, { label: string; Icon: LucideIcon; color: string; light: string }> = {
-  food:         { label: "Food & Drinks",      Icon: Utensils,      color: "#F97316", light: "#FFF7ED" },
-  room:         { label: "Room Service",        Icon: BedDouble,     color: "#8B5CF6", light: "#F5F3FF" },
-  breakfast:    { label: "Breakfast",           Icon: Coffee,        color: "#D97706", light: "#FFFBEB" },
-  bar:          { label: "Bar & Drinks",        Icon: Wine,          color: "#DC2626", light: "#FEF2F2" },
-  nightlife:    { label: "Night Life",          Icon: Moon,          color: "#7C3AED", light: "#F5F3FF" },
-  massage:      { label: "Massage & Wellness",  Icon: Heart,         color: "#DB2777", light: "#FDF2F8" },
-  spa:          { label: "Spa & Beauty",        Icon: FlameKindling, color: "#0891B2", light: "#ECFEFF" },
-  gym:          { label: "Gym & Fitness",       Icon: Dumbbell,      color: "#16A34A", light: "#F0FDF4" },
-  transport:    { label: "Transport",           Icon: Car,           color: "#2563EB", light: "#EFF6FF" },
-  laundry:      { label: "Laundry",             Icon: Shirt,         color: "#0284C7", light: "#F0F9FF" },
-  housekeeping: { label: "Housekeeping",        Icon: Home,          color: "#059669", light: "#ECFDF5" },
-  concierge:    { label: "Concierge",           Icon: Bell,          color: "#9333EA", light: "#FAF5FF" },
-  business:     { label: "Business Services",   Icon: Briefcase,     color: "#374151", light: "#F9FAFB" },
-  tour:         { label: "Tours",               Icon: Map,           color: "#3B82F6", light: "#EFF6FF" },
-  activity:     { label: "Activities",          Icon: Target,        color: "#10B981", light: "#ECFDF5" },
-  other:        { label: "Other",               Icon: Sparkles,      color: "#6B7280", light: "#F9FAFB" },
+const CAT_ICONS: Record<string, { Icon: LucideIcon; color: string; light: string }> = {
+  food:         { Icon: Utensils,      color: "#F97316", light: "#FFF7ED" },
+  room:         { Icon: BedDouble,     color: "#8B5CF6", light: "#F5F3FF" },
+  breakfast:    { Icon: Coffee,        color: "#D97706", light: "#FFFBEB" },
+  bar:          { Icon: Wine,          color: "#DC2626", light: "#FEF2F2" },
+  nightlife:    { Icon: Moon,          color: "#7C3AED", light: "#F5F3FF" },
+  massage:      { Icon: Heart,         color: "#DB2777", light: "#FDF2F8" },
+  spa:          { Icon: FlameKindling, color: "#0891B2", light: "#ECFEFF" },
+  gym:          { Icon: Dumbbell,      color: "#16A34A", light: "#F0FDF4" },
+  transport:    { Icon: Car,           color: "#2563EB", light: "#EFF6FF" },
+  laundry:      { Icon: Shirt,         color: "#0284C7", light: "#F0F9FF" },
+  housekeeping: { Icon: Home,          color: "#059669", light: "#ECFDF5" },
+  concierge:    { Icon: Bell,          color: "#9333EA", light: "#FAF5FF" },
+  business:     { Icon: Briefcase,     color: "#374151", light: "#F9FAFB" },
+  tour:         { Icon: Map,           color: "#3B82F6", light: "#EFF6FF" },
+  activity:     { Icon: Target,        color: "#10B981", light: "#ECFDF5" },
+  other:        { Icon: Sparkles,      color: "#6B7280", light: "#F9FAFB" },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +55,13 @@ function mkSheet(svc: HotelService): Sheet {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function ConciergeView({ hotelId }: { hotelId: string }) {
+  const { t } = useLanguage();
+  const CAT_META: Record<string, { label: string; Icon: LucideIcon; color: string; light: string }> = Object.fromEntries(
+    Object.entries(CAT_ICONS).map(([key, val]) => [
+      key,
+      { ...val, label: t.concierge.categories[key as keyof typeof t.concierge.categories] ?? key },
+    ])
+  );
   const [hotel,    setHotel]    = useState<Hotel | null>(null);
   const [tours,    setTours]    = useState<Tour[]>([]);
   const [services, setServices] = useState<HotelService[]>([]);
@@ -109,7 +117,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
   async function confirmBooking() {
     if (!sheet) return;
-    if (!sheet.name.trim()) { setSheet({ ...sheet, error: "Please enter your name." }); return; }
+    if (!sheet.name.trim()) { setSheet({ ...sheet, error: t.concierge.pleaseEnterName }); return; }
     setSheet({ ...sheet, submitting: true, error: "" });
     try {
       await bookingsApi.create({
@@ -119,7 +127,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       });
       setSheet({ ...sheet, done: true, submitting: false });
     } catch (e) {
-      setSheet({ ...sheet, error: e instanceof Error ? e.message : "Booking failed", submitting: false });
+      setSheet({ ...sheet, error: e instanceof Error ? e.message : t.concierge.bookingFailed, submitting: false });
     }
   }
 
@@ -127,7 +135,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   if (loading) return (
     <div className="min-h-screen bg-[#F0F2F5] flex flex-col items-center justify-center gap-4">
       <div className="w-12 h-12 rounded-full border-[3px] border-blue-600 border-t-transparent animate-spin" />
-      <p className="text-base text-slate-400 font-semibold">Loading…</p>
+      <p className="text-base text-slate-400 font-semibold">{t.concierge.loading}</p>
     </div>
   );
   if (notFound || !hotel) return (
@@ -135,8 +143,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
       <div className="w-24 h-24 rounded-3xl bg-white flex items-center justify-center shadow-sm mb-2">
         <SearchX className="w-12 h-12 text-slate-300" />
       </div>
-      <p className="font-black text-slate-800 text-2xl">Hotel Not Found</p>
-      <p className="text-slate-400 text-base">This link may be invalid or expired.</p>
+      <p className="font-black text-slate-800 text-2xl">{t.concierge.hotelNotFound}</p>
+      <p className="text-slate-400 text-base">{t.concierge.invalidLink}</p>
     </div>
   );
 
@@ -204,7 +212,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
             {place.open_now != null && (
               <span className={`absolute top-3 left-3 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
-                {place.open_now ? "Open Now" : "Closed"}
+                {place.open_now ? t.concierge.openNowBadge : t.concierge.closed}
               </span>
             )}
             {priceLabel && (
@@ -273,7 +281,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           style={{ touchAction: "manipulation", background: accentBg, color: accentColor }}
           className="flex items-center justify-center gap-2.5 py-4 border-t border-slate-100 text-sm font-black active:opacity-75 transition-opacity">
           <Navigation className="w-4 h-4" />
-          Get Directions
+          {t.concierge.getDirections}
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5 opacity-60">
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
@@ -315,7 +323,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             <div className="flex items-center gap-2 mt-3">
               <span className="font-black text-2xl text-slate-900">£{Number(svc.price).toFixed(2)}</span>
               {svc.category === "food" && (
-                <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2.5 py-1 rounded-full">Cash on delivery</span>
+                <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2.5 py-1 rounded-full">{t.concierge.cashOnDelivery}</span>
               )}
             </div>
           </div>
@@ -326,7 +334,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             className="w-full flex items-center justify-center gap-3 py-4 font-black text-base active:opacity-75 transition-opacity border-t"
             style={{ borderColor: m.light, background: m.light, color: m.color, touchAction: "manipulation" }}>
             <Info className="w-5 h-5" />
-            View Details
+            {t.concierge.viewDetails}
           </button>
         ) : (
           <button onClick={() => setSheet(mkSheet(svc))}
@@ -339,7 +347,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Book Now &nbsp;·&nbsp; £{Number(svc.price).toFixed(2)}
+            {t.concierge.bookNow} &nbsp;·&nbsp; £{Number(svc.price).toFixed(2)}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5 opacity-70">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
@@ -404,7 +412,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             <div className="flex items-center gap-1.5 mb-1">
               <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <p className="text-cyan-300/90 text-[11px] font-black tracking-[0.18em] uppercase">
-                Welcome to
+                {t.concierge.welcomeTo}
               </p>
             </div>
             <p className="text-white font-black text-[26px] leading-tight line-clamp-2 drop-shadow-md">
@@ -420,9 +428,9 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* Stats strip */}
         <div className="relative z-10 grid grid-cols-3 gap-3 mt-6">
           {[
-            { n: services.length,                              label: "Services",  accent: "#FCD34D" },
-            { n: services.filter(s => s.is_available).length, label: "Available", accent: "#6EE7B7" },
-            { n: (hotel.amenities || []).length,               label: "Amenities", accent: "#67E8F9" },
+            { n: services.length,                              label: t.concierge.statsServices,  accent: "#FCD34D" },
+            { n: services.filter(s => s.is_available).length, label: t.concierge.statsAvailable, accent: "#6EE7B7" },
+            { n: (hotel.amenities || []).length,               label: t.concierge.statsAmenities, accent: "#67E8F9" },
           ].map(({ n, label, accent }) => (
             <button key={label} onClick={() => setTab("info")}
               className="rounded-2xl px-2 py-4 text-center active:scale-95 transition-transform"
@@ -470,12 +478,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         style={{ background: "#ECEEF3", boxShadow: "0 4px 24px rgba(0,0,0,0.09)" }}>
         <div className="flex gap-2 overflow-x-auto px-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
           {([
-            { key: "restaurant" as const, label: "Restaurant", Icon: Utensils },
-            { key: "parking"    as const, label: "Parking",    Icon: Car      },
-            { key: "night"      as const, label: "Night Life", Icon: Moon     },
-            { key: "tours"      as const, label: "Tours",      Icon: Map      },
-            { key: "places"     as const, label: "Places",     Icon: MapPin   },
-            { key: "info"       as const, label: "Hotel Info", Icon: Info     },
+            { key: "restaurant" as const, label: t.concierge.tabs.restaurant, Icon: Utensils },
+            { key: "parking"    as const, label: t.concierge.tabs.parking,    Icon: Car      },
+            { key: "night"      as const, label: t.concierge.tabs.nightLife,  Icon: Moon     },
+            { key: "tours"      as const, label: t.concierge.tabs.tours,      Icon: Map      },
+            { key: "places"     as const, label: t.concierge.tabs.places,     Icon: MapPin   },
+            { key: "info"       as const, label: t.concierge.tabs.hotelInfo,  Icon: Info     },
           ]).map(({ key, label, Icon }) => {
             const active = tab === key;
             return (
@@ -515,12 +523,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {tab === "parking" && (
           <>
             <SectionBanner icon={Car} iconBg="#EFF6FF" iconColor="#2563EB"
-              title="Nearby Parking Areas"
-              subtitle={`Parking options close to ${hotel.city}`} />
+              title={t.concierge.parkingTitle}
+              subtitle={t.concierge.parkingSubtitle.replace("{city}", hotel.city)} />
             {loadingNearby["parking"] ? <NearbyLoading /> :
              nearbyParking && nearbyParking.length > 0
                ? nearbyParking.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#075985" accentBg="#E0F2FE" />)
-               : <EmptyState Icon={Car} title="No nearby parking found" subtitle="Ask reception for parking recommendations" />
+               : <EmptyState Icon={Car} title={t.concierge.noParkingFound} subtitle={t.concierge.askReceptionParking} />
             }
           </>
         )}
@@ -529,12 +537,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {tab === "night" && (
           <>
             <SectionBanner icon={Moon} iconBg="#F5F3FF" iconColor="#7C3AED"
-              title="Night Life & Evening Fun"
-              subtitle={`Clubs & bars near ${hotel.city}`} />
+              title={t.concierge.nightlifeTitle}
+              subtitle={t.concierge.nightlifeSubtitle.replace("{city}", hotel.city)} />
             {loadingNearby["nightlife"] ? <NearbyLoading /> :
              nearbyNightlife && nearbyNightlife.length > 0
                ? nearbyNightlife.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#6B21A8" accentBg="#F3E8FF" />)
-               : <EmptyState Icon={Moon} title="No nightlife found nearby" subtitle="Ask reception for evening recommendations" />
+               : <EmptyState Icon={Moon} title={t.concierge.noNightlifeFound} subtitle={t.concierge.askReceptionEvening} />
             }
           </>
         )}
@@ -544,22 +552,22 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <div className="relative">
               <Search className="w-5 h-5 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={tourQ} onChange={e => setTourQ(e.target.value)} placeholder="Search tours…"
+              <input value={tourQ} onChange={e => setTourQ(e.target.value)} placeholder={t.concierge.searchToursPlaceholder}
                 className="w-full bg-white rounded-2xl pl-12 pr-4 py-4 text-base font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
                 style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }} />
             </div>
             {filteredTours.length === 0 ? (
-              <EmptyState Icon={Map} title="No tours available" subtitle="Check back soon for available tours" />
-            ) : filteredTours.map(t => (
-              <div key={t.id} className="bg-white rounded-3xl overflow-hidden"
+              <EmptyState Icon={Map} title={t.concierge.noToursAvailable} subtitle={t.concierge.checkBackSoon} />
+            ) : filteredTours.map(tour => (
+              <div key={tour.id} className="bg-white rounded-3xl overflow-hidden"
                 style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-                {t.image_url ? (
+                {tour.image_url ? (
                   <div className="relative w-full h-52">
-                    <Image unoptimized src={t.image_url} alt={t.title} fill className="object-cover" />
+                    <Image unoptimized src={tour.image_url} alt={tour.title} fill className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    {t.provider && (
-                      <span className={`absolute top-3 left-3 text-xs font-black px-3 py-1.5 rounded-xl shadow ${t.provider === "GYG" ? "bg-orange-500" : "bg-blue-600"} text-white`}>
-                        {t.provider === "GYG" ? "GetYourGuide" : "Viator"}
+                    {tour.provider && (
+                      <span className={`absolute top-3 left-3 text-xs font-black px-3 py-1.5 rounded-xl shadow ${tour.provider === "GYG" ? "bg-orange-500" : "bg-blue-600"} text-white`}>
+                        {tour.provider === "GYG" ? "GetYourGuide" : "Viator"}
                       </span>
                     )}
                   </div>
@@ -569,24 +577,24 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   </div>
                 )}
                 <div className="p-5">
-                  <p className="font-black text-slate-900 text-lg leading-snug">{t.title}</p>
-                  {t.description && <p className="text-sm text-slate-400 mt-2 line-clamp-2 leading-relaxed">{t.description}</p>}
+                  <p className="font-black text-slate-900 text-lg leading-snug">{tour.title}</p>
+                  {tour.description && <p className="text-sm text-slate-400 mt-2 line-clamp-2 leading-relaxed">{tour.description}</p>}
                   <div className="flex items-center justify-between mt-5">
                     <div>
-                      {t.price ? (
+                      {tour.price ? (
                         <div>
-                          <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">From</span>
-                          <p className="font-black text-2xl text-slate-900">${t.price}</p>
+                          <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t.concierge.from}</span>
+                          <p className="font-black text-2xl text-slate-900">${tour.price}</p>
                         </div>
                       ) : (
-                        <span className="text-base text-slate-400 font-semibold">Price on request</span>
+                        <span className="text-base text-slate-400 font-semibold">{t.concierge.priceOnRequest}</span>
                       )}
                     </div>
-                    {t.affiliate_link && (
-                      <a href={t.affiliate_link} target="_blank" rel="noopener noreferrer"
+                    {tour.affiliate_link && (
+                      <a href={tour.affiliate_link} target="_blank" rel="noopener noreferrer"
                         style={{ touchAction: "manipulation", boxShadow: "0 6px 16px rgba(37,99,235,0.35)" }}
                         className="bg-blue-600 text-white text-base font-black px-6 py-3.5 rounded-2xl active:scale-95 transition-transform">
-                        Book Now
+                        {t.concierge.bookNow}
                       </a>
                     )}
                   </div>
@@ -600,12 +608,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {tab === "places" && (
           <>
             <SectionBanner icon={MapPin} iconBg="#EEF2FF" iconColor="#4338CA"
-              title="Top Attractions Nearby"
-              subtitle={`Best places to visit near ${hotel.city}`} />
+              title={t.concierge.placesTitle}
+              subtitle={t.concierge.placesSubtitle.replace("{city}", hotel.city)} />
             {loadingNearby["places"] ? <NearbyLoading /> :
              nearbyAttractions && nearbyAttractions.length > 0
                ? nearbyAttractions.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#4338CA" accentBg="#EEF2FF" />)
-               : <EmptyState Icon={MapPin} title="No attractions found" subtitle="Ask reception for local recommendations" />
+               : <EmptyState Icon={MapPin} title={t.concierge.noAttractionsFound} subtitle={t.concierge.askReceptionLocal} />
             }
           </>
         )}
@@ -623,8 +631,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-white font-black text-lg">Chat on WhatsApp</p>
-                  <p className="text-emerald-100 text-sm mt-0.5">{hotel.whatsapp_number} · Reception</p>
+                  <p className="text-white font-black text-lg">{t.concierge.chatOnWhatsapp}</p>
+                  <p className="text-emerald-100 text-sm mt-0.5">{hotel.whatsapp_number} · {t.concierge.receptionLabel}</p>
                 </div>
                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-6 h-6 opacity-60">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
@@ -636,18 +644,18 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             <div className="grid grid-cols-2 gap-3">
               {[
                 ...(!hotel.is_24_7 ? [
-                  { Icon: Clock, label: "Check-in",  val: hotel.check_in_time  || "14:00", color: "#3B82F6", bg: "#EFF6FF" },
-                  { Icon: Clock, label: "Check-out", val: hotel.check_out_time || "11:00", color: "#8B5CF6", bg: "#F5F3FF" },
+                  { Icon: Clock, label: t.concierge.checkIn,  val: hotel.check_in_time  || "14:00", color: "#3B82F6", bg: "#EFF6FF" },
+                  { Icon: Clock, label: t.concierge.checkOut, val: hotel.check_out_time || "11:00", color: "#8B5CF6", bg: "#F5F3FF" },
                 ] : []),
-                { Icon: Clock, label: "Hours", val: (() => {
-                    if (hotel.is_24_7) return "24/7 Open";
-                    const fmt = (t: string) => { if (!t) return ""; const [h,m] = t.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+                { Icon: Clock, label: t.concierge.hoursLabel, val: (() => {
+                    if (hotel.is_24_7) return t.concierge.hours247;
+                    const fmt = (time: string) => { if (!time) return ""; const [h,m] = time.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
                     return `${fmt(hotel.open_time||"09:00")} – ${fmt(hotel.close_time||"22:00")}`;
                   })(), color: "#059669", bg: "#ECFDF5" },
-                { Icon: Wifi,  label: "Wi-Fi",      val: hotel.wifi_info || "Ask Reception",                  color: "#10B981", bg: "#D1FAE5" },
-                { Icon: Globe, label: "Language",   val: hotel.language_default?.toUpperCase() || "EN",        color: "#F97316", bg: "#FFF7ED" },
-                { Icon: Car,   label: "Parking",    val: nearbyParking   ? `${nearbyParking.length} nearby`   : "See Parking tab",   color: "#075985", bg: "#E0F2FE" },
-                { Icon: Moon,  label: "Night Life", val: nearbyNightlife ? `${nearbyNightlife.length} nearby` : "See Night Life tab", color: "#6B21A8", bg: "#F3E8FF" },
+                { Icon: Wifi,  label: t.concierge.wifiLabel,     val: hotel.wifi_info || t.concierge.askReception,                  color: "#10B981", bg: "#D1FAE5" },
+                { Icon: Globe, label: t.concierge.languageLabel, val: hotel.language_default?.toUpperCase() || "EN",        color: "#F97316", bg: "#FFF7ED" },
+                { Icon: Car,   label: t.concierge.parkingLabel,    val: nearbyParking   ? t.concierge.nearbyCount.replace("{count}", String(nearbyParking.length))   : t.concierge.seeParkingTab,   color: "#075985", bg: "#E0F2FE" },
+                { Icon: Moon,  label: t.concierge.nightLifeLabel, val: nearbyNightlife ? t.concierge.nearbyCount.replace("{count}", String(nearbyNightlife.length)) : t.concierge.seeNightlifeTab, color: "#6B21A8", bg: "#F3E8FF" },
               ].map(({ Icon, label, val, color, bg }) => (
                 <div key={label} className="bg-white rounded-3xl p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
                   <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: bg }}>
@@ -662,7 +670,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
             {/* Amenities */}
             {hotel.amenities && hotel.amenities.length > 0 && (
               <div className="bg-white rounded-3xl p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Services & Benefits</p>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t.concierge.servicesAndBenefits}</p>
                 <div className="flex flex-wrap gap-2">
                   {hotel.amenities.map(a => (
                     <span key={a} className="text-sm font-bold px-3.5 py-2 rounded-full bg-blue-50 text-blue-700">{a}</span>
@@ -678,7 +686,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                     <Bell className="w-5 h-5 text-blue-600" />
                   </div>
-                  <p className="font-black text-slate-800 text-base">Hotel Services</p>
+                  <p className="font-black text-slate-800 text-base">{t.concierge.hotelServices}</p>
                   <div className="flex-1 h-px bg-slate-100" />
                   <span className="text-sm font-bold text-slate-300">{services.length}</span>
                 </div>
@@ -696,14 +704,14 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   <MapPin className="w-7 h-7 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Location</p>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.concierge.locationLabel}</p>
                   <p className="font-black text-slate-900 text-base mt-1">{hotel.city}</p>
                 </div>
               </div>
             )}
 
             <div className="text-center py-4">
-              <p className="text-sm text-slate-300 font-semibold">Powered by <span className="font-black text-slate-400">Amica International</span></p>
+              <p className="text-sm text-slate-300 font-semibold">{t.concierge.poweredBy} <span className="font-black text-slate-400">Amica International</span></p>
             </div>
           </>
         )}
@@ -730,8 +738,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   </svg>
                 </div>
                 <div>
-                  <p className="font-black text-slate-900 text-3xl">Booking Confirmed!</p>
-                  <p className="text-slate-500 text-base mt-2">Your request has been received.</p>
+                  <p className="font-black text-slate-900 text-3xl">{t.concierge.bookingConfirmed}</p>
+                  <p className="text-slate-500 text-base mt-2">{t.concierge.requestReceived}</p>
                 </div>
                 <div className="w-full bg-white rounded-3xl p-5 text-left" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                   <div className="flex items-center gap-4 mb-4">
@@ -741,19 +749,19 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     })()}
                     <div>
                       <p className="font-bold text-slate-900 text-base">{sheet.svc.name}</p>
-                      <p className="text-sm text-slate-400 mt-0.5">Qty: {sheet.qty} · Total: <strong>£{(Number(sheet.svc.price)*sheet.qty).toFixed(2)}</strong></p>
+                      <p className="text-sm text-slate-400 mt-0.5">{t.concierge.qty}: {sheet.qty} · {t.concierge.total}: <strong>£{(Number(sheet.svc.price)*sheet.qty).toFixed(2)}</strong></p>
                     </div>
                   </div>
                   <div className="pt-4 border-t border-slate-100">
                     {sheet.payMethod === "cod" ? (
                       <div className="flex items-center gap-3">
                         <Banknote className="w-6 h-6 text-orange-500" />
-                        <p className="text-base font-semibold text-orange-600">Pay cash when order arrives</p>
+                        <p className="text-base font-semibold text-orange-600">{t.concierge.payCashOnArrival}</p>
                       </div>
                     ) : (
                       <div className="flex items-center gap-3">
                         <Landmark className="w-6 h-6 text-blue-500" />
-                        <p className="text-base font-semibold text-blue-600">Our team will contact you for payment</p>
+                        <p className="text-base font-semibold text-blue-600">{t.concierge.teamWillContact}</p>
                       </div>
                     )}
                   </div>
@@ -761,7 +769,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 <button onClick={() => setSheet(null)}
                   className="w-full py-5 rounded-3xl text-white font-black text-lg active:scale-[0.98] transition-transform"
                   style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #2563EB, #3B82F6)", boxShadow: "0 8px 24px rgba(37,99,235,0.3)" }}>
-                  Done
+                  {t.concierge.done}
                 </button>
               </div>
             ) : (
@@ -795,7 +803,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 {/* Quantity */}
                 <div className="bg-white rounded-3xl px-5 py-5 mb-3 flex items-center justify-between"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <p className="font-bold text-slate-800 text-lg">Quantity</p>
+                  <p className="font-bold text-slate-800 text-lg">{t.concierge.quantity}</p>
                   <div className="flex items-center gap-5">
                     <button onClick={() => setSheet(s => s ? { ...s, qty: Math.max(1, s.qty - 1) } : s)}
                       style={{ touchAction: "manipulation" }}
@@ -814,37 +822,37 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 {/* Input fields */}
                 <div className="bg-white rounded-3xl px-5 py-5 mb-3 space-y-4"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <p className="font-bold text-slate-800 text-base">Your Details</p>
+                  <p className="font-bold text-slate-800 text-base">{t.concierge.yourDetails}</p>
                   <div>
                     <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">
-                      Full Name <span className="text-red-400">*</span>
+                      {t.concierge.fullName} <span className="text-red-400">*</span>
                     </label>
                     <input value={sheet.name}
                       onChange={e => setSheet(s => s ? { ...s, name: e.target.value, error: "" } : s)}
-                      placeholder="e.g. John Smith"
+                      placeholder={t.concierge.fullNamePlaceholder}
                       className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-4 text-base font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 focus:ring-2 focus:ring-blue-200 transition-all" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">Phone</label>
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">{t.concierge.phoneLabel}</label>
                       <input type="tel" inputMode="numeric" pattern="[0-9]*" value={sheet.phone}
                         onChange={e => { const v = e.target.value.replace(/\D/g, ""); setSheet(s => s ? { ...s, phone: v } : s); }}
-                        placeholder="07700 000000"
+                        placeholder={t.concierge.phonePlaceholder}
                         className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-4 text-base font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 focus:ring-2 focus:ring-blue-200 transition-all" />
                     </div>
                     <div>
-                      <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">Room No.</label>
+                      <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">{t.concierge.roomNo}</label>
                       <input inputMode="numeric" value={sheet.room}
                         onChange={e => { const v = e.target.value.replace(/\D/g, ""); setSheet(s => s ? { ...s, room: v } : s); }}
-                        placeholder="204"
+                        placeholder={t.concierge.roomPlaceholder}
                         className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-4 text-base font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 focus:ring-2 focus:ring-blue-200 transition-all" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">Special Requests</label>
+                    <label className="text-xs font-black text-slate-400 uppercase tracking-wide block mb-2">{t.concierge.specialRequests}</label>
                     <textarea value={sheet.notes}
                       onChange={e => setSheet(s => s ? { ...s, notes: e.target.value } : s)}
-                      rows={2} placeholder="Any special requests or allergies…"
+                      rows={2} placeholder={t.concierge.specialRequestsPlaceholder}
                       className="w-full bg-[#F0F2F5] rounded-2xl px-4 py-4 text-base font-semibold text-slate-800 placeholder:text-slate-300 outline-none border-0 resize-none focus:ring-2 focus:ring-blue-200 transition-all" />
                   </div>
                 </div>
@@ -852,15 +860,15 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 {/* Payment method */}
                 <div className="bg-white rounded-3xl px-5 py-5 mb-3"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <p className="font-bold text-slate-800 text-base mb-4">Payment</p>
+                  <p className="font-bold text-slate-800 text-base mb-4">{t.concierge.payment}</p>
                   {sheet.svc.category === "food" ? (
                     <div className="flex items-center gap-4 p-4 rounded-2xl" style={{ background: "#FFF7ED", border: "2px solid #F97316" }}>
                       <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
                         <Banknote className="w-6 h-6 text-orange-500" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-black text-orange-800 text-base">Cash on Delivery</p>
-                        <p className="text-orange-500 text-sm mt-0.5">Pay when your food arrives at your room</p>
+                        <p className="font-black text-orange-800 text-base">{t.concierge.cashOnDelivery}</p>
+                        <p className="text-orange-500 text-sm mt-0.5">{t.concierge.payWhenArrives}</p>
                       </div>
                       <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
                         <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} className="w-3.5 h-3.5">
@@ -881,8 +889,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                           <Landmark className="w-6 h-6 text-blue-500" />
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-black text-slate-800 text-base">Manual Payment</p>
-                          <p className="text-slate-400 text-sm mt-0.5">Bank transfer · Pay in person</p>
+                          <p className="font-black text-slate-800 text-base">{t.concierge.manualPayment}</p>
+                          <p className="text-slate-400 text-sm mt-0.5">{t.concierge.bankTransferInPerson}</p>
                         </div>
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${sheet.payMethod === "bank_transfer" ? "bg-blue-600" : "border-2 border-slate-200"}`}>
                           {sheet.payMethod === "bank_transfer" && (
@@ -898,10 +906,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                           <CreditCard className="w-6 h-6 text-slate-400" />
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-black text-slate-500 text-base">Card / Stripe</p>
-                          <p className="text-slate-400 text-sm mt-0.5">Online card payment</p>
+                          <p className="font-black text-slate-500 text-base">{t.concierge.cardStripe}</p>
+                          <p className="text-slate-400 text-sm mt-0.5">{t.concierge.onlineCardPayment}</p>
                         </div>
-                        <span className="text-xs font-black bg-slate-200 text-slate-400 px-2.5 py-1 rounded-full">SOON</span>
+                        <span className="text-xs font-black bg-slate-200 text-slate-400 px-2.5 py-1 rounded-full">{t.concierge.soon}</span>
                       </div>
                     </div>
                   )}
@@ -929,11 +937,11 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                       </svg>
-                      Placing order…
+                      {t.concierge.placingOrder}
                     </>
                   ) : (
                     <>
-                      Confirm Order · £{(Number(sheet.svc.price) * sheet.qty).toFixed(2)}
+                      {t.concierge.confirmOrder} · £{(Number(sheet.svc.price) * sheet.qty).toFixed(2)}
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                       </svg>
@@ -943,7 +951,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 <button onClick={() => setSheet(null)} disabled={sheet.submitting}
                   style={{ touchAction: "manipulation" }}
                   className="w-full py-4 mt-2 text-slate-400 font-semibold text-base active:opacity-60">
-                  Cancel
+                  {t.concierge.cancel}
                 </button>
               </div>
             )}
@@ -992,7 +1000,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
                 <div className="bg-white rounded-2xl px-5 py-5 flex items-center justify-between"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <span className="text-base font-bold text-slate-500">Price</span>
+                  <span className="text-base font-bold text-slate-500">{t.concierge.price}</span>
                   <span className="font-black text-4xl" style={{ color: m.color }}>
                     £{Number(viewSvc.price).toFixed(2)}
                   </span>
@@ -1001,7 +1009,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 {viewSvc.description && (
                   <div className="bg-white rounded-2xl px-5 py-5"
                     style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">About</p>
+                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{t.concierge.about}</p>
                     <p className="text-base text-slate-600 leading-relaxed">{viewSvc.description}</p>
                   </div>
                 )}
@@ -1010,12 +1018,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                   <div className={`w-3 h-3 rounded-full flex-shrink-0 ${viewSvc.is_available ? "bg-emerald-400" : "bg-slate-300"}`} />
                   <span className={`text-base font-bold ${viewSvc.is_available ? "text-emerald-700" : "text-slate-400"}`}>
-                    {viewSvc.is_available ? "Available now" : "Currently unavailable"}
+                    {viewSvc.is_available ? t.concierge.availableNow : t.concierge.currentlyUnavailable}
                   </span>
                 </div>
 
                 <p className="text-center text-sm text-slate-400 pb-2">
-                  To enquire or book, please contact the hotel reception.
+                  {t.concierge.enquireContact}
                 </p>
               </div>
             </div>

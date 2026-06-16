@@ -1,8 +1,10 @@
 "use client";
 
 import Script from "next/script";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export default function ToursView() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-slate-50">
 
@@ -16,8 +18,8 @@ export default function ToursView() {
 
       {/* ── Header ──────────────────────────────────────── */}
       <div className="bg-white px-4 pt-5 pb-4 border-b border-slate-100">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Live Availability</p>
-        <h1 className="text-lg font-bold text-slate-900">Tours &amp; Experiences</h1>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500">{t.tours.liveAvailability}</p>
+        <h1 className="text-lg font-bold text-slate-900">{t.tours.pageTitle}</h1>
       </div>
 
       {/* ── GetYourGuide Live Widgets ───────────────────── */}

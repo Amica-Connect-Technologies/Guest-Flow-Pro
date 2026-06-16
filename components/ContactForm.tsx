@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { CheckCircle, Lock } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 type Status = "idle" | "sending" | "success" | "error";
 
 export default function ContactForm() {
+  const { t } = useLanguage();
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [form, setForm] = useState({
@@ -53,11 +55,10 @@ export default function ContactForm() {
           <CheckCircle className="w-8 h-8 text-blue-600" />
         </div>
         <h3 className="text-2xl font-serif font-bold text-slate-900 mb-2">
-          Grazie! Thank You!
+          {t.contact.successTitle}
         </h3>
         <p className="text-slate-500 leading-relaxed max-w-xs">
-          Your message has been received. Our concierge team will be in touch
-          within a few hours.
+          {t.contact.successMessage}
         </p>
       </div>
     );
@@ -73,9 +74,9 @@ export default function ContactForm() {
     >
       <div>
         <h3 className="text-xl font-serif font-bold text-slate-900 mb-1">
-          Send Us an Enquiry
+          {t.contact.formTitle}
         </h3>
-        <p className="text-slate-400 text-sm">We reply within a few hours.</p>
+        <p className="text-slate-400 text-sm">{t.contact.formSubtitle}</p>
       </div>
 
       {status === "error" && (
@@ -87,18 +88,18 @@ export default function ContactForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" htmlFor="name">
-            Full Name *
+            {t.contact.namaRequired}
           </label>
           <input
             id="name" name="name" type="text" required
             value={form.name} onChange={handleChange}
-            placeholder="e.g. Marco Rossi"
+            placeholder={t.contact.placeholderName}
             className={inputClass}
           />
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" htmlFor="email">
-            Email Address *
+            {t.contact.emailRequired}
           </label>
           <input
             id="email" name="email" type="email" required
@@ -112,43 +113,43 @@ export default function ContactForm() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" htmlFor="nationality">
-            Your Country
+            {t.contact.yourCountry}
           </label>
           <input
             id="nationality" name="nationality" type="text"
             value={form.nationality} onChange={handleChange}
-            placeholder="e.g. Italy, Japan, USA…"
+            placeholder={t.contact.countryPlaceholder}
             className={inputClass}
           />
         </div>
         <div>
           <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" htmlFor="service">
-            Service of Interest
+            {t.contact.serviceInterest}
           </label>
           <select
             id="service" name="service"
             value={form.service} onChange={handleChange}
             className={inputClass}
           >
-            <option value="">Select a service…</option>
-            <option value="hotel">Hotel Reservation</option>
-            <option value="transfer">Airport Transfer</option>
-            <option value="dining">Fine Dining Reservation</option>
-            <option value="tour">Guided Tour</option>
-            <option value="concierge">Personal Concierge</option>
-            <option value="other">Other / General Enquiry</option>
+            <option value="">{t.contact.selectService}</option>
+            <option value="hotel">{t.contact.hotel}</option>
+            <option value="transfer">{t.contact.transfer}</option>
+            <option value="dining">{t.contact.dining}</option>
+            <option value="tour">{t.contact.tour}</option>
+            <option value="concierge">{t.contact.concierge}</option>
+            <option value="other">{t.contact.other}</option>
           </select>
         </div>
       </div>
 
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" htmlFor="message">
-          Your Message *
+          {t.contact.messageRequired}
         </label>
         <textarea
           id="message" name="message" required rows={5}
           value={form.message} onChange={handleChange}
-          placeholder="Tell us about your travel plans, dates, group size, or any special requests…"
+          placeholder={t.contact.messagePlaceholder}
           className={`${inputClass} resize-none`}
         />
       </div>
@@ -164,15 +165,15 @@ export default function ContactForm() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
             </svg>
-            Sending…
+            {t.contact.sending}
           </span>
         ) : (
-          "Send Enquiry"
+          t.contact.send
         )}
       </button>
 
       <p className="text-xs text-slate-400 text-center">
-        <Lock className="w-3 h-3 inline-block mr-1" /> Your details are kept private and secure
+        <Lock className="w-3 h-3 inline-block mr-1" /> {t.contact.privacy}
       </p>
     </form>
   );
