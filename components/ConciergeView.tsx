@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Script from "next/script";
 import {
   Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling,
   Dumbbell, Car, Shirt, Home, Briefcase, Sparkles,
@@ -550,6 +551,26 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* ══ TOURS ═══════════════════════════════════════════════════════ */}
         {tab === "tours" && (
           <>
+            {/* Live GetYourGuide widgets — shown automatically, no manual setup needed */}
+            <Script
+              async
+              defer
+              src="https://widget.getyourguide.com/dist/pa.umd.production.min.js"
+              data-gyg-partner-id="E1C9YRK"
+              strategy="lazyOnload"
+            />
+            <div className="space-y-4">
+              {["200", "863", "3954", "3953", "5000", "31006"].map((locationId) => (
+                <div key={locationId}
+                  data-gyg-href="https://widget.getyourguide.com/default/city.frame"
+                  data-gyg-location-id={locationId}
+                  data-gyg-locale-code="it-IT"
+                  data-gyg-widget="city"
+                  data-gyg-partner-id="E1C9YRK"
+                />
+              ))}
+            </div>
+
             <div className="relative">
               <Search className="w-5 h-5 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input value={tourQ} onChange={e => setTourQ(e.target.value)} placeholder={t.concierge.searchToursPlaceholder}
