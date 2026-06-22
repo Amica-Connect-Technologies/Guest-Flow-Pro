@@ -11,6 +11,7 @@ urlpatterns = [
     path("api/places/", include("places.urls")),
     path("api/subscriptions/", include("subscriptions.urls")),
     path("api/", include("services.urls")),
+    path("api/checkin/", include("checkin.urls")),
     # Serve media files in all environments (nginx can override this for performance)
     re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
 ]

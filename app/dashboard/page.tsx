@@ -499,6 +499,34 @@ export default function HotelDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* ── Guest Check-in card ───────────────────────────────────────── */}
+            <button
+              onClick={() => router.push("/dashboard/checkin")}
+              className="w-full text-left rounded-3xl p-5 flex items-center gap-4 active:scale-[0.98] transition-all"
+              style={{ background: "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)", boxShadow: "0 8px 28px rgba(14,116,144,0.28)" }}
+            >
+              {/* Icon */}
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.12)" }}>
+                <svg className="w-7 h-7 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-cyan-400 mb-0.5">
+                  {t.checkin.navLabel}
+                </p>
+                <p className="text-white font-black text-base">{t.checkin.dashboard.title}</p>
+                <p className="text-cyan-200/70 text-xs mt-0.5">{t.checkin.dashboard.subtitle}</p>
+              </div>
+              {/* Arrow */}
+              <svg className="w-5 h-5 text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         )}
 

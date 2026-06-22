@@ -260,6 +260,114 @@ export const servicesApi = {
   delete: (id: string) => req<void>(`/api/services/${id}/`, { method: "DELETE" }),
 };
 
+// ── Guest Check-in ────────────────────────────────────────────────────────────
+export type CheckinBooking = {
+  id: string;
+  hotel: string;
+  hotel_name: string;
+  booking_reference: string;
+  guest_name: string;
+  guest_email: string;
+  guest_phone: string;
+  check_in_date: string;
+  check_out_date: string;
+  num_guests: number;
+  status: "pending" | "completed" | "missing_info" | "expired";
+  checkin_token: string;
+  checkin_link: string;
+  link_sent_at: string | null;
+  notes: string;
+  created_at: string;
+  registration: CheckinRegistration | null;
+  messages: CheckinMessage[];
+};
+
+export type CheckinRegistration = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  place_of_birth: string;
+  nationality: string;
+  residence_address: string;
+  document_type: string;
+  document_number: string;
+  document_issue_date: string;
+  document_expiry_date: string;
+  document_image_url: string | null;
+  signature: string;
+  gdpr_consent: boolean;
+  completed_at: string;
+};
+
+export type CheckinMessage = {
+  id: string;
+  message_type: "email" | "whatsapp";
+  recipient: string;
+  status: "sent" | "failed";
+  sent_at: string;
+};
+
+export type CheckinStats = {
+  today: number;
+  tomorrow: number;
+  pending: number;
+  completed: number;
+  missing: number;
+  total: number;
+};
+
+export type PublicBookingInfo = {
+  guest_name: string;
+  check_in_date: string;
+  check_out_date: string;
+  num_guests: number;
+  hotel_name: string;
+  is_completed: boolean;
+};
+
+export const checkinApi = {
+  // Hotel-authenticated
+  listBookings: (params?: { status?: string; filter?: string }) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return req<CheckinBooking[]>(`/api/checkin/bookings/${qs ? `?${qs}` : ""}`);
+  },
+
+  createBooking: (data: {
+    booking_reference?: string;
+    guest_name: string;
+    guest_email?: string;
+    guest_phone?: string;
+    check_in_date: string;
+    check_out_date: string;
+    num_guests: number;
+    notes?: string;
+  }) => req<CheckinBooking>("/api/checkin/bookings/", { method: "POST", body: JSON.stringify(data) }),
+
+  getBooking: (id: string) => req<CheckinBooking>(`/api/checkin/bookings/${id}/`),
+
+  deleteBooking: (id: string) => req<void>(`/api/checkin/bookings/${id}/`, { method: "DELETE" }),
+
+  sendLink: (id: string) =>
+    req<{ detail: string; sent_at: string }>(`/api/checkin/bookings/${id}/send-link/`, { method: "POST" }),
+
+  stats: () => req<CheckinStats>("/api/checkin/bookings/stats/"),
+
+  exportCSV: () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access") : null;
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return fetch(`${BASE}/api/checkin/bookings/export/`, { headers });
+  },
+
+  // Public (no auth) — used by guest check-in page
+  verifyToken: (token: string) =>
+    req<PublicBookingInfo>(`/api/checkin/verify/${token}/`),
+
+  submitRegistration: (token: string, data: FormData) =>
+    req<{ detail: string }>(`/api/checkin/register/${token}/`, { method: "POST", body: data }),
+};
+
 // ── Bookings ──────────────────────────────────────────────────────────────────
 export const bookingsApi = {
   create: (data: {
