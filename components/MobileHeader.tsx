@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 interface Lang {
   code: string;
@@ -24,30 +25,15 @@ export default function MobileHeader({ activeLang, onLangClick }: MobileHeaderPr
         style={{ height: 56, paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* Logo */}
-        <Link href="/hotels" className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-md">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth={2.2}
-              className="w-5 h-5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"
-              />
-            </svg>
-          </div>
-          <div className="leading-none">
-            <p className="text-[10px] font-medium text-slate-400 leading-none mb-0.5 tracking-wide">
-              Amica International
-            </p>
-            <p className="font-bold text-slate-900 text-sm leading-none">
-              Digital <span className="text-blue-600">Concierge</span>
-            </p>
-          </div>
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo.png"
+            alt="GuestFlow Pro"
+            width={120}
+            height={36}
+            className="h-8 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Language Button */}

@@ -1,20 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
+import { clearSession } from "@/lib/api";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const { lang, t, setLang } = useLanguage();
+
+  useEffect(() => {
+    setLoggedIn(!!localStorage.getItem("access"));
+  }, [pathname]);
 
   const links = [
     { href: "/hotels", label: t.nav.hotels },
-    { href: "/tours", label: t.nav.tours },
+    { href: "/tours",  label: t.nav.tours  },
     { href: "/places", label: t.nav.places },
   ];
+
+  function handleSignOut() {
+    clearSession();
+    setLoggedIn(false);
+    router.push("/");
+    setMenuOpen(false);
+  }
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100">
@@ -22,17 +37,14 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-md group-hover:bg-blue-700 transition-colors">
-            <span className="text-white text-sm font-bold">G</span>
-          </div>
-          <div className="leading-none">
-            <span className="font-serif text-xl font-bold text-slate-900 tracking-tight group-hover:text-blue-700 transition-colors">
-              Guest Flow
-            </span>
-            <span className="hidden sm:inline text-blue-600 font-semibold text-sm ml-1">
-              Pro
-            </span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="GuestFlow Pro"
+            width={120}
+            height={40}
+            className="h-9 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}
@@ -53,17 +65,16 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Language toggle + mobile hamburger */}
+        {/* Right side: language + account */}
         <div className="flex items-center gap-3">
+
           {/* Language toggle */}
           <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
             <button
               onClick={() => setLang("en")}
               title="English"
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-all ${
-                lang === "en"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                lang === "en" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <span className="text-base leading-none">🇬🇧</span>
@@ -73,15 +84,44 @@ export default function Navbar() {
               onClick={() => setLang("it")}
               title="Italiano"
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-all ${
-                lang === "it"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                lang === "it" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               <span className="text-base leading-none">🇮🇹</span>
               <span className="hidden sm:inline">IT</span>
             </button>
           </div>
+
+          {/* Account button — desktop only */}
+          {loggedIn ? (
+            <div className="hidden md:flex items-center gap-2">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 bg-gradient-to-r from-cyan-700 to-cyan-600 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm hover:opacity-90 transition-opacity"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                </svg>
+                Dashboard
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="hidden md:block text-xs font-semibold text-slate-500 hover:text-red-500 transition-colors px-2 py-2"
+              >
+                {t.adminNav.signOut}
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden md:flex items-center gap-2 border-2 border-cyan-700 text-cyan-700 text-xs font-bold px-4 py-2 rounded-xl hover:bg-cyan-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+              </svg>
+              {t.login?.signIn ?? "Login"}
+            </Link>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -117,6 +157,44 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
+
+            {/* Account section in mobile menu */}
+            <li className="pt-2 border-t border-slate-100">
+              {loggedIn ? (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 font-bold text-cyan-700"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                    </svg>
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 text-red-500 font-semibold text-left"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                    </svg>
+                    {t.adminNav.signOut}
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2 font-bold text-cyan-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                  </svg>
+                  {t.login?.signIn ?? "Login"}
+                </Link>
+              )}
+            </li>
           </ul>
         </div>
       )}

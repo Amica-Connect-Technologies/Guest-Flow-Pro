@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -51,13 +52,18 @@ export default function LoginPage() {
 
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center shadow-xl mx-auto mb-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-7 h-7">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
-            </svg>
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-28 h-28 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 mb-5 bg-white">
+            <Image
+              src="/m-logo.jpeg"
+              alt="Amica International"
+              width={112}
+              height={112}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
-          <h1 className="text-2xl font-bold text-white">{t.login.brandTitle}</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t.login.brandTitle}</h1>
           <p className="text-blue-300 text-sm mt-1">{t.login.brandSubtitle}</p>
         </div>
 

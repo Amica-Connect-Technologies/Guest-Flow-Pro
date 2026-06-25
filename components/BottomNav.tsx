@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(!!localStorage.getItem("access"));
+  }, [pathname]);
 
   const navItems = [
     {
@@ -37,6 +43,21 @@ export default function BottomNav() {
         </svg>
       ),
     },
+    {
+      href: loggedIn ? "/dashboard" : "/login",
+      label: t.bottomNav.account,
+      icon: loggedIn ? (
+        // Dashboard icon when logged in
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+      ) : (
+        // Person icon when not logged in
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -47,7 +68,7 @@ export default function BottomNav() {
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <div className="grid grid-cols-3 h-[62px]">
+      <div className="grid grid-cols-4 h-[62px]">
         {navItems.map(({ href, label, icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (

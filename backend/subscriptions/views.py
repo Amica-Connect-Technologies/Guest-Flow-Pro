@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from accounts.models import HotelUser
 from hotels.models import Hotel
+from .emails import send_approved_email, send_welcome_email
 from .models import Registration
 from .serializers import RegisterRequestSerializer, RegistrationSerializer
 
@@ -79,6 +80,7 @@ class RegisterView(APIView):
         # ── Manual payment (bank transfer / invoice) ──────────────────────────
         if payment_method != "stripe":
             reference = f"{BANK_DETAILS['reference_prefix']}{str(reg.id)[:8].upper()}"
+            send_welcome_email(reg)  # auto welcome email
             return Response({
                 "registration_id": str(reg.id),
                 "method": payment_method,
@@ -109,6 +111,7 @@ class RegisterView(APIView):
 
         reg.stripe_session_id = session.id
         reg.save(update_fields=["stripe_session_id"])
+        send_welcome_email(reg)  # auto welcome email
         return Response({"checkout_url": session.url, "registration_id": str(reg.id)})
 
 
@@ -265,6 +268,8 @@ class ApproveRegistrationView(APIView):
         reg.hotel = hotel
         reg.reviewed_at = timezone.now()
         reg.save(update_fields=["status", "hotel", "reviewed_at"])
+
+        send_approved_email(reg)  # notify partner their account is live
 
         return Response({"status": "approved", "hotel_id": str(hotel.id)})
 

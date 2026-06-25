@@ -27,7 +27,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/register");
 
-  const showHeader = !isDashAdmin;
+  const showHeader = !isDashAdmin && !isAuthPage;
   const showFooter = !isDashAdmin && !isHotelPage && !isAuthPage;
 
   const [sheetOpen, setSheetOpen] = useState(false);

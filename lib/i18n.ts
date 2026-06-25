@@ -321,7 +321,7 @@ export const translations = {
       mapButton: "Map",
       categories: { all: "All", restaurant: "Restaurant", museum: "Museum", cafe: "Cafe", attraction: "Attraction", shop: "Shop", parking: "Parking", nightlife: "Night Life" },
     },
-    bottomNav: { hotels: "Hotels", tours: "Tours", places: "Places" },
+    bottomNav: { hotels: "Hotels", tours: "Tours", places: "Places", account: "Account" },
     adminNav: {
       overview: "Overview",
       hotels: "Hotels",
@@ -1387,7 +1387,7 @@ export const translations = {
       mapButton: "Mappa",
       categories: { all: "Tutti", restaurant: "Ristorante", museum: "Museo", cafe: "Bar", attraction: "Attrazione", shop: "Negozio", parking: "Parcheggio", nightlife: "Vita Notturna" },
     },
-    bottomNav: { hotels: "Alberghi", tours: "Tour", places: "Luoghi" },
+    bottomNav: { hotels: "Alberghi", tours: "Tour", places: "Luoghi", account: "Account" },
     adminNav: {
       overview: "Panoramica",
       hotels: "Hotel",

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Guest Flow Pro</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F0F4F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+
+<!-- Preheader (hidden) -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+  Welcome to Guest Flow Pro! Your registration has been received. &#8204;&#8204;&#8204;
+</div>
+
+<!-- Email wrapper -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F0F4F8;padding:32px 16px;">
+  <tr>
+    <td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+
+        <!-- ── HEADER ── -->
+        <tr>
+          <td align="center" style="padding-bottom:24px;">
+            <table cellpadding="0" cellspacing="0" border="0"
+              style="background:linear-gradient(135deg,#0D1B2A 0%,#1E3A5F 50%,#0A7EA4 100%);
+                     border-radius:20px 20px 0 0;width:100%;">
+              <tr>
+                <td align="center" style="padding:36px 32px 28px;">
+                  <!-- Logo -->
+                  <img src="cid:{{ logo_cid }}"
+                       alt="Guest Flow Pro"
+                       width="140" height="auto"
+                       style="display:block;max-width:160px;margin-bottom:20px;border-radius:12px;
+                              filter:drop-shadow(0 4px 16px rgba(0,0,0,0.3));">
+                  <!-- Tagline -->
+                  <p style="margin:0;color:#93C5FD;font-size:11px;font-weight:600;
+                             letter-spacing:3px;text-transform:uppercase;">
+                    Partner Registration Confirmed
+                  </p>
+                  <h1 style="margin:10px 0 0;color:#FFFFFF;font-size:26px;font-weight:800;
+                              line-height:1.2;letter-spacing:-0.5px;">
+                    Welcome, {{ first_name }}! 🎉
+                  </h1>
+                </td>
+              </tr>
+              <!-- Status ribbon -->
+              <tr>
+                <td style="padding:0 32px 32px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                    style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+                           border-radius:14px;overflow:hidden;">
+                    <tr>
+                      <td style="padding:16px 20px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td>
+                              <p style="margin:0;color:#93C5FD;font-size:10px;font-weight:700;
+                                         text-transform:uppercase;letter-spacing:2px;">Status</p>
+                              <p style="margin:4px 0 0;color:#FFFFFF;font-size:15px;font-weight:700;">
+                                ⏳ Under Review
+                              </p>
+                            </td>
+                            <td align="right">
+                              <span style="background:#F59E0B;color:#000;font-size:10px;font-weight:800;
+                                           padding:5px 12px;border-radius:100px;letter-spacing:1px;
+                                           text-transform:uppercase;">
+                                Pending Approval
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── WHITE CARD ── -->
+        <tr>
+          <td style="background:#FFFFFF;border-radius:0 0 20px 20px;padding:0 0 8px;">
+
+            <!-- Greeting -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:32px 32px 0;">
+                  <p style="margin:0;color:#1E3A5F;font-size:16px;line-height:1.7;font-weight:400;">
+                    Thank you for registering <strong style="color:#0A7EA4;">{{ business_name }}</strong>
+                    with Guest Flow Pro. We're excited to have you on board!
+                  </p>
+                  <p style="margin:14px 0 0;color:#64748B;font-size:14px;line-height:1.7;">
+                    Our team will carefully review your application and get back to you
+                    within <strong>1–2 business days</strong>.
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- ── Registration summary ── -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:24px 32px 0;">
+                  <p style="margin:0 0 12px;color:#94A3B8;font-size:10px;font-weight:700;
+                             text-transform:uppercase;letter-spacing:2px;">
+                    Registration Summary
+                  </p>
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                    style="border:1px solid #E2E8F0;border-radius:14px;overflow:hidden;">
+                    {% for row in summary_rows %}
+                    <tr style="background:{% if forloop.counter|divisibleby:2 %}#F8FAFC{% else %}#FFFFFF{% endif %};">
+                      <td style="padding:13px 18px;color:#64748B;font-size:12px;font-weight:600;
+                                 width:40%;text-transform:uppercase;letter-spacing:0.5px;">
+                        {{ row.label }}
+                      </td>
+                      <td style="padding:13px 18px;color:#0F172A;font-size:13px;font-weight:700;
+                                 border-left:1px solid #E2E8F0;">
+                        {{ row.value }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- ── What happens next ── -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:28px 32px 0;">
+                  <p style="margin:0 0 16px;color:#94A3B8;font-size:10px;font-weight:700;
+                             text-transform:uppercase;letter-spacing:2px;">
+                    What Happens Next
+                  </p>
+
+                  <!-- Step 1 -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">
+                    <tr>
+                      <td width="40" valign="top">
+                        <div style="width:32px;height:32px;background:#DBEAFE;border-radius:50%;
+                                    text-align:center;line-height:32px;font-size:13px;font-weight:800;
+                                    color:#1D4ED8;">1</div>
+                      </td>
+                      <td style="padding-left:12px;">
+                        <p style="margin:0;color:#0F172A;font-size:14px;font-weight:700;">Review & Verification</p>
+                        <p style="margin:3px 0 0;color:#64748B;font-size:13px;line-height:1.5;">
+                          Our team verifies your business details and payment (1–2 business days).
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Step 2 -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:14px;">
+                    <tr>
+                      <td width="40" valign="top">
+                        <div style="width:32px;height:32px;background:#D1FAE5;border-radius:50%;
+                                    text-align:center;line-height:32px;font-size:13px;font-weight:800;
+                                    color:#065F46;">2</div>
+                      </td>
+                      <td style="padding-left:12px;">
+                        <p style="margin:0;color:#0F172A;font-size:14px;font-weight:700;">Account Activation</p>
+                        <p style="margin:3px 0 0;color:#64748B;font-size:13px;line-height:1.5;">
+                          You'll receive a confirmation email with your login credentials.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <!-- Step 3 -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td width="40" valign="top">
+                        <div style="width:32px;height:32px;background:#F3E8FF;border-radius:50%;
+                                    text-align:center;line-height:32px;font-size:13px;font-weight:800;
+                                    color:#6B21A8;">3</div>
+                      </td>
+                      <td style="padding-left:12px;">
+                        <p style="margin:0;color:#0F172A;font-size:14px;font-weight:700;">Go Live!</p>
+                        <p style="margin:3px 0 0;color:#64748B;font-size:13px;line-height:1.5;">
+                          Access your hotel dashboard, manage check-ins, tours & more.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- ── CTA Button ── -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" style="padding:28px 32px;">
+                  <a href="{{ frontend_url }}"
+                     style="display:inline-block;background:linear-gradient(135deg,#0D1B2A,#0A7EA4);
+                            color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:700;
+                            padding:14px 36px;border-radius:12px;letter-spacing:0.3px;">
+                    Visit Guest Flow Pro →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- ── Divider ── -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:0 32px;">
+                  <hr style="border:none;border-top:1px solid #E2E8F0;margin:0;">
+                </td>
+              </tr>
+            </table>
+
+            <!-- ── Contact ── -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding:20px 32px 28px;">
+                  <p style="margin:0;color:#94A3B8;font-size:12px;line-height:1.7;text-align:center;">
+                    Questions? Reply to this email or contact us at
+                    <a href="mailto:info@amicaconnect.com"
+                       style="color:#0A7EA4;text-decoration:none;font-weight:600;">
+                      info@amicaconnect.com
+                    </a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- ── FOOTER ── -->
+        <tr>
+          <td style="padding:24px 32px 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center">
+                  <p style="margin:0;color:#94A3B8;font-size:11px;line-height:1.6;">
+                    © {{ year }} <strong>Amica International Services</strong> · Guest Flow Pro<br>
+                    This email was sent to <a href="mailto:{{ email }}"
+                      style="color:#64748B;text-decoration:none;">{{ email }}</a>
+                    because you registered on our platform.
+                  </p>
+                  <p style="margin:8px 0 0;">
+                    <a href="{{ frontend_url }}" style="color:#94A3B8;font-size:11px;text-decoration:none;margin:0 8px;">
+                      Website
+                    </a>
+                    <span style="color:#CBD5E1;">·</span>
+                    <a href="mailto:info@amicaconnect.com" style="color:#94A3B8;font-size:11px;text-decoration:none;margin:0 8px;">
+                      Support
+                    </a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>
