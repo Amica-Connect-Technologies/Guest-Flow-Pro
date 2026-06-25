@@ -22,16 +22,16 @@ export default function MobileHeader({ activeLang, onLangClick }: MobileHeaderPr
     >
       <div
         className="flex items-center justify-between px-4"
-        style={{ height: 56, paddingTop: "env(safe-area-inset-top)" }}
+        style={{ height: 76, paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* Logo */}
         <Link href="/" className="flex items-center">
           <Image
             src="/logo.png"
             alt="GuestFlow Pro"
-            width={120}
-            height={36}
-            className="h-8 w-auto object-contain"
+            width={220}
+            height={64}
+            className="h-14 w-auto object-contain"
             priority
           />
         </Link>

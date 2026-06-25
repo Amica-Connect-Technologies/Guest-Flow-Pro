@@ -45,7 +45,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         </>
       )}
 
-      <main className={showHeader ? `flex-1 pt-14 md:pt-16${showFooter ? " pb-20 md:pb-0" : ""}` : "flex-1"}>
+      <main className={showHeader ? `flex-1 pt-[76px] md:pt-[76px]${showFooter ? " pb-20 md:pb-0" : ""}` : "flex-1"}>
         {children}
       </main>
 

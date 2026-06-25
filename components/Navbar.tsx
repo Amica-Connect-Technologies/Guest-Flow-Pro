@@ -33,16 +33,16 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100">
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between" style={{ height: 76 }}>
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
           <Image
             src="/logo.png"
             alt="GuestFlow Pro"
-            width={120}
-            height={40}
-            className="h-9 w-auto object-contain"
+            width={240}
+            height={68}
+            className="h-16 w-auto object-contain"
             priority
           />
         </Link>
