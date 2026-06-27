@@ -41,6 +41,7 @@ export type Registration = {
   rejection_reason: string;
   created_at: string;
   reviewed_at: string | null;
+  payment_proof_url: string | null;
 };
 
 // ── Token helpers ────────────────────────────────────────────────────────────

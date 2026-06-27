@@ -110,93 +110,118 @@ export default function RestaurantView({ hotel }: Props) {
   // ── Discovery screen ────────────────────────────────────────────────────────
   if (view === "discovery") {
     return (
-      <div className="space-y-4">
-        {/* Welcome header */}
-        <div className="relative overflow-hidden rounded-3xl p-6 text-white"
-          style={{
-            background: "linear-gradient(140deg, #1A0208 0%, #6B1535 40%, #9D174D 72%, #BE185D 100%)",
-            boxShadow: "0 12px 40px rgba(157,23,77,0.40)",
-          }}>
-          {/* Decorative glows */}
-          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(244,114,182,0.28) 0%, transparent 65%)" }} />
-          <div className="absolute -bottom-12 -left-8 w-40 h-40 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(251,191,36,0.16) 0%, transparent 65%)" }} />
-          <div className="absolute top-4 right-16 w-14 h-14 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)" }} />
+      <div className="space-y-5">
 
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "rgba(255,255,255,0.16)" }}>
-                <Utensils className="w-4 h-4 text-white" />
+        {/* ── Welcome header ── */}
+        <div className="relative overflow-hidden rounded-3xl"
+          style={{ background: "linear-gradient(145deg, #0B1426 0%, #0f2a4a 50%, #0a3d5c 100%)", boxShadow: "0 8px 32px rgba(11,20,38,0.25)" }}>
+          {/* Subtle dots */}
+          <div style={{ position: "absolute", inset: 0, opacity: 0.2,
+            backgroundImage: "radial-gradient(rgba(103,232,249,0.5) 1px, transparent 1px)",
+            backgroundSize: "24px 24px", pointerEvents: "none" }} />
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(6,182,212,0.2) 0%, transparent 65%)" }} />
+
+          <div className="relative z-10 p-6 md:p-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between md:gap-8">
+              <div className="mb-5 md:mb-0">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(103,232,249,0.15)", border: "1px solid rgba(103,232,249,0.25)" }}>
+                    <Utensils className="w-4 h-4" style={{ color: "#67e8f9" }} />
+                  </div>
+                  <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: "rgba(103,232,249,0.75)" }}>
+                    {t.restaurant.digitalConcierge}
+                  </span>
+                </div>
+                <p className="text-white font-black text-2xl md:text-3xl leading-tight mb-2">
+                  {t.restaurant.whatToEat}
+                </p>
+                <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  {t.restaurant.chooseHint}
+                </p>
               </div>
-              <span className="text-pink-200/90 text-[11px] font-black uppercase tracking-[0.15em]">
-                {t.restaurant.digitalConcierge}
-              </span>
+
+              {/* Trust badges */}
+              <div className="flex md:flex-col gap-2.5 md:gap-2 flex-shrink-0">
+                {[
+                  { icon: "📍", text: "Near Your Hotel" },
+                  { icon: "⭐", text: "Google Verified" },
+                  { icon: "🔄", text: "Live Results" },
+                ].map(b => (
+                  <div key={b.text} className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                    style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    <span className="text-sm">{b.icon}</span>
+                    <span className="text-xs font-semibold whitespace-nowrap" style={{ color: "rgba(255,255,255,0.6)" }}>{b.text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="text-white font-black text-2xl leading-tight mb-1.5 drop-shadow-sm">
-              {t.restaurant.whatToEat}
-            </p>
-            <p className="text-pink-200/70 text-sm leading-relaxed">
-              {t.restaurant.chooseHint}
-            </p>
           </div>
         </div>
 
-        {/* Active filters strip */}
-        {activeFilterCount > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">{t.restaurant.filtersLabel}</span>
-            {filters.openNow && <Chip label={t.restaurant.openNowChip} onRemove={() => setFilters(f => ({ ...f, openNow: false }))} />}
-            {filters.distance !== 1000 && <Chip label={t.restaurant.radiusChip.replace("{distance}", String(filters.distance))} onRemove={() => setFilters(f => ({ ...f, distance: 1000 }))} />}
-            {filters.familyFriendly && <Chip label={t.restaurant.familyFriendlyChip} onRemove={() => setFilters(f => ({ ...f, familyFriendly: false }))} />}
-            {filters.takeaway && <Chip label={t.restaurant.takeawayChip} onRemove={() => setFilters(f => ({ ...f, takeaway: false }))} />}
-          </div>
-        )}
-
-        {/* Filter button */}
-        <button onClick={() => setShowFilters(true)}
-          style={{
-            touchAction: "manipulation",
-            boxShadow: activeFilterCount > 0
-              ? "0 4px 16px rgba(37,99,235,0.22)"
-              : "0 2px 10px rgba(0,0,0,0.06)",
-            background: activeFilterCount > 0
-              ? "linear-gradient(135deg, #1E40AF, #2563EB)"
-              : "white",
-          }}
-          className="w-full flex items-center justify-between rounded-2xl px-4 py-4 active:scale-[0.98] transition-all">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${activeFilterCount > 0 ? "bg-white/20" : "bg-blue-50"}`}>
-              <SlidersHorizontal className={`w-4 h-4 ${activeFilterCount > 0 ? "text-white" : "text-blue-600"}`} />
-            </div>
+        {/* ── Filter bar ── */}
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowFilters(true)}
+            style={{
+              touchAction: "manipulation",
+              background: activeFilterCount > 0 ? "linear-gradient(135deg, #1E40AF, #2563EB)" : "white",
+              boxShadow: activeFilterCount > 0 ? "0 4px 16px rgba(37,99,235,0.25)" : "0 2px 10px rgba(0,0,0,0.07)",
+            }}
+            className="flex items-center gap-2.5 rounded-2xl px-4 py-3 flex-shrink-0 transition-all">
+            <SlidersHorizontal className={`w-4 h-4 ${activeFilterCount > 0 ? "text-white" : "text-blue-600"}`} />
             <span className={`font-black text-sm ${activeFilterCount > 0 ? "text-white" : "text-slate-700"}`}>
               {t.restaurant.filterResults}
             </span>
             {activeFilterCount > 0 && (
               <span className="bg-white/25 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{activeFilterCount}</span>
             )}
-          </div>
-          <span className={`text-xs font-semibold ${activeFilterCount > 0 ? "text-blue-200" : "text-slate-400"}`}>
-            {t.restaurant.tapToCustomise}
-          </span>
-        </button>
+          </button>
 
-        {/* Category grid */}
+          {/* Active filter chips */}
+          {activeFilterCount > 0 && (
+            <div className="flex gap-2 overflow-x-auto flex-1" style={{ scrollbarWidth: "none" }}>
+              {filters.openNow && <Chip label={t.restaurant.openNowChip} onRemove={() => setFilters(f => ({ ...f, openNow: false }))} />}
+              {filters.distance !== 1000 && <Chip label={t.restaurant.radiusChip.replace("{distance}", String(filters.distance))} onRemove={() => setFilters(f => ({ ...f, distance: 1000 }))} />}
+              {filters.familyFriendly && <Chip label={t.restaurant.familyFriendlyChip} onRemove={() => setFilters(f => ({ ...f, familyFriendly: false }))} />}
+              {filters.takeaway && <Chip label={t.restaurant.takeawayChip} onRemove={() => setFilters(f => ({ ...f, takeaway: false }))} />}
+            </div>
+          )}
+        </div>
+
+        {/* ── Category grid ── */}
         <div>
-          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.12em] mb-3.5 px-1">{t.restaurant.chooseACuisine}</p>
-          <div className="grid grid-cols-3 gap-3">
+          <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] mb-4 px-0.5">
+            {t.restaurant.chooseACuisine}
+          </p>
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {CATEGORIES.map(cat => (
               <button key={cat.id} onClick={() => loadCategory(cat)}
                 style={{
                   touchAction: "manipulation",
-                  background: `linear-gradient(145deg, ${cat.color}18, ${cat.color}32)`,
-                  boxShadow: `0 4px 18px ${cat.color}28`,
-                  border: `1.5px solid ${cat.color}22`,
+                  background: "white",
+                  border: `1.5px solid ${cat.color}20`,
+                  boxShadow: `0 2px 12px rgba(0,0,0,0.06)`,
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
                 }}
-                className="rounded-2xl py-5 px-2 flex flex-col items-center justify-center gap-2.5 active:scale-95 transition-all min-h-[102px]">
-                <span className="text-[34px] leading-none">{cat.emoji}</span>
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.transform = "translateY(-4px) scale(1.02)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = `0 12px 32px ${cat.color}30`;
+                  (e.currentTarget as HTMLElement).style.borderColor = `${cat.color}55`;
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.transform = "translateY(0) scale(1)";
+                  (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)";
+                  (e.currentTarget as HTMLElement).style.borderColor = `${cat.color}20`;
+                }}
+                className="rounded-2xl py-5 px-2 flex flex-col items-center justify-center gap-2.5 min-h-[108px]">
+
+                {/* Emoji in colored circle */}
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: cat.bg }}>
+                  <span className="text-[26px] leading-none">{cat.emoji}</span>
+                </div>
+
                 <span className="font-black text-[11px] text-center leading-tight" style={{ color: cat.color }}>
                   {cat.label}
                 </span>
@@ -219,44 +244,69 @@ export default function RestaurantView({ hotel }: Props) {
 
   // ── Results screen ──────────────────────────────────────────────────────────
   return (
-    <div className="space-y-3">
-      {/* Back bar */}
-      <div className="flex items-center gap-3">
-        <button onClick={() => { setView("discovery"); setResults([]); }}
-          style={{ touchAction: "manipulation", boxShadow: "0 2px 10px rgba(0,0,0,0.07)" }}
-          className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform">
-          <ChevronLeft className="w-5 h-5 text-slate-700" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="font-black text-slate-900 text-base truncate">
-            {selectedCat?.emoji} {selectedCat?.label}
-          </p>
-          <p className="text-xs text-slate-400 font-semibold">{t.restaurant.near.replace("{city}", hotel.city)}</p>
-        </div>
-        <button onClick={() => setShowFilters(true)}
-          style={{
-            touchAction: "manipulation",
-            boxShadow: activeFilterCount === 0 ? "0 2px 8px rgba(0,0,0,0.07)" : undefined,
-          }}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black active:scale-95 transition-transform ${
-            activeFilterCount > 0 ? "bg-blue-600 text-white" : "bg-white text-slate-700"
-          }`}>
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          {t.restaurant.filter}
-          {activeFilterCount > 0 && <span className="bg-white/25 text-white font-black px-1.5 py-0.5 rounded-full text-[10px]">{activeFilterCount}</span>}
-        </button>
-      </div>
+    <div className="space-y-4">
 
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-        <input
-          value={searchQ}
-          onChange={e => setSearchQ(e.target.value)}
-          placeholder={t.restaurant.searchPlaceholder.replace("{category}", selectedCat?.label ?? t.restaurant.restaurantsFallback)}
-          className="w-full bg-white rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
-          style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.06)" }}
-        />
+      {/* ── Results header card ── */}
+      <div className="bg-white rounded-3xl px-4 py-4 md:px-6 md:py-5"
+        style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+        <div className="flex items-center gap-4">
+          {/* Back button */}
+          <button onClick={() => { setView("discovery"); setResults([]); }}
+            style={{ touchAction: "manipulation", background: "#F1F5F9" }}
+            className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform">
+            <ChevronLeft className="w-5 h-5 text-slate-600" />
+          </button>
+
+          {/* Cuisine info */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+              style={{ background: selectedCat?.bg ?? "#F1F5F9" }}>
+              <span className="text-2xl leading-none">{selectedCat?.emoji}</span>
+            </div>
+            <div className="min-w-0">
+              <p className="font-black text-slate-900 text-lg leading-none">{selectedCat?.label}</p>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <span className="text-xs font-semibold text-slate-400">
+                  {t.restaurant.near.replace("{city}", hotel.city)}
+                </span>
+                {!loading && displayed.length > 0 && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-slate-200 flex-shrink-0" />
+                    <span className="text-xs font-black" style={{ color: selectedCat?.color ?? "#2563EB" }}>
+                      {displayed.length} results
+                    </span>
+                  </>
+                )}
+                <span className="w-1 h-1 rounded-full bg-slate-200 flex-shrink-0" />
+                <span className="text-[10px] font-semibold text-slate-300">via Google Places</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter button */}
+          <button onClick={() => setShowFilters(true)}
+            style={{ touchAction: "manipulation" }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-black flex-shrink-0 transition-all ${
+              activeFilterCount > 0 ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+            }`}>
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="hidden sm:inline">{t.restaurant.filter}</span>
+            {activeFilterCount > 0 && (
+              <span className="bg-white/30 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{activeFilterCount}</span>
+            )}
+          </button>
+        </div>
+
+        {/* Search bar inside the header card */}
+        <div className="relative mt-3">
+          <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            value={searchQ}
+            onChange={e => setSearchQ(e.target.value)}
+            placeholder={t.restaurant.searchPlaceholder.replace("{category}", selectedCat?.label ?? t.restaurant.restaurantsFallback)}
+            className="w-full bg-slate-50 rounded-xl pl-11 pr-4 py-3 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border border-slate-100 outline-none focus:border-slate-200 transition-colors"
+          />
+        </div>
       </div>
 
       {/* Active filters chips */}
@@ -271,17 +321,22 @@ export default function RestaurantView({ hotel }: Props) {
 
       {/* Loading skeletons */}
       {loading && (
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse"
-              style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
-              <div className="h-48 bg-slate-100" />
-              <div className="p-5 space-y-3">
-                <div className="h-4 bg-slate-100 rounded-full w-2/3" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse flex flex-col md:flex-row"
+              style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+              <div className="h-44 md:h-auto md:w-[220px] md:flex-shrink-0 bg-slate-100" />
+              <div className="flex-1 p-5 space-y-3">
+                <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+                <div className="h-3 bg-slate-100 rounded-full w-full" />
+                <div className="h-3 bg-slate-100 rounded-full w-2/3" />
                 <div className="h-3 bg-slate-100 rounded-full w-1/2" />
-                <div className="h-3 bg-slate-100 rounded-full w-3/4" />
+                <div className="flex gap-2 pt-2 mt-2">
+                  <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                  <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                  <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-px h-14 bg-slate-50" />
             </div>
           ))}
         </div>
@@ -315,9 +370,13 @@ export default function RestaurantView({ hotel }: Props) {
       )}
 
       {/* Results */}
-      {!loading && displayed.map((place, i) => (
-        <RestaurantCard key={place.place_id} place={place} index={i} accentColor={selectedCat?.color ?? "#2563EB"} accentBg={selectedCat?.bg ?? "#EFF6FF"} />
-      ))}
+      {!loading && displayed.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {displayed.map((place, i) => (
+            <RestaurantCard key={place.place_id} place={place} index={i} accentColor={selectedCat?.color ?? "#2563EB"} accentBg={selectedCat?.bg ?? "#EFF6FF"} />
+          ))}
+        </div>
+      )}
 
       {/* Count */}
       {!loading && displayed.length > 0 && (
@@ -364,61 +423,60 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
   const priceLabel = place.price_level != null ? (PRICE[place.price_level] ?? "") : "";
 
   return (
-    <div className="bg-white rounded-3xl overflow-hidden" style={{ boxShadow: "0 4px 28px rgba(0,0,0,0.09)" }}>
+    <div className="bg-white rounded-3xl overflow-hidden flex flex-col md:flex-row"
+      style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)", transition: "box-shadow 0.2s ease" }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,0,0,0.13)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}>
 
-      {/* Photo */}
+      {/* ── Photo — full width mobile / fixed 220px desktop ── */}
       {place.photo_url ? (
-        <div className="relative w-full h-52">
+        <div className="relative w-full h-52 md:w-[220px] md:h-auto md:flex-shrink-0">
           <Image unoptimized src={place.photo_url} alt={place.name} fill className="object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+          {/* Mobile: bottom-up gradient; Desktop: right-facing gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-transparent" />
 
-          {/* Top badges */}
-          <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
-            {badge && (
-              <span className="text-[11px] font-black px-3 py-1.5 rounded-xl shadow-lg"
-                style={{ background: badge.bg, color: badge.color }}>
-                {badge.label}
+          {/* Open / price badges — top right */}
+          <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+            {place.open_now != null && (
+              <span className={`text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
+                {place.open_now ? t.restaurant.open : t.restaurant.closed}
               </span>
             )}
-            <div className="flex items-center gap-1.5 ml-auto">
-              {place.open_now != null && (
-                <span className={`text-xs font-black px-2.5 py-1 rounded-xl shadow ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
-                  {place.open_now ? t.restaurant.open : t.restaurant.closed}
-                </span>
-              )}
-              {priceLabel && (
-                <span className="text-xs font-black px-2.5 py-1 rounded-xl bg-black/60 text-white">
-                  {priceLabel}
-                </span>
-              )}
-            </div>
+            {priceLabel && (
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md bg-black/55 text-white backdrop-blur-sm">
+                {priceLabel}
+              </span>
+            )}
           </div>
 
-          {/* Bottom name + rating on photo */}
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <p className="font-black text-white text-xl leading-snug drop-shadow-md">{place.name}</p>
+          {/* Trust badge — top left */}
+          {badge && (
+            <span className="absolute top-3 left-3 text-[11px] font-black px-3 py-1 rounded-xl shadow-md"
+              style={{ background: badge.bg, color: badge.color }}>
+              {badge.label}
+            </span>
+          )}
+
+          {/* Name + rating overlay — mobile only */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 md:hidden">
+            <p className="font-black text-white text-lg leading-snug drop-shadow-md">{place.name}</p>
             {place.rating != null && (
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <div className="flex items-center gap-1 bg-amber-400/20 backdrop-blur-sm px-2.5 py-1 rounded-xl">
-                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                  <span className="font-black text-sm text-white">{place.rating.toFixed(1)}</span>
-                  {place.user_ratings_total > 0 && (
-                    <span className="text-xs text-white/70">
-                      ({place.user_ratings_total > 999
-                        ? `${(place.user_ratings_total / 1000).toFixed(1)}k`
-                        : place.user_ratings_total})
-                    </span>
-                  )}
-                </div>
+              <div className="flex items-center gap-1 bg-black/30 backdrop-blur-sm w-fit px-2.5 py-1 rounded-xl mt-1.5">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <span className="font-black text-sm text-white">{place.rating.toFixed(1)}</span>
+                {place.user_ratings_total > 0 && (
+                  <span className="text-xs text-white/65">({place.user_ratings_total > 999 ? `${(place.user_ratings_total / 1000).toFixed(1)}k` : place.user_ratings_total})</span>
+                )}
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div className="w-full h-28 flex items-center justify-center relative" style={{ background: accentBg }}>
-          <span className="text-6xl opacity-30">🍽️</span>
+        <div className="w-full h-32 md:w-[220px] md:h-auto md:flex-shrink-0 flex items-center justify-center relative"
+          style={{ background: accentBg }}>
+          <span className="text-5xl opacity-25">🍽️</span>
           {badge && (
-            <span className="absolute top-3 left-3 text-[11px] font-black px-3 py-1.5 rounded-xl"
+            <span className="absolute top-3 left-3 text-[11px] font-black px-3 py-1 rounded-xl"
               style={{ background: badge.bg, color: badge.color }}>
               {badge.label}
             </span>
@@ -426,63 +484,66 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
         </div>
       )}
 
-      {/* Details section */}
-      <div className="p-5">
-        {/* Name (when no photo) */}
-        {!place.photo_url && (
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <p className="font-black text-slate-900 text-xl leading-snug flex-1">{place.name}</p>
-            {place.rating != null && (
-              <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1.5 rounded-xl flex-shrink-0">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="font-black text-sm text-slate-800">{place.rating.toFixed(1)}</span>
-              </div>
-            )}
-          </div>
-        )}
+      {/* ── Content ── */}
+      <div className="flex-1 flex flex-col p-5">
+
+        {/* Name + rating — desktop (name not in photo overlay) */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <p className="font-black text-slate-900 text-base md:text-lg leading-snug flex-1">
+            {/* Mobile: only show name if no photo (already on photo overlay) */}
+            <span className={place.photo_url ? "hidden md:block" : ""}>{place.name}</span>
+          </p>
+          {place.rating != null && (
+            <div className="hidden md:flex items-center gap-1.5 bg-amber-50 px-2.5 py-1.5 rounded-xl flex-shrink-0">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span className="font-black text-sm text-slate-800">{place.rating.toFixed(1)}</span>
+              {place.user_ratings_total > 0 && (
+                <span className="text-xs text-slate-400">({place.user_ratings_total > 999 ? `${(place.user_ratings_total / 1000).toFixed(1)}k` : place.user_ratings_total})</span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* AI description */}
         {place.ai_description && (
-          <p className="text-sm text-slate-500 leading-relaxed italic mb-3">
+          <p className="text-sm text-slate-500 leading-relaxed italic mb-3 line-clamp-2">
             &ldquo;{place.ai_description}&rdquo;
           </p>
         )}
 
         {/* Address */}
         {place.address && (
-          <div className="flex items-center gap-2 mb-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />
+          <div className="flex items-center gap-2">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accentColor }} />
             <p className="text-sm text-slate-400 truncate">{place.address}</p>
           </div>
         )}
-      </div>
 
-      {/* Action buttons row */}
-      <div className="grid grid-cols-3 border-t border-slate-100">
-        {/* Directions */}
-        <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
-          style={{ touchAction: "manipulation", color: accentColor }}
-          className="flex flex-col items-center justify-center gap-1.5 py-4 active:opacity-70 transition-opacity border-r border-slate-100">
-          <Navigation className="w-5 h-5" />
-          <span className="text-xs font-black">{t.restaurant.directions}</span>
-        </a>
+        {/* Spacer pushes buttons to bottom */}
+        <div className="flex-1 min-h-[12px]" />
 
-        {/* Call */}
-        <a href={`https://www.google.com/search?q=${encodeURIComponent(place.name + " " + place.address + " phone number")}`}
-          target="_blank" rel="noopener noreferrer"
-          style={{ touchAction: "manipulation" }}
-          className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-500 active:opacity-70 transition-opacity border-r border-slate-100">
-          <Phone className="w-5 h-5" />
-          <span className="text-xs font-black">{t.restaurant.call}</span>
-        </a>
-
-        {/* View on Maps */}
-        <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
-          style={{ touchAction: "manipulation" }}
-          className="flex flex-col items-center justify-center gap-1.5 py-4 text-slate-500 active:opacity-70 transition-opacity">
-          <MapPin className="w-5 h-5" />
-          <span className="text-xs font-black">{t.restaurant.view}</span>
-        </a>
+        {/* ── Action buttons — horizontal row ── */}
+        <div className="flex gap-2 pt-3 mt-2 border-t border-slate-100">
+          <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
+            style={{ touchAction: "manipulation", color: "white", background: accentColor }}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-black transition-opacity hover:opacity-85">
+            <Navigation className="w-3.5 h-3.5 flex-shrink-0" />
+            {t.restaurant.directions}
+          </a>
+          <a href={`https://www.google.com/search?q=${encodeURIComponent(place.name + " " + place.address + " phone number")}`}
+            target="_blank" rel="noopener noreferrer"
+            style={{ touchAction: "manipulation" }}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-black hover:bg-slate-200 transition-colors">
+            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+            {t.restaurant.call}
+          </a>
+          <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
+            style={{ touchAction: "manipulation" }}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-black hover:bg-slate-200 transition-colors">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            {t.restaurant.view}
+          </a>
+        </div>
       </div>
     </div>
   );

@@ -162,17 +162,20 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   // ── Nearby skeleton ──────────────────────────────────────────────────────
   function NearbyLoading() {
     return (
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[1, 2, 3].map(i => (
           <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse"
-            style={{ boxShadow: "0 2px 20px rgba(0,0,0,0.07)" }}>
+            style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
             <div className="h-44 bg-slate-100 w-full" />
             <div className="p-5 space-y-3">
               <div className="h-4 bg-slate-100 rounded-full w-3/4" />
               <div className="h-3 bg-slate-100 rounded-full w-1/2" />
               <div className="h-3 bg-slate-100 rounded-full w-2/3" />
             </div>
-            <div className="h-14 bg-slate-50 w-full" />
+            <div className="flex gap-2 px-5 pb-5">
+              <div className="flex-1 h-10 bg-slate-100 rounded-2xl" />
+              <div className="flex-1 h-10 bg-slate-100 rounded-2xl" />
+            </div>
           </div>
         ))}
       </div>
@@ -180,20 +183,31 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   }
 
   // ── Section banner ────────────────────────────────────────────────────────
-  function SectionBanner({ icon: Icon, iconBg, iconColor, title, subtitle }: {
-    icon: LucideIcon; iconBg: string; iconColor: string; title: string; subtitle: string;
+  function SectionBanner({ icon: Icon, iconBg, iconColor, title, subtitle, count }: {
+    icon: LucideIcon; iconBg: string; iconColor: string; title: string; subtitle: string; count?: number;
   }) {
     return (
-      <div className="bg-white rounded-3xl p-5 flex items-center gap-4 mb-2"
-        style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+      <div className="rounded-3xl p-5 md:p-6 flex items-center gap-5 mb-4"
+        style={{
+          background: `linear-gradient(135deg, ${iconBg} 0%, white 100%)`,
+          border: `1px solid ${iconColor}22`,
+          boxShadow: `0 4px 24px ${iconColor}18`,
+        }}>
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: iconBg }}>
+          style={{ background: `linear-gradient(135deg, ${iconColor}22, ${iconColor}38)`, boxShadow: `0 4px 12px ${iconColor}28` }}>
           <Icon className="w-7 h-7" style={{ color: iconColor }} />
         </div>
-        <div>
-          <p className="font-black text-slate-900 text-base">{title}</p>
-          <p className="text-slate-400 text-sm mt-0.5">{subtitle}</p>
+        <div className="flex-1 min-w-0">
+          <p className="font-black text-slate-900 text-lg leading-none">{title}</p>
+          <p className="text-slate-500 text-sm mt-1">{subtitle}</p>
         </div>
+        {count != null && count > 0 && (
+          <div className="flex-shrink-0 text-center px-4 py-2.5 rounded-2xl"
+            style={{ background: `${iconColor}14` }}>
+            <p className="font-black text-lg leading-none" style={{ color: iconColor }}>{count}</p>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: `${iconColor}90` }}>found</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -205,51 +219,61 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     const priceLabel = place.price_level != null
       ? (["Free", "£", "££", "£££", "££££"][place.price_level] ?? "") : "";
     return (
-      <div className="bg-white rounded-3xl overflow-hidden"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+      <div className="bg-white rounded-3xl overflow-hidden flex flex-col"
+        style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 36px rgba(0,0,0,0.14)";
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+          (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.08)";
+        }}>
 
         {/* Photo */}
         {place.photo_url ? (
-          <div className="relative w-full h-48">
+          <div className="relative w-full h-44 flex-shrink-0">
             <Image unoptimized src={place.photo_url} alt={place.name} fill className="object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
-            {place.open_now != null && (
-              <span className={`absolute top-3 left-3 text-xs font-black px-3 py-1.5 rounded-xl shadow-lg ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
-                {place.open_now ? t.concierge.openNowBadge : t.concierge.closed}
-              </span>
-            )}
-            {priceLabel && (
-              <span className="absolute top-3 right-3 text-xs font-black px-3 py-1.5 rounded-xl bg-black/60 text-white">
-                {priceLabel}
-              </span>
-            )}
-            {/* Name overlay on photo */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+            {/* Badges */}
+            <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
+              {place.open_now != null && (
+                <span className={`text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
+                  {place.open_now ? t.concierge.openNowBadge : t.concierge.closed}
+                </span>
+              )}
+              {priceLabel && (
+                <span className="text-[11px] font-black px-2.5 py-1 rounded-xl bg-black/55 text-white backdrop-blur-sm ml-auto">
+                  {priceLabel}
+                </span>
+              )}
+            </div>
+            {/* Name + rating overlay */}
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <p className="font-black text-white text-lg leading-snug drop-shadow-md">{place.name}</p>
+              <p className="font-black text-white text-base leading-snug drop-shadow-md">{place.name}</p>
               {place.rating != null && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <svg viewBox="0 0 24 24" fill="#FBBF24" className="w-4 h-4 flex-shrink-0">
+                <div className="flex items-center gap-1.5 mt-1.5 w-fit px-2.5 py-1 rounded-xl"
+                  style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
+                  <svg viewBox="0 0 24 24" fill="#FBBF24" className="w-3.5 h-3.5 flex-shrink-0">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
                   <span className="font-black text-sm text-white">{place.rating.toFixed(1)}</span>
                   {place.user_ratings_total > 0 && (
-                    <span className="text-xs text-white/70">
-                      ({place.user_ratings_total > 999
-                        ? `${(place.user_ratings_total / 1000).toFixed(1)}k`
-                        : place.user_ratings_total})
-                    </span>
+                    <span className="text-xs text-white/65">({place.user_ratings_total > 999
+                      ? `${(place.user_ratings_total / 1000).toFixed(1)}k`
+                      : place.user_ratings_total})</span>
                   )}
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="w-full h-28 flex items-center justify-center" style={{ background: accentBg }}>
-            <MapPin className="w-10 h-10 opacity-25" style={{ color: accentColor }} />
+          <div className="w-full h-32 flex items-center justify-center flex-shrink-0" style={{ background: accentBg }}>
+            <MapPin className="w-10 h-10 opacity-20" style={{ color: accentColor }} />
           </div>
         )}
 
-        {/* Details (only shown when no photo, since name/rating is on the photo) */}
+        {/* Details (name + rating when no photo) */}
         {!place.photo_url && (
           <div className="px-5 pt-4 pb-2">
             <div className="flex items-start justify-between gap-2">
@@ -266,29 +290,37 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           </div>
         )}
 
-        {/* AI description + address */}
-        <div className="px-5 pt-3 pb-4">
+        {/* Content area */}
+        <div className="px-5 pt-3 pb-4 flex-1 flex flex-col">
           {place.ai_description && (
-            <p className="text-sm text-slate-500 leading-relaxed italic">{place.ai_description}</p>
+            <p className="text-xs text-slate-500 leading-relaxed italic mb-2.5 line-clamp-2">
+              &ldquo;{place.ai_description}&rdquo;
+            </p>
           )}
           {place.address && (
-            <div className="flex items-center gap-2 mt-2.5">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-300" />
-              <p className="text-sm text-slate-400 truncate">{place.address}</p>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accentColor, opacity: 0.7 }} />
+              <p className="text-xs text-slate-400 truncate">{place.address}</p>
             </div>
           )}
+          <div className="flex-1 min-h-[10px]" />
         </div>
 
-        {/* Directions button — prominent */}
-        <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
-          style={{ touchAction: "manipulation", background: accentBg, color: accentColor }}
-          className="flex items-center justify-center gap-2.5 py-4 border-t border-slate-100 text-sm font-black active:opacity-75 transition-opacity">
-          <Navigation className="w-4 h-4" />
-          {t.concierge.getDirections}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5 opacity-60">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        </a>
+        {/* Action buttons */}
+        <div className="flex gap-2 px-5 pb-5">
+          <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
+            style={{ touchAction: "manipulation", background: accentColor, color: "white" }}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-black transition-opacity hover:opacity-85">
+            <Navigation className="w-3.5 h-3.5 flex-shrink-0" />
+            {t.concierge.getDirections}
+          </a>
+          <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
+            style={{ touchAction: "manipulation" }}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-slate-100 text-slate-600 text-xs font-black hover:bg-slate-200 transition-colors">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            View on Maps
+          </a>
+        </div>
       </div>
     );
   }
@@ -301,14 +333,11 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
 
         <div className="flex items-stretch">
-          <div className="w-32 flex-shrink-0">
+          <div className="w-32 flex-shrink-0 self-stretch relative overflow-hidden" style={{ minHeight: 130 }}>
             {svc.image_url ? (
-              <div className="relative w-full h-full min-h-[120px]">
-                <Image unoptimized src={svc.image_url} alt={svc.name} fill className="object-cover" />
-              </div>
+              <Image unoptimized src={svc.image_url} alt={svc.name} fill className="object-cover" />
             ) : (
-              <div className="w-full min-h-[120px] flex items-center justify-center"
-                style={{ background: m.light }}>
+              <div className="absolute inset-0 flex items-center justify-center" style={{ background: m.light }}>
                 <m.Icon className="w-12 h-12" style={{ color: m.color }} />
               </div>
             )}
@@ -376,146 +405,267 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     <div className="min-h-screen pb-28"
       style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", background: "#ECEEF3" }}>
 
-      {/* ── Hero Header ──────────────────────────────────────────────────── */}
-      <div className="relative px-5 pt-8 pb-7 overflow-hidden"
-        style={{ background: "linear-gradient(150deg, #020B12 0%, #083344 30%, #0A4A5E 62%, #0E7490 100%)" }}>
+      {/* ══════════════════════════════════════════
+          HERO
+      ══════════════════════════════════════════ */}
+      <div className="relative overflow-hidden"
+        style={{ background: "linear-gradient(150deg, #020B12 0%, #083344 35%, #0A4A5E 65%, #0E7490 100%)" }}>
 
-        {/* Glow blobs */}
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.28) 0%, transparent 65%)" }} />
-        <div className="absolute top-6 right-5 w-20 h-20 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(251,191,36,0.20) 0%, transparent 70%)" }} />
-        <div className="absolute -bottom-20 -left-10 w-60 h-60 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(8,145,178,0.30) 0%, transparent 65%)" }} />
-        <div className="absolute bottom-8 right-20 w-16 h-16 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(103,232,249,0.12) 0%, transparent 70%)" }} />
+        {/* Subtle dot texture only — no large glow orbs */}
+        <div style={{ position: "absolute", inset: 0, opacity: 0.12,
+          backgroundImage: "radial-gradient(rgba(103,232,249,0.5) 1px, transparent 1px)",
+          backgroundSize: "28px 28px", pointerEvents: "none" }} />
+        {/* Soft bottom fade to blend into page */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+          style={{ background: "linear-gradient(to bottom, transparent, rgba(2,11,18,0.3))" }} />
 
-        {/* Hotel identity */}
-        <div className="relative z-10 flex items-center gap-4">
-          {hotel.logo_url ? (
-            <div className="relative flex-shrink-0">
-              <div className="absolute -inset-0.5 rounded-2xl opacity-80"
-                style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
-              <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={72} height={72}
-                className="relative w-[72px] h-[72px] rounded-2xl object-cover shadow-2xl" />
-            </div>
-          ) : (
-            <div className="relative flex-shrink-0">
-              <div className="absolute -inset-0.5 rounded-2xl opacity-80"
-                style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
-              <div className="relative w-[72px] h-[72px] rounded-2xl flex items-center justify-center shadow-2xl"
-                style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
-                <span className="text-white font-black text-2xl tracking-tight">
-                  {hotel.name.slice(0, 2).toUpperCase()}
-                </span>
+        <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-12 pt-8 md:pt-10 pb-8 md:pb-10">
+          <div className="flex flex-col md:flex-row md:items-stretch md:gap-10">
+
+            {/* ── Left: identity + stats + categories ── */}
+            <div className="flex-1 flex flex-col">
+
+              {/* Hotel identity row */}
+              <div className="flex items-start gap-4 mb-6">
+                {hotel.logo_url ? (
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute -inset-0.5 rounded-2xl opacity-70"
+                      style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
+                    <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={76} height={76}
+                      className="relative rounded-2xl object-cover shadow-xl"
+                      style={{ width: 76, height: 76 }} />
+                  </div>
+                ) : (
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute -inset-0.5 rounded-2xl opacity-70"
+                      style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
+                    <div className="relative rounded-2xl flex items-center justify-center shadow-xl"
+                      style={{ width: 76, height: 76, background: "linear-gradient(135deg, #083344, #0E7490)" }}>
+                      <span className="text-white font-black text-2xl tracking-tight">
+                        {hotel.name.slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0 pt-1">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    <p className="text-[10px] font-black tracking-[0.22em] uppercase"
+                      style={{ color: "rgba(103,232,249,0.8)" }}>
+                      {t.concierge.welcomeTo}
+                    </p>
+                  </div>
+                  <h1 className="text-white font-black leading-none mb-3"
+                    style={{ fontSize: "clamp(1.6rem, 3.5vw, 2.4rem)" }}>
+                    {hotel.name}
+                  </h1>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#67e8f9" }} />
+                      <span className="text-sm font-semibold" style={{ color: "rgba(103,232,249,0.85)" }}>{hotel.city}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                      style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)" }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth={2.5} className="w-3 h-3">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      <span className="text-[10px] font-black" style={{ color: "#34d399" }}>Verified Partner</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats — with icons */}
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                {[
+                  { n: services.length,                              label: t.concierge.statsServices,  accent: "#FCD34D", Icon: Bell        },
+                  { n: services.filter(s => s.is_available).length, label: t.concierge.statsAvailable, accent: "#6EE7B7", Icon: Sparkles    },
+                  { n: (hotel.amenities || []).length,               label: t.concierge.statsAmenities, accent: "#67E8F9", Icon: Briefcase   },
+                ].map(({ n, label, accent, Icon: StatIcon }) => (
+                  <button key={label} onClick={() => setTab("info")}
+                    className="rounded-2xl px-3 py-3 flex items-center gap-2.5 transition-all hover:scale-[1.02]"
+                    style={{
+                      touchAction: "manipulation",
+                      background: "rgba(255,255,255,0.07)",
+                      border: "1px solid rgba(103,232,249,0.15)",
+                      backdropFilter: "blur(12px)",
+                    }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${accent}20` }}>
+                      <StatIcon className="w-4 h-4" style={{ color: accent }} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-black text-lg md:text-xl leading-none" style={{ color: accent }}>{n}</p>
+                      <p className="text-[9px] font-bold tracking-wide mt-0.5 leading-tight" style={{ color: "rgba(103,232,249,0.55)" }}>{label}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Category pills — icon in colored circle, matches tab style */}
+              {availableCategories.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible" style={{ scrollbarWidth: "none" }}>
+                  {availableCategories.map(cat => {
+                    const m = CAT_META[cat] ?? CAT_META.other;
+                    const count = services.filter(s => s.category === cat).length;
+                    return (
+                      <button key={cat} onClick={() => setTab("info")}
+                        className="flex-shrink-0 flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 transition-all hover:scale-105"
+                        style={{
+                          touchAction: "manipulation",
+                          background: "rgba(255,255,255,0.09)",
+                          border: "1px solid rgba(103,232,249,0.22)",
+                          backdropFilter: "blur(10px)",
+                        }}>
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: "rgba(103,232,249,0.15)" }}>
+                          <m.Icon className="w-3.5 h-3.5" style={{ color: "#67e8f9" }} />
+                        </div>
+                        <span className="text-white text-xs font-bold whitespace-nowrap">{m.label}</span>
+                        <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                          style={{ background: "rgba(6,182,212,0.35)", color: "white" }}>{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Hotel description */}
+              <div className="mt-5 flex-1">
+                <p className="text-sm leading-relaxed"
+                  style={{ color: "rgba(255,255,255,0.5)" }}>
+                  {hotel.description?.trim()
+                    ? hotel.description
+                    : `Welcome to ${hotel.name}. Our dedicated concierge team is here to make your stay in ${hotel.city} as comfortable and memorable as possible. Explore local dining, attractions, and services — all at your fingertips.`
+                  }
+                </p>
+              </div>
+
+              {/* Powered by */}
+              <div className="hidden md:flex items-center gap-2 mt-5">
+                <div className="h-px flex-1" style={{ background: "rgba(103,232,249,0.1)" }} />
+                <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.25)" }}>
+                  Powered by <strong style={{ color: "rgba(255,255,255,0.4)" }}>Amica International</strong>
+                </p>
+                <div className="h-px flex-1" style={{ background: "rgba(103,232,249,0.1)" }} />
               </div>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <p className="text-cyan-300/90 text-[11px] font-black tracking-[0.18em] uppercase">
-                {t.concierge.welcomeTo}
-              </p>
+
+            {/* ── Right: info card (desktop only) ── */}
+            <div className="hidden md:flex md:w-[300px] md:flex-shrink-0">
+              <div className="rounded-3xl overflow-hidden flex flex-col w-full"
+                style={{
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(103,232,249,0.16)",
+                  backdropFilter: "blur(16px)",
+                }}>
+                {/* Card header */}
+                <div className="px-6 pt-5 pb-4 border-b" style={{ borderColor: "rgba(103,232,249,0.1)" }}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center"
+                      style={{ background: "rgba(103,232,249,0.15)" }}>
+                      <Info className="w-3.5 h-3.5" style={{ color: "#67e8f9" }} />
+                    </div>
+                    <p className="text-[11px] font-black tracking-[0.22em] uppercase"
+                      style={{ color: "rgba(103,232,249,0.65)" }}>
+                      Hotel Information
+                    </p>
+                  </div>
+                </div>
+
+                {/* Info rows */}
+                <div className="flex-1 flex flex-col divide-y" style={{ borderColor: "rgba(103,232,249,0.08)" }}>
+                  {[
+                    { Icon: Clock,  label: "Hours",    val: hotel.is_24_7 ? "Open 24/7" : `${hotel.open_time || "09:00"} – ${hotel.close_time || "22:00"}`, accent: "#6EE7B7" },
+                    { Icon: Wifi,   label: "Wi-Fi",    val: hotel.wifi_info || "Ask reception",                          accent: "#67E8F9" },
+                    { Icon: MapPin, label: "Location", val: hotel.address ? `${hotel.address}, ${hotel.city}` : hotel.city, accent: "#FCD34D" },
+                    { Icon: Globe,  label: "Language", val: hotel.language_default?.toUpperCase() || "EN",               accent: "#F9A8D4" },
+                  ].map(({ Icon, label, val, accent }) => (
+                    <div key={label} className="flex items-center gap-3.5 px-5 py-3.5">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: "rgba(255,255,255,0.08)" }}>
+                        <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[9px] font-black uppercase tracking-wider mb-0.5"
+                          style={{ color: "rgba(255,255,255,0.35)" }}>{label}</p>
+                        <p className="text-sm font-bold text-white truncate">{val}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* WhatsApp CTA */}
+                {hotel.whatsapp_number ? (
+                  <div className="p-4">
+                    <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g,"")}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-2xl text-sm font-black text-white transition-all hover:opacity-90"
+                      style={{ background: "linear-gradient(135deg, #10B981, #059669)", boxShadow: "0 4px 18px rgba(16,185,129,0.35)" }}>
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                      Chat on WhatsApp
+                    </a>
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    <div className="flex items-center justify-center gap-2 py-3 rounded-2xl"
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <Bell className="w-4 h-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                      <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.3)" }}>Contact via reception</span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-white font-black text-[26px] leading-tight line-clamp-2 drop-shadow-md">
-              {hotel.name}
-            </p>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <MapPin className="w-3.5 h-3.5 text-cyan-300 flex-shrink-0" />
-              <span className="text-cyan-200 text-sm font-semibold">{hotel.city}</span>
-            </div>
+
           </div>
         </div>
+      </div>
 
-        {/* Stats strip */}
-        <div className="relative z-10 grid grid-cols-3 gap-3 mt-6">
-          {[
-            { n: services.length,                              label: t.concierge.statsServices,  accent: "#FCD34D" },
-            { n: services.filter(s => s.is_available).length, label: t.concierge.statsAvailable, accent: "#6EE7B7" },
-            { n: (hotel.amenities || []).length,               label: t.concierge.statsAmenities, accent: "#67E8F9" },
-          ].map(({ n, label, accent }) => (
-            <button key={label} onClick={() => setTab("info")}
-              className="rounded-2xl px-2 py-4 text-center active:scale-95 transition-transform"
-              style={{
-                touchAction: "manipulation",
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(103,232,249,0.20)",
-                backdropFilter: "blur(12px)",
-              }}>
-              <p className="font-black text-3xl leading-none" style={{ color: accent }}>{n}</p>
-              <p className="text-cyan-200/70 text-[11px] font-bold mt-1.5 tracking-wide">{label}</p>
-            </button>
-          ))}
-        </div>
-
-        {/* Quick-access category pills */}
-        {availableCategories.length > 0 && (
-          <div className="relative z-10 mt-5 -mx-1 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-            {availableCategories.map(cat => {
-              const m = CAT_META[cat] ?? CAT_META.other;
-              const count = services.filter(s => s.category === cat).length;
+      {/* ══════════════════════════════════════════
+          TAB NAVIGATION
+      ══════════════════════════════════════════ */}
+      <div className="sticky top-0 z-30 pt-3 pb-3"
+        style={{ background: "#ECEEF3", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex gap-2 overflow-x-auto px-4 md:px-12 pb-0.5 md:justify-start" style={{ scrollbarWidth: "none" }}>
+            {([
+              { key: "restaurant" as const, label: t.concierge.tabs.restaurant, Icon: Utensils },
+              { key: "parking"    as const, label: t.concierge.tabs.parking,    Icon: Car      },
+              { key: "night"      as const, label: t.concierge.tabs.nightLife,  Icon: Moon     },
+              { key: "tours"      as const, label: t.concierge.tabs.tours,      Icon: Map      },
+              { key: "places"     as const, label: t.concierge.tabs.places,     Icon: MapPin   },
+              { key: "info"       as const, label: t.concierge.tabs.hotelInfo,  Icon: Info     },
+            ]).map(({ key, label, Icon }) => {
+              const active = tab === key;
               return (
-                <button key={cat}
-                  onClick={() => setTab("info")}
-                  className="flex-shrink-0 flex items-center gap-2 rounded-2xl px-4 py-2.5 active:scale-95 transition-transform"
+                <button key={key} onClick={() => setTab(key)}
                   style={{
                     touchAction: "manipulation",
-                    background: "rgba(255,255,255,0.09)",
-                    border: "1px solid rgba(103,232,249,0.20)",
-                    backdropFilter: "blur(10px)",
-                  }}>
-                  <m.Icon className="w-4 h-4 text-white" />
-                  <span className="text-white text-xs font-bold whitespace-nowrap">{m.label}</span>
-                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
-                    style={{ background: "rgba(6,182,212,0.35)", color: "white" }}>{count}</span>
+                    background: active ? "linear-gradient(135deg, #083344 0%, #0E7490 100%)" : "white",
+                    boxShadow: active ? "0 6px 22px rgba(14,116,144,0.38)" : "0 2px 8px rgba(0,0,0,0.06)",
+                    transition: "all 0.2s ease",
+                  }}
+                  className="flex-shrink-0 flex items-center gap-2.5 px-4 md:px-5 py-3 rounded-2xl">
+                  <div className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: active ? "rgba(255,255,255,0.18)" : "#ECFEFF" }}>
+                    <Icon className="w-3.5 h-3.5" style={{ color: active ? "white" : "#0E7490" }} />
+                  </div>
+                  <span className="font-black text-[13px] whitespace-nowrap"
+                    style={{ color: active ? "white" : "#1E293B" }}>
+                    {label}
+                  </span>
                 </button>
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* ── Tab Navigation (horizontal scroll) ──────────────────────────── */}
-      <div className="sticky top-0 z-30 pt-4 pb-3"
-        style={{ background: "#ECEEF3", boxShadow: "0 4px 24px rgba(0,0,0,0.09)" }}>
-        <div className="flex gap-2 overflow-x-auto px-4 pb-0.5" style={{ scrollbarWidth: "none" }}>
-          {([
-            { key: "restaurant" as const, label: t.concierge.tabs.restaurant, Icon: Utensils },
-            { key: "parking"    as const, label: t.concierge.tabs.parking,    Icon: Car      },
-            { key: "night"      as const, label: t.concierge.tabs.nightLife,  Icon: Moon     },
-            { key: "tours"      as const, label: t.concierge.tabs.tours,      Icon: Map      },
-            { key: "places"     as const, label: t.concierge.tabs.places,     Icon: MapPin   },
-            { key: "info"       as const, label: t.concierge.tabs.hotelInfo,  Icon: Info     },
-          ]).map(({ key, label, Icon }) => {
-            const active = tab === key;
-            return (
-              <button key={key} onClick={() => setTab(key)}
-                style={{
-                  touchAction: "manipulation",
-                  background: active
-                    ? "linear-gradient(135deg, #083344 0%, #0E7490 100%)"
-                    : "white",
-                  boxShadow: active
-                    ? "0 6px 22px rgba(14,116,144,0.42)"
-                    : "0 2px 8px rgba(0,0,0,0.06)",
-                }}
-                className="flex-shrink-0 flex items-center gap-2.5 px-5 py-3.5 rounded-2xl transition-all active:scale-[0.96]">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0`}
-                  style={{ background: active ? "rgba(255,255,255,0.18)" : "#ECFEFF" }}>
-                  <Icon className="w-4 h-4" style={{ color: active ? "white" : "#0E7490" }} />
-                </div>
-                <span className="font-black text-[13px] whitespace-nowrap"
-                  style={{ color: active ? "white" : "#1E293B" }}>
-                  {label}
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-4">
+      <div className="max-w-7xl mx-auto px-4 md:px-12 pt-5 space-y-4 md:space-y-5">
 
         {/* ══ RESTAURANT ══════════════════════════════════════════════════ */}
         {tab === "restaurant" && (
@@ -527,10 +677,11 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <SectionBanner icon={Car} iconBg="#EFF6FF" iconColor="#2563EB"
               title={t.concierge.parkingTitle}
-              subtitle={t.concierge.parkingSubtitle.replace("{city}", hotel.city)} />
+              subtitle={t.concierge.parkingSubtitle.replace("{city}", hotel.city)}
+              count={nearbyParking?.length} />
             {loadingNearby["parking"] ? <NearbyLoading /> :
              nearbyParking && nearbyParking.length > 0
-               ? nearbyParking.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#075985" accentBg="#E0F2FE" />)
+               ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{nearbyParking.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#075985" accentBg="#E0F2FE" />)}</div>
                : <EmptyState Icon={Car} title={t.concierge.noParkingFound} subtitle={t.concierge.askReceptionParking} />
             }
           </>
@@ -541,10 +692,11 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <SectionBanner icon={Moon} iconBg="#F5F3FF" iconColor="#7C3AED"
               title={t.concierge.nightlifeTitle}
-              subtitle={t.concierge.nightlifeSubtitle.replace("{city}", hotel.city)} />
+              subtitle={t.concierge.nightlifeSubtitle.replace("{city}", hotel.city)}
+              count={nearbyNightlife?.length} />
             {loadingNearby["nightlife"] ? <NearbyLoading /> :
              nearbyNightlife && nearbyNightlife.length > 0
-               ? nearbyNightlife.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#6B21A8" accentBg="#F3E8FF" />)
+               ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{nearbyNightlife.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#6B21A8" accentBg="#F3E8FF" />)}</div>
                : <EmptyState Icon={Moon} title={t.concierge.noNightlifeFound} subtitle={t.concierge.askReceptionEvening} />
             }
           </>
@@ -553,77 +705,127 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* ══ TOURS ═══════════════════════════════════════════════════════ */}
         {tab === "tours" && (
           <>
-            {/* Live GetYourGuide widgets — shown automatically, no manual setup needed */}
-            <Script
-              async
-              defer
+            <Script async defer
               src="https://widget.getyourguide.com/dist/pa.umd.production.min.js"
               data-gyg-partner-id="E1C9YRK"
               strategy="lazyOnload"
             />
+
+            {/* Section header */}
+            <SectionBanner icon={Map} iconBg="#EFF6FF" iconColor="#2563EB"
+              title={t.concierge.tabs.tours}
+              subtitle={`Curated tours & experiences near ${hotel.city} — powered by GetYourGuide`} />
+
+            {/* GYG city widgets — each wrapped in a card */}
             <div className="space-y-4">
               {GYG_LOCATION_IDS.map((locationId) => (
-                <div key={locationId}
-                  data-gyg-href="https://widget.getyourguide.com/default/city.frame"
-                  data-gyg-location-id={locationId}
-                  data-gyg-locale-code="it-IT"
-                  data-gyg-widget="city"
-                  data-gyg-partner-id="E1C9YRK"
-                />
+                <div key={locationId} className="bg-white rounded-3xl overflow-hidden"
+                  style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)", transition: "box-shadow 0.2s ease" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 36px rgba(0,0,0,0.13)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.08)"; }}>
+                  <div
+                    data-gyg-href="https://widget.getyourguide.com/default/city.frame"
+                    data-gyg-location-id={locationId}
+                    data-gyg-locale-code="it-IT"
+                    data-gyg-widget="city"
+                    data-gyg-partner-id="E1C9YRK"
+                  />
+                </div>
               ))}
+              {/* Attribution */}
+              <div className="flex items-center justify-center gap-3 py-2">
+                <div className="h-px flex-1 max-w-[100px] bg-slate-200" />
+                <p className="text-[11px] font-semibold text-slate-400">
+                  Tours powered by <strong className="text-slate-500">GetYourGuide</strong>
+                </p>
+                <div className="h-px flex-1 max-w-[100px] bg-slate-200" />
+              </div>
             </div>
 
-            <div className="relative">
-              <Search className="w-5 h-5 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input value={tourQ} onChange={e => setTourQ(e.target.value)} placeholder={t.concierge.searchToursPlaceholder}
-                className="w-full bg-white rounded-2xl pl-12 pr-4 py-4 text-base font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
-                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }} />
-            </div>
-            {filteredTours.length === 0 ? (
-              <EmptyState Icon={Map} title={t.concierge.noToursAvailable} subtitle={t.concierge.checkBackSoon} />
-            ) : filteredTours.map(tour => (
-              <div key={tour.id} className="bg-white rounded-3xl overflow-hidden"
-                style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-                {tour.image_url ? (
-                  <div className="relative w-full h-52">
-                    <Image unoptimized src={tour.image_url} alt={tour.title} fill className="object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    {tour.provider && (
-                      <span className={`absolute top-3 left-3 text-xs font-black px-3 py-1.5 rounded-xl shadow ${tour.provider === "GYG" ? "bg-orange-500" : "bg-blue-600"} text-white`}>
-                        {tour.provider === "GYG" ? "GetYourGuide" : "Viator"}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full h-28 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-                    <Map className="w-12 h-12 text-white/40" />
-                  </div>
-                )}
-                <div className="p-5">
-                  <p className="font-black text-slate-900 text-lg leading-snug">{tour.title}</p>
-                  {tour.description && <p className="text-sm text-slate-400 mt-2 line-clamp-2 leading-relaxed">{tour.description}</p>}
-                  <div className="flex items-center justify-between mt-5">
-                    <div>
-                      {tour.price ? (
-                        <div>
-                          <span className="text-xs text-slate-400 font-semibold uppercase tracking-wide">{t.concierge.from}</span>
-                          <p className="font-black text-2xl text-slate-900">${tour.price}</p>
+            {/* Hotel-added tours section */}
+            {filteredTours.length > 0 && (
+              <>
+                {/* Divider */}
+                <div className="flex items-center gap-4 py-1">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">
+                    Also from this hotel
+                  </span>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                {/* Search bar */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input value={tourQ} onChange={e => setTourQ(e.target.value)}
+                    placeholder={t.concierge.searchToursPlaceholder}
+                    className="w-full bg-white rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
+                    style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }} />
+                </div>
+
+                {/* Tour cards — 2-col grid on desktop */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredTours.map(tour => (
+                    <div key={tour.id} className="bg-white rounded-3xl overflow-hidden flex flex-col"
+                      style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 36px rgba(0,0,0,0.13)";
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.08)";
+                      }}>
+
+                      {/* Photo */}
+                      {tour.image_url ? (
+                        <div className="relative w-full h-44 flex-shrink-0">
+                          <Image unoptimized src={tour.image_url} alt={tour.title} fill className="object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                          {tour.provider && (
+                            <span className={`absolute top-3 left-3 text-[11px] font-black px-3 py-1 rounded-xl shadow-md ${tour.provider === "GYG" ? "bg-orange-500" : "bg-blue-600"} text-white`}>
+                              {tour.provider === "GYG" ? "GetYourGuide" : "Viator"}
+                            </span>
+                          )}
                         </div>
                       ) : (
-                        <span className="text-base text-slate-400 font-semibold">{t.concierge.priceOnRequest}</span>
+                        <div className="w-full h-32 flex-shrink-0 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
+                          <Map className="w-12 h-12 text-white/30" />
+                        </div>
                       )}
+
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col">
+                        <h3 className="font-black text-slate-900 text-base leading-snug mb-2">{tour.title}</h3>
+                        {tour.description && (
+                          <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed mb-3">{tour.description}</p>
+                        )}
+                        <div className="flex-1" />
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                          <div>
+                            {tour.price ? (
+                              <>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">{t.concierge.from}</span>
+                                <p className="font-black text-2xl text-slate-900 leading-none mt-0.5">${tour.price}</p>
+                              </>
+                            ) : (
+                              <span className="text-sm text-slate-400 font-semibold">{t.concierge.priceOnRequest}</span>
+                            )}
+                          </div>
+                          {tour.affiliate_link && (
+                            <a href={tour.affiliate_link} target="_blank" rel="noopener noreferrer"
+                              style={{ touchAction: "manipulation", background: "#2563EB", boxShadow: "0 4px 16px rgba(37,99,235,0.35)" }}
+                              className="text-white text-sm font-black px-5 py-3 rounded-2xl hover:opacity-90 transition-opacity">
+                              {t.concierge.bookNow} →
+                            </a>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    {tour.affiliate_link && (
-                      <a href={tour.affiliate_link} target="_blank" rel="noopener noreferrer"
-                        style={{ touchAction: "manipulation", boxShadow: "0 6px 16px rgba(37,99,235,0.35)" }}
-                        className="bg-blue-600 text-white text-base font-black px-6 py-3.5 rounded-2xl active:scale-95 transition-transform">
-                        {t.concierge.bookNow}
-                      </a>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              </>
+            )}
           </>
         )}
 
@@ -632,11 +834,150 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <SectionBanner icon={MapPin} iconBg="#EEF2FF" iconColor="#4338CA"
               title={t.concierge.placesTitle}
-              subtitle={t.concierge.placesSubtitle.replace("{city}", hotel.city)} />
+              subtitle={t.concierge.placesSubtitle.replace("{city}", hotel.city)}
+              count={nearbyAttractions?.length} />
+
             {loadingNearby["places"] ? <NearbyLoading /> :
-             nearbyAttractions && nearbyAttractions.length > 0
-               ? nearbyAttractions.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#4338CA" accentBg="#EEF2FF" />)
-               : <EmptyState Icon={MapPin} title={t.concierge.noAttractionsFound} subtitle={t.concierge.askReceptionLocal} />
+             !nearbyAttractions || nearbyAttractions.length === 0
+               ? <EmptyState Icon={MapPin} title={t.concierge.noAttractionsFound} subtitle={t.concierge.askReceptionLocal} />
+               : (
+                 <>
+                   {/* ── Featured top attraction (hero layout) ── */}
+                   {(() => {
+                     const top = nearbyAttractions[0];
+                     const priceLabel = top.price_level != null
+                       ? (["Free", "£", "££", "£££", "££££"][top.price_level] ?? "") : "";
+                     return (
+                       <div className="bg-white rounded-3xl overflow-hidden flex flex-col md:flex-row"
+                         style={{ boxShadow: "0 6px 28px rgba(67,56,202,0.13)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                         onMouseEnter={e => {
+                           (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)";
+                           (e.currentTarget as HTMLElement).style.boxShadow = "0 14px 40px rgba(67,56,202,0.18)";
+                         }}
+                         onMouseLeave={e => {
+                           (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                           (e.currentTarget as HTMLElement).style.boxShadow = "0 6px 28px rgba(67,56,202,0.13)";
+                         }}>
+
+                         {/* Photo */}
+                         <div className="relative w-full h-56 md:h-auto md:flex-1 flex-shrink-0">
+                           {top.photo_url ? (
+                             <>
+                               <Image unoptimized src={top.photo_url} alt={top.name} fill className="object-cover" />
+                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-transparent" />
+                             </>
+                           ) : (
+                             <div className="w-full h-full bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center">
+                               <MapPin className="w-16 h-16 text-white/20" />
+                             </div>
+                           )}
+
+                           {/* Badges */}
+                           <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-2">
+                             <div className="flex flex-col gap-1.5">
+                               {/* Top attraction badge */}
+                               <span className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 rounded-xl shadow-md"
+                                 style={{ background: "#4338CA", color: "white" }}>
+                                 ⭐ Top Attraction
+                               </span>
+                               {top.open_now != null && (
+                                 <span className={`text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md ${top.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
+                                   {top.open_now ? t.concierge.openNowBadge : t.concierge.closed}
+                                 </span>
+                               )}
+                             </div>
+                             {priceLabel && (
+                               <span className="text-[11px] font-black px-2.5 py-1 rounded-xl bg-black/55 text-white backdrop-blur-sm">
+                                 {priceLabel}
+                               </span>
+                             )}
+                           </div>
+
+                           {/* Mobile name overlay */}
+                           <div className="absolute bottom-0 left-0 right-0 p-4 md:hidden">
+                             <p className="font-black text-white text-xl leading-snug drop-shadow-md">{top.name}</p>
+                             {top.rating != null && (
+                               <div className="flex items-center gap-1.5 mt-1.5 w-fit px-2.5 py-1 rounded-xl"
+                                 style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
+                                 <svg viewBox="0 0 24 24" fill="#FBBF24" className="w-3.5 h-3.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                 <span className="font-black text-sm text-white">{top.rating.toFixed(1)}</span>
+                                 {top.user_ratings_total > 0 && <span className="text-xs text-white/65">({top.user_ratings_total > 999 ? `${(top.user_ratings_total/1000).toFixed(1)}k` : top.user_ratings_total})</span>}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+
+                         {/* Desktop content panel */}
+                         <div className="md:w-[320px] md:flex-shrink-0 p-6 flex flex-col justify-between">
+                           <div>
+                             <div className="hidden md:flex items-start justify-between gap-3 mb-3">
+                               <h2 className="font-black text-slate-900 text-xl leading-snug flex-1">{top.name}</h2>
+                               {top.rating != null && (
+                                 <div className="flex items-center gap-1.5 flex-shrink-0 px-2.5 py-1.5 rounded-xl"
+                                   style={{ background: "#EEF2FF" }}>
+                                   <svg viewBox="0 0 24 24" fill="#FBBF24" className="w-4 h-4"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                   <span className="font-black text-sm" style={{ color: "#4338CA" }}>{top.rating.toFixed(1)}</span>
+                                   {top.user_ratings_total > 0 && <span className="text-xs text-slate-400">({top.user_ratings_total > 999 ? `${(top.user_ratings_total/1000).toFixed(1)}k` : top.user_ratings_total})</span>}
+                                 </div>
+                               )}
+                             </div>
+
+                             {top.ai_description && (
+                               <p className="text-sm text-slate-500 leading-relaxed italic mb-4 line-clamp-3">
+                                 &ldquo;{top.ai_description}&rdquo;
+                               </p>
+                             )}
+
+                             {top.address && (
+                               <div className="flex items-center gap-2 mb-4">
+                                 <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: "#4338CA", opacity: 0.7 }} />
+                                 <p className="text-sm text-slate-400 truncate">{top.address}</p>
+                               </div>
+                             )}
+
+                             {/* Trust strip */}
+                             <div className="flex items-center gap-2 flex-wrap mb-4">
+                               <span className="text-[10px] font-black px-2.5 py-1 rounded-full" style={{ background: "#EEF2FF", color: "#4338CA" }}>
+                                 📍 Tourist Attraction
+                               </span>
+                               {top.open_now && (
+                                 <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">
+                                   ✓ Open Now
+                                 </span>
+                               )}
+                             </div>
+                           </div>
+
+                           {/* CTAs */}
+                           <div className="flex gap-2">
+                             <a href={top.maps_link} target="_blank" rel="noopener noreferrer"
+                               style={{ touchAction: "manipulation", background: "#4338CA", color: "white" }}
+                               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black hover:opacity-90 transition-opacity">
+                               <Navigation className="w-4 h-4" />
+                               {t.concierge.getDirections}
+                             </a>
+                             <a href={top.maps_link} target="_blank" rel="noopener noreferrer"
+                               style={{ touchAction: "manipulation" }}
+                               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-slate-100 text-slate-600 text-sm font-black hover:bg-slate-200 transition-colors">
+                               <MapPin className="w-4 h-4" />
+                               View on Maps
+                             </a>
+                           </div>
+                         </div>
+                       </div>
+                     );
+                   })()}
+
+                   {/* ── Rest of attractions in 3-col grid ── */}
+                   {nearbyAttractions.length > 1 && (
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                       {nearbyAttractions.slice(1).map(p => (
+                         <NearbyCard key={p.place_id} place={p} accentColor="#4338CA" accentBg="#EEF2FF" />
+                       ))}
+                     </div>
+                   )}
+                 </>
+               )
             }
           </>
         )}
@@ -644,97 +985,143 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
         {/* ══ INFO ════════════════════════════════════════════════════════ */}
         {tab === "info" && (
           <>
-            {hotel.whatsapp_number && (
-              <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                style={{ touchAction: "manipulation", boxShadow: "0 6px 28px rgba(16,185,129,0.28)" }}
-                className="flex items-center gap-4 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-3xl px-5 py-5 active:scale-[0.98] transition-transform">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                  <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-white font-black text-lg">{t.concierge.chatOnWhatsapp}</p>
-                  <p className="text-emerald-100 text-sm mt-0.5">{hotel.whatsapp_number} · {t.concierge.receptionLabel}</p>
-                </div>
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-6 h-6 opacity-60">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </a>
-            )}
+            <SectionBanner icon={Info} iconBg="#EFF6FF" iconColor="#2563EB"
+              title={t.concierge.tabs.hotelInfo}
+              subtitle={`Everything you need to know about ${hotel.name}`} />
 
-            {/* Info grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ...(!hotel.is_24_7 ? [
-                  { Icon: Clock, label: t.concierge.checkIn,  val: hotel.check_in_time  || "14:00", color: "#3B82F6", bg: "#EFF6FF" },
-                  { Icon: Clock, label: t.concierge.checkOut, val: hotel.check_out_time || "11:00", color: "#8B5CF6", bg: "#F5F3FF" },
-                ] : []),
-                { Icon: Clock, label: t.concierge.hoursLabel, val: (() => {
-                    if (hotel.is_24_7) return t.concierge.hours247;
-                    const fmt = (time: string) => { if (!time) return ""; const [h,m] = time.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
-                    return `${fmt(hotel.open_time||"09:00")} – ${fmt(hotel.close_time||"22:00")}`;
-                  })(), color: "#059669", bg: "#ECFDF5" },
-                { Icon: Wifi,  label: t.concierge.wifiLabel,     val: hotel.wifi_info || t.concierge.askReception,                  color: "#10B981", bg: "#D1FAE5" },
-                { Icon: Globe, label: t.concierge.languageLabel, val: hotel.language_default?.toUpperCase() || "EN",        color: "#F97316", bg: "#FFF7ED" },
-                { Icon: Car,   label: t.concierge.parkingLabel,    val: nearbyParking   ? t.concierge.nearbyCount.replace("{count}", String(nearbyParking.length))   : t.concierge.seeParkingTab,   color: "#075985", bg: "#E0F2FE" },
-                { Icon: Moon,  label: t.concierge.nightLifeLabel, val: nearbyNightlife ? t.concierge.nearbyCount.replace("{count}", String(nearbyNightlife.length)) : t.concierge.seeNightlifeTab, color: "#6B21A8", bg: "#F3E8FF" },
-              ].map(({ Icon, label, val, color, bg }) => (
-                <div key={label} className="bg-white rounded-3xl p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: bg }}>
-                    <Icon className="w-5 h-5" style={{ color }} />
-                  </div>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{label}</p>
-                  <p className="font-black text-slate-900 text-base mt-1">{val}</p>
-                </div>
-              ))}
-            </div>
+            {/* ── Desktop 2-col: main info left, contact/location right ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 items-start">
 
-            {/* Amenities */}
-            {hotel.amenities && hotel.amenities.length > 0 && (
-              <div className="bg-white rounded-3xl p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">{t.concierge.servicesAndBenefits}</p>
-                <div className="flex flex-wrap gap-2">
-                  {hotel.amenities.map(a => (
-                    <span key={a} className="text-sm font-bold px-3.5 py-2 rounded-full bg-blue-50 text-blue-700">{a}</span>
+              {/* LEFT column */}
+              <div className="space-y-5">
+
+                {/* Info grid — 3 cols on desktop */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    ...(!hotel.is_24_7 ? [
+                      { Icon: Clock, label: t.concierge.checkIn,  val: hotel.check_in_time  || "14:00", color: "#3B82F6", bg: "#EFF6FF" },
+                      { Icon: Clock, label: t.concierge.checkOut, val: hotel.check_out_time || "11:00", color: "#8B5CF6", bg: "#F5F3FF" },
+                    ] : []),
+                    { Icon: Clock, label: t.concierge.hoursLabel, val: (() => {
+                        if (hotel.is_24_7) return t.concierge.hours247;
+                        const fmt = (time: string) => { if (!time) return ""; const [h,m] = time.split(":").map(Number); return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`; };
+                        return `${fmt(hotel.open_time||"09:00")} – ${fmt(hotel.close_time||"22:00")}`;
+                      })(), color: "#059669", bg: "#ECFDF5" },
+                    { Icon: Wifi,  label: t.concierge.wifiLabel,     val: hotel.wifi_info || t.concierge.askReception,                  color: "#10B981", bg: "#D1FAE5" },
+                    { Icon: Globe, label: t.concierge.languageLabel, val: hotel.language_default?.toUpperCase() || "EN",        color: "#F97316", bg: "#FFF7ED" },
+                    { Icon: Car,   label: t.concierge.parkingLabel,    val: nearbyParking   ? t.concierge.nearbyCount.replace("{count}", String(nearbyParking.length))   : t.concierge.seeParkingTab,   color: "#075985", bg: "#E0F2FE" },
+                    { Icon: Moon,  label: t.concierge.nightLifeLabel, val: nearbyNightlife ? t.concierge.nearbyCount.replace("{count}", String(nearbyNightlife.length)) : t.concierge.seeNightlifeTab, color: "#6B21A8", bg: "#F3E8FF" },
+                  ].map(({ Icon, label, val, color, bg }) => (
+                    <div key={label} className="bg-white rounded-3xl p-5 flex flex-col"
+                      style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)", transition: "transform 0.15s ease, box-shadow 0.15s ease" }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(0,0,0,0.10)";
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                        (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 16px rgba(0,0,0,0.06)";
+                      }}>
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+                        style={{ background: `linear-gradient(135deg, ${bg} 0%, white 100%)`, border: `1px solid ${color}18` }}>
+                        <Icon className="w-5 h-5" style={{ color }} />
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">{label}</p>
+                      <p className="font-black text-slate-900 text-base leading-snug">{val}</p>
+                    </div>
                   ))}
                 </div>
-              </div>
-            )}
 
-            {/* Full hotel services */}
-            {services.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 py-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <Bell className="w-5 h-5 text-blue-600" />
+                {/* Amenities */}
+                {hotel.amenities && hotel.amenities.length > 0 && (
+                  <div className="bg-white rounded-3xl p-6" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <p className="font-black text-slate-800 text-sm">{t.concierge.servicesAndBenefits}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {hotel.amenities.map(a => (
+                        <span key={a} className="text-sm font-bold px-4 py-2 rounded-full"
+                          style={{ background: "#EFF6FF", color: "#2563EB" }}>{a}</span>
+                      ))}
+                    </div>
                   </div>
-                  <p className="font-black text-slate-800 text-base">{t.concierge.hotelServices}</p>
-                  <div className="flex-1 h-px bg-slate-100" />
-                  <span className="text-sm font-bold text-slate-300">{services.length}</span>
-                </div>
-                <div className="space-y-4">
-                  {services.map(svc => <ServiceCard key={svc.id} svc={svc} viewOnly />)}
+                )}
+
+                {/* Hotel services */}
+                {services.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 py-3 mb-1">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <Bell className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <p className="font-black text-slate-800 text-base">{t.concierge.hotelServices}</p>
+                      <div className="flex-1 h-px bg-slate-100" />
+                      <span className="text-xs font-black text-slate-300 bg-slate-100 px-2.5 py-1 rounded-full">{services.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {services.map(svc => <ServiceCard key={svc.id} svc={svc} viewOnly />)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT column — contact + location */}
+              <div className="space-y-4">
+
+                {/* WhatsApp CTA */}
+                {hotel.whatsapp_number && (
+                  <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
+                    style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", boxShadow: "0 6px 28px rgba(16,185,129,0.30)", display: "flex" }}
+                    className="items-center gap-4 rounded-3xl px-5 py-5 hover:opacity-95 transition-opacity">
+                    <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-black text-base leading-snug">{t.concierge.chatOnWhatsapp}</p>
+                      <p className="text-emerald-100 text-sm mt-0.5 truncate">{hotel.whatsapp_number} · {t.concierge.receptionLabel}</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="w-5 h-5 opacity-60 flex-shrink-0">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </a>
+                )}
+
+                {/* Location card */}
+                {hotel.city && (
+                  <div className="bg-white rounded-3xl overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}>
+                    {/* Tinted map header */}
+                    <div className="px-5 pt-5 pb-4 flex items-center gap-3"
+                      style={{ background: "linear-gradient(135deg, #FEF2F2 0%, white 100%)", borderBottom: "1px solid #FEE2E2" }}>
+                      <div className="w-11 h-11 rounded-2xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-5 h-5 text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t.concierge.locationLabel}</p>
+                        <p className="font-black text-slate-900 text-base leading-snug">{hotel.city}</p>
+                      </div>
+                    </div>
+                    {hotel.address && (
+                      <div className="px-5 py-4 flex items-start gap-2.5">
+                        <Navigation className="w-4 h-4 text-slate-300 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-slate-500 leading-relaxed">{hotel.address}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Powered by */}
+                <div className="text-center py-3">
+                  <p className="text-xs text-slate-300 font-semibold">
+                    {t.concierge.poweredBy}{" "}
+                    <span className="font-black text-slate-400">Amica International</span>
+                  </p>
                 </div>
               </div>
-            )}
-
-            {/* Location */}
-            {hotel.city && (
-              <div className="bg-white rounded-3xl p-5 flex items-center gap-4"
-                style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-                <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-7 h-7 text-red-500" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t.concierge.locationLabel}</p>
-                  <p className="font-black text-slate-900 text-base mt-1">{hotel.city}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="text-center py-4">
-              <p className="text-sm text-slate-300 font-semibold">{t.concierge.poweredBy} <span className="font-black text-slate-400">Amica International</span></p>
             </div>
           </>
         )}

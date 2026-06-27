@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -15,6 +15,11 @@ const languages = [
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+
+  // Scroll to top instantly on every route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname]);
 
   // Dashboard and admin have their own full headers — skip everything
   const isDashAdmin =
