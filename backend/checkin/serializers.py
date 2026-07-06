@@ -15,13 +15,25 @@ class GuestRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = GuestRegistration
         fields = [
-            "id", "first_name", "last_name", "date_of_birth", "place_of_birth",
-            "nationality", "residence_address", "document_type", "document_number",
+            "id", "guest_number",
+            "first_name", "last_name", "gender",
+            "date_of_birth", "place_of_birth",
+            "nationality", "residence_address",
+            "document_type", "document_number",
             "document_issue_date", "document_expiry_date",
             "document_image", "document_image_url",
             "signature", "gdpr_consent", "completed_at",
         ]
-        extra_kwargs = {"document_image": {"write_only": True, "required": False}}
+        extra_kwargs = {
+            "document_image":    {"write_only": True, "required": False},
+            "date_of_birth":     {"required": False, "allow_null": True},
+            "nationality":       {"required": False, "allow_blank": True},
+            "residence_address": {"required": False, "allow_blank": True},
+            "document_number":   {"required": False, "allow_blank": True},
+            "place_of_birth":    {"required": False, "allow_blank": True},
+            "gender":            {"required": False, "allow_blank": True},
+            "signature":         {"required": False, "allow_blank": True},
+        }
 
     def get_document_image_url(self, obj):
         if obj.document_image:
@@ -32,7 +44,8 @@ class GuestRegistrationSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
-    registration = GuestRegistrationSerializer(read_only=True)
+    # Returns all guest registrations sorted by guest_number
+    registrations = GuestRegistrationSerializer(many=True, read_only=True)
     messages = MessageLogSerializer(many=True, read_only=True)
     hotel_name = serializers.CharField(source="hotel.name", read_only=True)
     checkin_link = serializers.SerializerMethodField()
@@ -45,7 +58,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "check_in_date", "check_out_date", "num_guests",
             "status", "checkin_token", "checkin_link",
             "link_sent_at", "notes", "created_at",
-            "registration", "messages",
+            "registrations", "messages",
         ]
         read_only_fields = [
             "id", "hotel", "hotel_name", "status",

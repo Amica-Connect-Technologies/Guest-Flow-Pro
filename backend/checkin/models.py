@@ -29,7 +29,6 @@ class Booking(models.Model):
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING
     )
-    # Unique token embedded in the guest check-in URL — never expose booking ID publicly.
     checkin_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     link_sent_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
@@ -50,31 +49,45 @@ class GuestRegistration(models.Model):
         ("residence_permit", "Residence Permit"),
     ]
 
+    GENDER_CHOICES = [
+        ("male", "Male"),
+        ("female", "Female"),
+        ("other", "Other"),
+        ("prefer_not_to_say", "Prefer not to say"),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    booking = models.OneToOneField(
-        Booking, on_delete=models.CASCADE, related_name="registration"
+    # ForeignKey (not OneToOneField) so multiple guests can register per booking
+    booking = models.ForeignKey(
+        Booking, on_delete=models.CASCADE, related_name="registrations"
     )
+    guest_number = models.PositiveIntegerField(default=1)  # 1 = primary, 2, 3, …
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    date_of_birth = models.DateField()
-    place_of_birth = models.CharField(max_length=200)
-    nationality = models.CharField(max_length=100)
-    residence_address = models.TextField()
+    gender = models.CharField(max_length=30, choices=GENDER_CHOICES, blank=True)
+    # Required for primary guest (guest_number=1), optional for additional guests
+    date_of_birth = models.DateField(null=True, blank=True)
+    place_of_birth = models.CharField(max_length=200, blank=True)
+    nationality = models.CharField(max_length=100, blank=True)
+    residence_address = models.TextField(blank=True)
     document_type = models.CharField(max_length=30, choices=DOCUMENT_CHOICES)
-    document_number = models.CharField(max_length=100)
+    document_number = models.CharField(max_length=100, blank=True)
     document_issue_date = models.DateField()
     document_expiry_date = models.DateField()
-    # Stored in media/checkin-documents/ — access restricted to hotel staff only.
     document_image = models.FileField(
         upload_to="checkin-documents/%Y/%m/", null=True, blank=True
     )
-    # Base64-encoded canvas signature PNG data URL.
     signature = models.TextField(blank=True)
     gdpr_consent = models.BooleanField(default=False)
     completed_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        # One registration slot per guest number per booking
+        unique_together = [("booking", "guest_number")]
+        ordering = ["guest_number"]
+
     def __str__(self):
-        return f"{self.first_name} {self.last_name} (Booking: {self.booking_id})"
+        return f"Guest {self.guest_number}: {self.first_name} {self.last_name} (Booking: {self.booking_id})"
 
 
 class MessageLog(models.Model):

@@ -279,14 +279,16 @@ export type CheckinBooking = {
   link_sent_at: string | null;
   notes: string;
   created_at: string;
-  registration: CheckinRegistration | null;
+  registrations: CheckinRegistration[];
   messages: CheckinMessage[];
 };
 
 export type CheckinRegistration = {
   id: string;
+  guest_number: number;
   first_name: string;
   last_name: string;
+  gender?: string;
   date_of_birth: string;
   place_of_birth: string;
   nationality: string;

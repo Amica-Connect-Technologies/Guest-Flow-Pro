@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
+
+const REMEMBER_KEY = "gfp_remembered_email";
 
 export default function LoginPage() {
   const { t } = useLanguage();
@@ -13,9 +15,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isPending, setIsPending] = useState(false);
+
+  // Pre-fill saved email on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) { setEmail(saved); setRememberMe(true); }
+  }, []);
 
   async function handleLogin(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -25,6 +34,8 @@ export default function LoginPage() {
 
     try {
       const { user } = await auth.login(email, password);
+      if (rememberMe) { localStorage.setItem(REMEMBER_KEY, email); }
+      else { localStorage.removeItem(REMEMBER_KEY); }
       router.push(user.role === "admin" ? "/admin" : "/dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.login.loginFailed;
@@ -162,10 +173,30 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Remember me */}
+            <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+              <div className="relative flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-4.5 h-4.5 w-[18px] h-[18px] rounded-[5px] border-2 border-slate-300 peer-checked:border-blue-600 peer-checked:bg-blue-600 transition-all group-hover:border-blue-400 flex items-center justify-center">
+                  {rememberMe && (
+                    <svg viewBox="0 0 12 10" fill="none" className="w-2.5 h-2.5">
+                      <path d="M1 5l3.5 3.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">Remember me</span>
+            </label>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl transition-all shadow-md shadow-blue-200 mt-2 flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl transition-all shadow-md shadow-blue-200 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

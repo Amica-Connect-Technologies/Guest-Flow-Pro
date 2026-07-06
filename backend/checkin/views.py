@@ -32,7 +32,7 @@ def _hotel_for(user):
 
 def _booking_qs(user):
     hotel = _hotel_for(user)
-    qs = Booking.objects.select_related("hotel", "registration").all()
+    qs = Booking.objects.prefetch_related("registrations", "messages").select_related("hotel").all()
     if hotel:
         qs = qs.filter(hotel=hotel)
     return qs
@@ -82,7 +82,7 @@ class BookingDetailView(APIView):
     def _get(self, pk, user):
         hotel = _hotel_for(user)
         try:
-            booking = Booking.objects.select_related("hotel", "registration").get(pk=pk)
+            booking = Booking.objects.prefetch_related("registrations", "messages").select_related("hotel").get(pk=pk)
         except Booking.DoesNotExist:
             return None, Response({"detail": "Not found."}, status=404)
         if hotel and booking.hotel != hotel:
@@ -191,22 +191,33 @@ class ExportCSVView(APIView):
         writer = csv.writer(output)
         writer.writerow([
             "Booking Ref", "Guest Name", "Email", "Phone",
-            "Check-in", "Check-out", "Guests", "Status",
-            "First Name", "Last Name", "DOB", "Nationality",
+            "Check-in", "Check-out", "Total Guests", "Status",
+            "Guest #", "First Name", "Last Name", "Gender", "DOB",
+            "Place of Birth", "Nationality", "Address",
             "Document Type", "Document Number", "Issue Date", "Expiry Date",
             "GDPR Consent", "Completed At",
         ])
         for b in qs:
-            reg = getattr(b, "registration", None)
-            writer.writerow([
-                b.booking_reference, b.guest_name, b.guest_email, b.guest_phone,
-                b.check_in_date, b.check_out_date, b.num_guests, b.status,
-                reg.first_name if reg else "", reg.last_name if reg else "",
-                reg.date_of_birth if reg else "", reg.nationality if reg else "",
-                reg.document_type if reg else "", reg.document_number if reg else "",
-                reg.document_issue_date if reg else "", reg.document_expiry_date if reg else "",
-                reg.gdpr_consent if reg else "", reg.completed_at if reg else "",
-            ])
+            regs = list(b.registrations.all())
+            if regs:
+                for reg in regs:
+                    writer.writerow([
+                        b.booking_reference, b.guest_name, b.guest_email, b.guest_phone,
+                        b.check_in_date, b.check_out_date, b.num_guests, b.status,
+                        reg.guest_number, reg.first_name, reg.last_name, reg.gender,
+                        reg.date_of_birth, reg.place_of_birth, reg.nationality,
+                        reg.residence_address,
+                        reg.document_type, reg.document_number,
+                        reg.document_issue_date, reg.document_expiry_date,
+                        reg.gdpr_consent, reg.completed_at,
+                    ])
+            else:
+                # Booking with no registrations yet
+                writer.writerow([
+                    b.booking_reference, b.guest_name, b.guest_email, b.guest_phone,
+                    b.check_in_date, b.check_out_date, b.num_guests, b.status,
+                    "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+                ])
         response = HttpResponse(output.getvalue(), content_type="text/csv")
         response["Content-Disposition"] = "attachment; filename=guest-registrations.csv"
         return response
@@ -228,28 +239,64 @@ class PublicCheckinVerifyView(APIView):
 
 
 class PublicGuestSubmitView(APIView):
-    """Guest submits their registration form via the tokenised URL."""
+    """
+    Guest submits their registration form via the tokenised URL.
+    Supports multiple guests — each submission includes guest_number (1-based).
+    Booking is marked completed once all num_guests have registered.
+    """
     permission_classes = [permissions.AllowAny]
     authentication_classes = []
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def post(self, request, token):
         try:
-            booking = Booking.objects.select_related("hotel").get(checkin_token=token)
+            booking = Booking.objects.prefetch_related("registrations").select_related("hotel").get(checkin_token=token)
         except Booking.DoesNotExist:
             return Response({"detail": "Invalid check-in link."}, status=404)
-
-        if hasattr(booking, "registration"):
-            return Response({"detail": "Registration already completed."}, status=400)
 
         data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
         if request.FILES.get("document_image"):
             data["document_image"] = request.FILES["document_image"]
 
-        serializer = GuestRegistrationSerializer(data=data, context={"request": request})
-        if serializer.is_valid():
-            serializer.save(booking=booking)
+        # Determine which guest number this submission is for (default to 1)
+        try:
+            guest_number = max(1, int(data.get("guest_number", 1)))
+        except (ValueError, TypeError):
+            guest_number = 1
+
+        # Clamp to valid range
+        guest_number = min(guest_number, booking.num_guests)
+
+        # Upsert: update existing registration for this guest_number or create new
+        existing = booking.registrations.filter(guest_number=guest_number).first()
+        if existing:
+            serializer = GuestRegistrationSerializer(
+                existing, data=data, partial=True, context={"request": request}
+            )
+        else:
+            serializer = GuestRegistrationSerializer(data=data, context={"request": request})
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        instance = serializer.save(booking=booking, guest_number=guest_number)
+
+        # Mark booking completed when all guests have registered
+        registered_count = booking.registrations.count()
+        if registered_count >= booking.num_guests:
             booking.status = Booking.STATUS_COMPLETED
             booking.save(update_fields=["status"])
-            return Response({"detail": "Registration completed."}, status=201)
-        return Response(serializer.errors, status=400)
+            all_done = True
+        else:
+            # Keep status pending while waiting for remaining guests
+            if booking.status == Booking.STATUS_PENDING:
+                pass  # leave as pending
+            all_done = False
+
+        return Response({
+            "detail": "Registration saved.",
+            "guest_number": guest_number,
+            "registered": registered_count,
+            "total_guests": booking.num_guests,
+            "all_done": all_done,
+        }, status=201)
