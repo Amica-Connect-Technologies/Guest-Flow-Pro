@@ -420,8 +420,6 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
 }) {
   const { t } = useLanguage();
   const badge = getBadge(place, index, t);
-  const priceLabel = place.price_level != null ? (PRICE[place.price_level] ?? "") : "";
-
   return (
     <div className="bg-white rounded-3xl overflow-hidden flex flex-col md:flex-row"
       style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)", transition: "box-shadow 0.2s ease" }}
@@ -440,11 +438,6 @@ function RestaurantCard({ place, index, accentColor, accentBg }: {
             {place.open_now != null && (
               <span className={`text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
                 {place.open_now ? t.restaurant.open : t.restaurant.closed}
-              </span>
-            )}
-            {priceLabel && (
-              <span className="text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md bg-black/55 text-white backdrop-blur-sm">
-                {priceLabel}
               </span>
             )}
           </div>

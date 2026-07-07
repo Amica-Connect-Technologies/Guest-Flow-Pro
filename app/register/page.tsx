@@ -12,9 +12,22 @@ const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: strin
     code: "+39",
     flag: "🇮🇹",
     cities: [
-      "Rome", "Milan", "Florence", "Venice", "Naples", "Turin",
-      "Bologna", "Verona", "Genoa", "Palermo", "Bari", "Catania",
-      "Pisa", "Siena", "Amalfi", "Ravenna", "Trieste", "Perugia",
+      "Rome", "Milan", "Naples", "Turin", "Palermo", "Genoa",
+      "Bologna", "Florence", "Bari", "Catania", "Venice", "Verona",
+      "Messina", "Padua", "Trieste", "Taranto", "Brescia", "Prato",
+      "Reggio Calabria", "Modena", "Reggio Emilia", "Perugia",
+      "Ravenna", "Livorno", "Cagliari", "Foggia", "Rimini", "Salerno",
+      "Ferrara", "Sassari", "Latina", "Monza", "Siracusa", "Bergamo",
+      "Pescara", "Trento", "Forlì", "Novara", "Vicenza", "Piacenza",
+      "Ancona", "Andria", "Arezzo", "Udine", "Cesena", "Barletta",
+      "La Spezia", "Parma", "Lecce", "Pisa", "Siena", "Amalfi",
+      "Como", "Lucca", "Mantua", "Treviso", "Matera", "Bolzano",
+      "Brindisi", "Pistoia", "Pavia", "Cosenza", "Catanzaro",
+      "L'Aquila", "Potenza", "Campobasso", "Asti", "Alessandria",
+      "Grosseto", "Terni", "Viterbo", "Trapani", "Agrigento",
+      "Caltanissetta", "Ragusa", "Enna", "Nuoro", "Oristano",
+      "Verbania", "Biella", "Vercelli", "Lodi", "Cremona",
+      "Sondrio", "Varese", "Lecco", "Pordenone", "Gorizia",
     ],
   },
   "United Kingdom": {
@@ -135,6 +148,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [showPw, setShowPw] = useState(false);
   const [showCPw, setShowCPw] = useState(false);
+  const [cityCustom, setCityCustom] = useState(false);
   const [loading, setLoading] = useState(false);
   const [globalError, setGlobalError] = useState("");
 
@@ -398,13 +412,18 @@ export default function RegisterPage() {
                   error={errors.email}
                 />
 
-                <Input
-                  label={t.register.step1.phoneLabel}
-                  type="tel"
-                  value={form.phone}
-                  onChange={(v) => set("phone", v)}
-                  placeholder={t.register.step1.phonePlaceholder}
-                />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step1.phoneLabel}</label>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    value={form.phone}
+                    onChange={(e) => set("phone", sanitizePhone(e.target.value, 15))}
+                    placeholder={t.register.step1.phonePlaceholder}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all"
+                  />
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -540,6 +559,7 @@ export default function RegisterPage() {
                             set("city", "");
                             set("phone", "");
                             set("whatsapp_number", "");
+                            setCityCustom(false);
                           }}
                           className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center ${
                             active ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
@@ -557,17 +577,39 @@ export default function RegisterPage() {
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step2.cityLabel}</label>
                   {getCities(form.country).length > 0 ? (
-                    <select
-                      value={form.city}
-                      onChange={(e) => set("city", e.target.value)}
-                      className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
-                        errors.city ? "border-red-300" : "border-slate-200"
-                      }`}>
-                      <option value="">{t.register.step2.citySelectPlaceholder}</option>
-                      {getCities(form.country).map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        value={cityCustom ? "__other__" : form.city}
+                        onChange={(e) => {
+                          if (e.target.value === "__other__") {
+                            setCityCustom(true);
+                            set("city", "");
+                          } else {
+                            setCityCustom(false);
+                            set("city", e.target.value);
+                          }
+                        }}
+                        className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                          errors.city ? "border-red-300" : "border-slate-200"
+                        }`}>
+                        <option value="">{t.register.step2.citySelectPlaceholder}</option>
+                        {getCities(form.country).map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                        <option value="__other__">Other (type your city)</option>
+                      </select>
+                      {cityCustom && (
+                        <input
+                          autoFocus
+                          value={form.city}
+                          onChange={(e) => set("city", e.target.value)}
+                          placeholder="Type your city name..."
+                          className={`mt-2 w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                            errors.city ? "border-red-300" : "border-slate-200"
+                          }`}
+                        />
+                      )}
+                    </>
                   ) : (
                     <input
                       value={form.city}

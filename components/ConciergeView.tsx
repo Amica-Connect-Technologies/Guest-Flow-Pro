@@ -216,8 +216,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   function NearbyCard({ place, accentColor = "#3B82F6", accentBg = "#EFF6FF" }: {
     place: NearbyPlace; accentColor?: string; accentBg?: string;
   }) {
-    const priceLabel = place.price_level != null
-      ? (["Free", "£", "££", "£££", "££££"][place.price_level] ?? "") : "";
     return (
       <div className="bg-white rounded-3xl overflow-hidden flex flex-col"
         style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
@@ -240,11 +238,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               {place.open_now != null && (
                 <span className={`text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
                   {place.open_now ? t.concierge.openNowBadge : t.concierge.closed}
-                </span>
-              )}
-              {priceLabel && (
-                <span className="text-[11px] font-black px-2.5 py-1 rounded-xl bg-black/55 text-white backdrop-blur-sm ml-auto">
-                  {priceLabel}
                 </span>
               )}
             </div>
@@ -845,8 +838,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                    {/* ── Featured top attraction (hero layout) ── */}
                    {(() => {
                      const top = nearbyAttractions[0];
-                     const priceLabel = top.price_level != null
-                       ? (["Free", "£", "££", "£££", "££££"][top.price_level] ?? "") : "";
                      return (
                        <div className="bg-white rounded-3xl overflow-hidden flex flex-col md:flex-row"
                          style={{ boxShadow: "0 6px 28px rgba(67,56,202,0.13)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
@@ -886,11 +877,6 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                                  </span>
                                )}
                              </div>
-                             {priceLabel && (
-                               <span className="text-[11px] font-black px-2.5 py-1 rounded-xl bg-black/55 text-white backdrop-blur-sm">
-                                 {priceLabel}
-                               </span>
-                             )}
                            </div>
 
                            {/* Mobile name overlay */}
