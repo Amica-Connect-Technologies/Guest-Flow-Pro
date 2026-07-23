@@ -11,8 +11,10 @@ class Registration(models.Model):
         ("rejected", "Rejected"),
     ]
     PLAN_CHOICES = [
-        ("basic", "Basic – £29/month"),
-        ("pro", "Pro – £79/month"),
+        ("concierge",         "Digital Concierge — €25/mo"),
+        ("checkin",           "Digital Check-In — €50/mo"),
+        ("concierge_checkin", "Concierge + Check-In — €75/mo"),
+        ("full",              "Full Suite — €100/mo"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -21,8 +23,10 @@ class Registration(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=30, blank=True)
     city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, blank=True, default="Italy")
     whatsapp_number = models.CharField(max_length=30, blank=True)
-    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default="basic")
+    website = models.URLField(blank=True)
+    plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default="concierge")
 
     user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="registration")
     hotel = models.ForeignKey("hotels.Hotel", on_delete=models.SET_NULL, null=True, blank=True)

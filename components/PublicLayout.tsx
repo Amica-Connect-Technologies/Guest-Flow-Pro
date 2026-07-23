@@ -11,6 +11,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 const languages = [
   { code: "EN", label: "English", flag: "🇬🇧" },
   { code: "IT", label: "Italiano", flag: "🇮🇹" },
+  { code: "ES", label: "Español", flag: "🇪🇸" },
 ] as const;
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
@@ -108,7 +109,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                     type="button"
                     style={{ touchAction: "manipulation" }}
                     onClick={() => {
-                      setLang(opt.code.toLowerCase() as "en" | "it");
+                      setLang(opt.code.toLowerCase() as import("@/lib/i18n").Lang);
                       setSheetOpen(false);
                     }}
                     className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-colors ${

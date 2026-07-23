@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { registrationsApi } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -12,22 +13,149 @@ const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: strin
     code: "+39",
     flag: "🇮🇹",
     cities: [
-      "Rome", "Milan", "Naples", "Turin", "Palermo", "Genoa",
-      "Bologna", "Florence", "Bari", "Catania", "Venice", "Verona",
-      "Messina", "Padua", "Trieste", "Taranto", "Brescia", "Prato",
-      "Reggio Calabria", "Modena", "Reggio Emilia", "Perugia",
-      "Ravenna", "Livorno", "Cagliari", "Foggia", "Rimini", "Salerno",
-      "Ferrara", "Sassari", "Latina", "Monza", "Siracusa", "Bergamo",
-      "Pescara", "Trento", "Forlì", "Novara", "Vicenza", "Piacenza",
-      "Ancona", "Andria", "Arezzo", "Udine", "Cesena", "Barletta",
-      "La Spezia", "Parma", "Lecce", "Pisa", "Siena", "Amalfi",
-      "Como", "Lucca", "Mantua", "Treviso", "Matera", "Bolzano",
-      "Brindisi", "Pistoia", "Pavia", "Cosenza", "Catanzaro",
-      "L'Aquila", "Potenza", "Campobasso", "Asti", "Alessandria",
-      "Grosseto", "Terni", "Viterbo", "Trapani", "Agrigento",
-      "Caltanissetta", "Ragusa", "Enna", "Nuoro", "Oristano",
-      "Verbania", "Biella", "Vercelli", "Lodi", "Cremona",
-      "Sondrio", "Varese", "Lecco", "Pordenone", "Gorizia",
+      "Rome", "Milan", "Naples", "Turin", "Genoa", "Florence",
+      "Bari", "Verona", "Venice", "Cosenza", "Padova", "Trieste",
+      "Parma", "Prato", "Taranto", "Reggio di Calabria", "Perugia", "Ravenna",
+      "Livorno", "Rimini", "Cagliari", "Salerno", "Giugliano in Campania", "Monza",
+      "Sassari", "Bergamo", "Trento", "Pescara", "Forlì", "Siracusa",
+      "Vicenza", "Udine", "Andria", "Cesena", "Pesaro", "Barletta",
+      "Alessandria", "Mestre", "Treviso", "Busto Arsizio", "Brindisi", "Fiumicino",
+      "Torre del Greco", "Sesto San Giovanni", "Pozzuoli", "Cinisello Balsamo", "Aprilia", "Casoria",
+      "Carpi", "Asti", "Ragusa", "Caserta", "Gela", "Altamura",
+      "Imola", "Quartu Sant’Elena", "Acilia", "Calimera", "Viterbo", "Potenza",
+      "Pomezia", "Vittoria", "Castellammare di Stabia", "Vigevano", "Afragola", "Legnano",
+      "Fano", "Carrara", "Matera", "Anzio", "Faenza", "Crotone",
+      "Acerra", "Savona", "Marano di Napoli", "Molfetta", "Cerignola", "Cuneo",
+      "Foligno", "Trani", "Manfredonia", "Bitonto", "Bagheria", "Gallarate",
+      "San Remo", "Velletri", "Portici", "Pordenone", "Teramo", "Cava de’ Tirreni",
+      "Acireale", "Rho", "Ercolano", "Mazara del Vallo", "Rovigo", "Aversa",
+      "Battipaglia", "Scandicci", "San Severo", "Misterbianco", "Empoli", "Sesto Fiorentino",
+      "Chieti", "Collegno", "Scafati", "Nettuno", "Monopoli", "Campi Bisenzio",
+      "Rivoli", "Paderno Dugnano", "Corato", "San Benedetto del Tronto", "Martina Franca", "Lecco",
+      "Cologno Monzese", "Lissone", "Marino", "Ascoli Piceno", "Rieti", "Vercelli",
+      "Paterno", "Seregno", "Cascina", "Lodi", "Alcamo", "Gravina in Puglia",
+      "Biella", "San Giorgio a Cremano", "Alghero", "Civitanova Marche", "San Donà di Piave", "Desio",
+      "Merano", "Monterotondo", "Vasto", "Avezzano", "Corigliano Calabro", "Torre Annunziata",
+      "Barcellona-Pozzo di Gotto", "Rovereto", "Carini", "Albano Laziale", "Cantù", "Pomigliano d’Arco",
+      "Fondi", "San Giuliano Milanese", "Iesi", "Monreale", "Ciampino", "Schio",
+      "Saronno", "Formia", "Grugliasco", "Maddaloni", "Melito di Napoli", "Modugno",
+      "Pioltello", "Caivano", "Caltagirone", "Belluno", "Casalecchio di Reno", "Cento",
+      "Brugherio", "Francavilla Fontana", "Cernusco sul Naviglio", "Limbiate", "Osimo", "Augusta",
+      "Mugnano di Napoli", "Formigine", "Canicattì", "Corsico", "Conegliano", "Licata",
+      "Angri", "Adrano", "Somma Vesuviana", "Castelfranco Veneto", "Abbiategrasso", "Lugo",
+      "Sant’Antimo", "Venaria Reale", "Termoli", "Casale Monferrato", "Piombino", "San Donato Milanese",
+      "Arzano", "Mascalucia", "Massafra", "Santa Maria Capua Vetere", "Favara", "Villaricca",
+      "Montebelluna", "Vibo Valentia", "Lucera", "Nardò", "Treviglio", "Partinico",
+      "Gubbio", "Avola", "Oristano", "Ostuni", "San Giuseppe Vesuviano", "Rosignano Marittimo",
+      "Monfalcone", "Milazzo", "Manduria", "Desenzano del Garda", "Rapallo", "Marigliano",
+      "Misilmeri", "Mondragone", "Frattamaggiore", "Selargius", "Poggibonsi", "Carmagnola",
+      "Canosa di Puglia", "Aci Catena", "Parabiago", "Mogliano Veneto", "Spinea", "Chiavari",
+      "Lido di Iesolo", "Mirano", "Vittorio Veneto", "Fidenza", "Albignasego", "Garbagnate Milanese",
+      "Borgo Panigale", "Gioia del Colle", "Iesolo", "Giarre", "Tortona", "Carbonia",
+      "San Giovanni Rotondo", "Lainate", "Sant’Anastasia", "Bresso", "Boscoreale", "Putignano",
+      "Galatina", "Vimercate", "Assèmini", "Vignola", "Conversano", "Valdagno",
+      "Porto Sant’Elpidio", "Falconara Marittima", "Enna", "San Giovanni Lupatoto", "Arzignano", "Seriate",
+      "Mariano Comense", "Bacoli", "Bagno a Ripoli", "Iglesias", "Correggio", "Termini Imerese",
+      "Sora", "Qualiano", "Ruvo di Puglia", "Portogruaro", "Fossano", "Magenta",
+      "Mirandola", "Montevarchi", "Pompei", "Thiene", "San Giovanni la Punta", "Sezze",
+      "Muggiò", "Albenga", "Giulianova", "Montecchio Maggiore", "Dalmine", "Capoterra",
+      "Copertino", "Genzano di Roma", "Ventimiglia", "Bressanone", "Frascati", "Fucecchio",
+      "Ceccano", "Poggiomarino", "Ortona", "Sulmona", "Palestrina", "Comacchio",
+      "Ginosa", "Colle di Val d’Elsa", "Cardito", "Trezzano sul Naviglio", "Senago", "Casal di Principe",
+      "Gorgonzola", "Floridia", "Martellago", "Sondrio", "Castrovillari", "Sestu",
+      "Castel San Pietro Terme", "Montecatini Terme", "Bussolengo", "Cornaredo", "Piazza Armerina", "Rosolini",
+      "Palo del Colle", "Romano di Lombardia", "Trecate", "Follonica", "Cormano", "Trentola",
+      "Vico Equense", "Abano Terme", "Rivalta di Torino", "Pallazzolo sull’Oglio", "Oderzo", "Novate Milanese",
+      "Sacile", "Viadana", "San Salvo", "Ischia", "Lastra a Signa", "Gallipoli",
+      "Castellana Grotte", "Giovinazzo", "Casamassima", "Rovato", "Cassano d’Adda", "Gioia Tauro",
+      "Scorzè", "Acqui Terme", "Casalgrande", "Monserrato", "Pozzallo", "Cusano Milanino",
+      "Corbetta", "Adria", "San Mauro Torinese", "Ghedi", "Castelfidardo", "Bracciano",
+      "Melzo", "Ciriè", "San Vito dei Normanni", "Pavullo nel Frignano", "Borgo San Lorenzo", "Calenzano",
+      "Aci Sant’Antonio", "Marsciano", "Ariccia", "Melegnano", "Agliana", "Palmi",
+      "Ribera", "Arcore", "Cordenons", "Carate Brianza", "Somma Lombardo", "Domodossola",
+      "Marcon", "Polignano a Mare", "Forio", "Beinasco", "Maranello", "Castelfiorentino",
+      "Sìnnai", "Figline Valdarno", "Carlentini", "Cercola", "Carovigno", "Nerviano",
+      "Orta Nova", "Preganziol", "Medicina", "San Giovanni Valdarno", "Gussago", "Cassano al Ionio",
+      "Alpignano", "Adelfia", "Reggello", "Vedelago", "Malnate", "Umbertide",
+      "Palma Campania", "Castellaneta", "Castenaso", "Noale", "Bovolone", "San Cesareo",
+      "Este", "Valeggio sul Mincio", "Tarquinia", "San Giovanni in Fiore", "Brusciano", "Codroipo",
+      "Grottammare", "Lentate sul Seveso", "Palagiano", "Altopascio", "Todi", "Azzano Decimo",
+      "Molinella", "Ponsacco", "Galliate", "Zevio", "Agrate Brianza", "Codogno",
+      "Casalpusterlengo", "Pianezza", "Sorrento", "Mortara", "Frattaminore", "Sava",
+      "Mottola", "Volpiano", "Capurso", "San Vito al Tagliamento", "Sansepolcro", "Sant’Arpino",
+      "Dolo", "Taurianova", "Paola", "Surbo", "Ospitaletto", "Collecchio",
+      "Rubiera", "Corridonia", "Malo", "Castellammare del Golfo", "Guastalla", "Sorso",
+      "Leno", "Omegna", "Orbetello", "Chiaravalle", "Gualdo Tadino", "Santa Maria a Vico",
+      "San Giorgio Ionico", "Rescaldina", "Montelupo Fiorentino", "Luino", "Trepuzzi", "Cirò Marina",
+      "Riposto", "Cassina de’ Pecchi", "Castellanza", "Locorotondo", "Cefalù", "Amantea",
+      "Sannicandro Garganico", "Varedo", "Travagliato", "Priverno", "Taglio", "Crevalcore",
+      "Castel San Giorgio", "San Ferdinando di Puglia", "Maglie", "Formello", "Cervignano del Friuli", "Latiano",
+      "Calolziocorte", "Squinzano", "Veglie", "Vieste", "Alzano Lombardo", "Manerbio",
+      "Vetralla", "San Martino di Lupari", "Noceto", "Tempio Pausania", "Villacidro", "Melilli",
+      "Casale sul Sile", "Vigodarzere", "Crispiano", "Sarezzo", "San Pietro Vernotico", "Turi",
+      "Statte", "Múggia", "San Pietro in Casale", "Terrasini Favarotta", "Quartucciu", "Spilamberto",
+      "Fontanafredda", "Salzano", "Villa San Giovanni", "Cavarzere", "Gricignano d’Aversa", "Cairo Montenotte",
+      "Lipari", "Montegranaro", "Rionero in Vulture", "Canegrate", "Fagnano Olona", "Villa Literno",
+      "Calvizzano", "Orzinuovi", "Porto Recanati", "Piano di Sorrento", "Biassono", "Spresiano",
+      "Morbegno", "Russi", "San Prisco", "Solofra", "Occhiobello", "Raffadali",
+      "Trezzo sull’Adda", "Cinisi", "Sant’Agata di Militello", "Monte di Procida", "Lizzanello", "Spilimbergo",
+      "Baranzate", "Camposampiero", "Menfi", "Barrafranca", "Francofonte", "Marotta",
+      "Casteldaccia", "Castenedolo", "Amelia", "Maniago", "Stradella", "Lonate Pozzolo",
+      "Monte Sant’Angelo", "Taurisano", "Trecastagni", "Priolo Gargallo", "Margherita di Savoia", "Pulsano",
+      "Caorle", "Paullo", "Arenzano", "Codigoro", "Cologno al Serio", "Santa Flavia",
+      "Matino", "Guspini", "Santa Croce Camerina", "Mazzarino", "Cividale del Friuli", "Castano Primo",
+      "Paceco", "Cave", "Isola del Liri", "Martinengo", "Grezzana", "Loano",
+      "Cameri", "Sant’Antìoco", "Avigliano", "Riesi", "Taormina", "Melito di Porto Salvo",
+      "Salò", "Cislago", "Montecchio Emilia", "Atripalda", "Bonate di Sopra", "Ravanusa",
+      "Locate di Triulzi", "San Maurizio Canavese", "Randazzo", "Poirino", "Bordighera", "Piedimonte d’Alife",
+      "Rignano Flaminio", "Mori", "Nizza Monferrato", "Procida", "Fiuggi", "Alassio",
+      "Macerata Campania", "Goito", "Capodrise", "Salemi", "Conselve", "Mussomeli",
+      "Polistena", "Campi Salentina", "Meldola", "Ozieri", "Boscotrecase", "Trescore Balneario",
+      "Cittanova", "San Giorgio del Sannio", "Terralba", "Lurate Caccivio", "Casaluce", "Cesa",
+      "Volterra", "Castel Bolognese", "Vaprio d’Adda", "Mareno di Piave", "Dolianova", "Elmas",
+      "Magnago", "Vanzago", "Gassino Torinese", "Gaggiano", "Pasian di Prato", "Montescaglioso",
+      "Maserada sul Piave", "Maserà di Padova", "Campobello di Licata", "Monteroni d’Arbia", "Foiano della Chiana", "Venturina",
+      "Druento", "San Marzano di San Giuseppe", "Pandino", "Aradeo", "Albinea", "Ala",
+      "Uta", "La Loggia", "Aragona", "Coccaglio", "Mozzate", "Parabita",
+      "Càbras", "Cutrofiano", "Roccapiemonte", "Flero", "Gonzaga", "Roverbella",
+      "Torre Boldone", "Lequile", "Triuggio", "Sant’Agnello", "Martano", "Serramanna",
+      "Trebisacce", "Brembate", "Rignano sull’Arno", "Fiesso d’Artico", "Cogoleto", "Bruino",
+      "San Sperate", "Decimomannu", "Casapulla", "Sortino", "Tuscania", "Rossano Veneto",
+      "Minervino Murge", "Cellole", "Sanluri", "Marnate", "Verdello", "Santhià",
+      "San Gavino Monreale", "San Giuseppe Iato", "Verolanuova", "Quarto d’Altino", "Origgio", "Vallo della Lucania",
+      "Chiaramonte Gulfi", "Rovellasca", "Maracalagonis", "Pisogne", "Villa Guardia", "Mariglianella",
+      "Monte Urano", "Manziana", "Cervaro", "Cairate", "Portico di Caserta", "Campomarino",
+      "Carnate", "Agira", "Caccamo", "Grado", "Racalmuto", "Marmirolo",
+      "Novoli", "Recale", "Palagianello", "Stra", "Solarino", "Soncino",
+      "Cariati", "Città della Pieve", "Carmignano di Brenta", "Alife", "Borgo a Buggiano", "Bovezzo",
+      "Vedano Olona", "Chiavenna", "Volta Mantovana", "Vietri sul Mare", "Porto Potenza Picena", "Staranzano",
+      "Cambiago", "Camerano", "Borgetto", "Marcellina", "Borgo", "Noventa di Piave",
+      "Settimo San Pietro", "Cimitile", "Sennori", "Lazise", "Barlassina", "Urbania",
+      "Anacapri", "Melissano", "Sarnico", "Albiate", "Ceriano Laghetto", "Villa di Serio",
+      "Villasor", "Carosino", "Oliena", "Gorle", "Carnago", "San Cipriano Picentino",
+      "Canicattini Bagni", "San Vincenzo", "Poggio Rusco", "Sapri", "Montebello Vicentino", "Piedimonte San Germano",
+      "Sommariva del Bosco", "Serra San Bruno", "Subbiano", "Canova", "Silandro", "Balestrate",
+      "Marcallo con Casone", "Lesina", "Montenero di Bisaccia", "Gonnosfanàdiga", "Roccella Ionica", "San Polo d’Enza in Caviano",
+      "Marineo", "Ceggia", "Cellino San Marco", "Strambino", "Abbadia San Salvatore", "Guidizzolo",
+      "Carloforte", "Cambiano", "Serravalle Scrivia", "Poggiardo", "San Secondo Parmense", "Villanuova sul clisi",
+      "Brolo", "Rosate", "Arbus", "San Tammaro", "Castelsardo", "Corigliano d’Otranto",
+      "Genazzano", "Dello", "Casorezzo", "Serradifalco", "Acque Dolci", "Ossi",
+      "Trezzano Rosa", "Solbiate Olona", "Vanzaghello", "Torchiarolo", "Maruggio", "Stornarella",
+      "Boretto", "Grotte", "Albisola Marina", "Albizzate", "Arosio", "Calatabiano",
+      "Sannazzaro de’ Burgondi", "Montanaro", "Camposano", "Diamante", "Canino", "Telgate",
+      "Cividate al Piano", "Camogli", "Fragagnano", "Castelnuovo Scrivia", "Portoscuso", "Senorbì",
+      "Santa Ninfa", "Robecchetto con Induno", "Cupello", "Osnago", "Amalfi", "Popoli",
+      "Spadafora", "Murano", "Acquarica del Capo", "Breno", "Gonnesa", "Azzate",
+      "San Giovanni Bianco", "Dorno", "Favignana", "Scilla", "Baiano", "Monastir",
+      "Bogliasco", "San Paolo", "Edolo", "Vignanello", "Malgrate", "Livorno Ferraris",
+      "Prizzi", "Decimoputzu", "Garda", "Fossalta di Piave", "Bova Marina", "Sant’Antonio di Susa",
+      "Bozzolo", "Palau", "Sabbio Chiese", "Sori", "Altavilla Irpina", "Francavilla in Sinni",
+      "Roccalumera", "Orgosolo", "Sardara", "Casazza", "Occhieppo Inferiore", "Allumiere",
+      "Villasimìus", "Fonni", "Stigliano", "Passo Corese", "Marina di Pisa", "Nizza di Sicilia",
+      "Sergnano", "Aci Bonaccorsi", "Lauro", "Zapponeta", "Furci Siculo", "Bonorva",
+      "Casalmaiocco", "Marone", "San Lorenzo del Vallo", "Sperlonga", "Misano di Gera d’Adda", "Viguzzolo",
+      "Bagnoli Irpino", "Arsiero", "Trescore Cremasco", "Castronuovo di Sicilia", "Poggio Moiano", "Riva Ligure",
+      "Falcone", "Turriaco", "Licodia Eubea", "Bronzolo", "Pellestrina", "Chiusa Sclafani",
     ],
   },
   "United Kingdom": {
@@ -50,8 +178,10 @@ const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: strin
 
 // ── Plans ────────────────────────────────────────────────────────────────────
 const PLAN_META = [
-  { id: "basic" as const, price: "£29", period: "/month", accent: "blue" },
-  { id: "pro" as const, price: "£79", period: "/month", popular: true, accent: "violet" },
+  { id: "concierge"         as const, price: "€25", period: "/month", accent: "blue"   },
+  { id: "checkin"           as const, price: "€50", period: "/month", accent: "violet" },
+  { id: "concierge_checkin" as const, price: "€75", period: "/month", popular: true, accent: "cyan" },
+  { id: "full"              as const, price: "€100", period: "/month", accent: "amber" },
 ];
 
 // ── Form state ───────────────────────────────────────────────────────────────
@@ -66,14 +196,14 @@ interface Form {
   country: string;
   whatsapp_number: string;
   website: string;
-  plan: "basic" | "pro";
+  plan: "concierge" | "checkin" | "concierge_checkin" | "full";
   payment_method: "bank_transfer" | "invoice";
 }
 
 const empty: Form = {
   owner_name: "", email: "", phone: "", password: "", confirm_password: "",
   business_name: "", city: "", country: "", whatsapp_number: "", website: "",
-  plan: "basic",
+  plan: "concierge",
   payment_method: "bank_transfer",
 };
 
@@ -81,7 +211,9 @@ function getCode(country: string) {
   return COUNTRY_CONFIG[country]?.code ?? "";
 }
 function getCities(country: string) {
-  return COUNTRY_CONFIG[country]?.cities ?? [];
+  return [...(COUNTRY_CONFIG[country]?.cities ?? [])].sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" })
+  );
 }
 // Max subscriber digits (excluding country code)
 function getMaxDigits(country: string): number {
@@ -141,15 +273,34 @@ type BankDetails = {
 };
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function RegisterPage() {
+function RegisterPageInner() {
   const { t } = useLanguage();
-  const [form, setForm] = useState<Form>(empty);
+  const searchParams = useSearchParams();
+  const planParam = searchParams.get("plan") as Form["plan"] | null;
+  const validPlans: Form["plan"][] = ["concierge", "checkin", "concierge_checkin", "full"];
+  const [form, setForm] = useState<Form>({
+    ...empty,
+    plan: planParam && validPlans.includes(planParam) ? planParam : "concierge",
+  });
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [showPw, setShowPw] = useState(false);
   const [showCPw, setShowCPw] = useState(false);
   const [cityCustom, setCityCustom] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (cityDropdownRef.current && !cityDropdownRef.current.contains(e.target as Node)) {
+        setCityDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   const [globalError, setGlobalError] = useState("");
 
   // Step 4 state
@@ -161,10 +312,12 @@ export default function RegisterPage() {
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [submittingProof, setSubmittingProof] = useState(false);
 
-  // Translated plan + step config (depends on hooks, so built inside the component)
+  // Translated plan + step config
   const plans = [
-    { ...PLAN_META[0], name: t.register.plans.basic.name, tagline: t.register.plans.basic.tagline, features: t.register.plans.basic.features },
-    { ...PLAN_META[1], name: t.register.plans.pro.name, tagline: t.register.plans.pro.tagline, features: t.register.plans.pro.features },
+    { ...PLAN_META[0], name: t.register.plans.concierge.name,         tagline: t.register.plans.concierge.tagline,         features: t.register.plans.concierge.features },
+    { ...PLAN_META[1], name: t.register.plans.checkin.name,           tagline: t.register.plans.checkin.tagline,           features: t.register.plans.checkin.features },
+    { ...PLAN_META[2], name: t.register.plans.concierge_checkin.name, tagline: t.register.plans.concierge_checkin.tagline, features: t.register.plans.concierge_checkin.features },
+    { ...PLAN_META[3], name: t.register.plans.full.name,              tagline: t.register.plans.full.tagline,              features: t.register.plans.full.features },
   ];
   const steps = [
     t.register.steps.account,
@@ -236,7 +389,9 @@ export default function RegisterPage() {
         password: form.password,
         phone: fullPhone,
         city: form.city,
+        country: form.country,
         whatsapp_number: fullWhatsApp,
+        website: form.website,
         plan: form.plan,
         payment_method: form.payment_method,
       });
@@ -560,6 +715,8 @@ export default function RegisterPage() {
                             set("phone", "");
                             set("whatsapp_number", "");
                             setCityCustom(false);
+                            setCitySearch("");
+                            setCityDropdownOpen(false);
                           }}
                           className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-center ${
                             active ? "border-blue-500 bg-blue-50" : "border-slate-200 bg-slate-50 hover:border-slate-300"
@@ -576,40 +733,98 @@ export default function RegisterPage() {
                 {/* City */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1.5">{t.register.step2.cityLabel}</label>
-                  {getCities(form.country).length > 0 ? (
-                    <>
-                      <select
-                        value={cityCustom ? "__other__" : form.city}
-                        onChange={(e) => {
-                          if (e.target.value === "__other__") {
-                            setCityCustom(true);
-                            set("city", "");
-                          } else {
-                            setCityCustom(false);
-                            set("city", e.target.value);
-                          }
-                        }}
-                        className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
-                          errors.city ? "border-red-300" : "border-slate-200"
-                        }`}>
-                        <option value="">{t.register.step2.citySelectPlaceholder}</option>
-                        {getCities(form.country).map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                        <option value="__other__">Other (type your city)</option>
-                      </select>
-                      {cityCustom && (
+                  {getCities(form.country).length > 0 && !cityCustom ? (
+                    <div ref={cityDropdownRef} className="relative">
+                      <div className="relative">
                         <input
-                          autoFocus
-                          value={form.city}
-                          onChange={(e) => set("city", e.target.value)}
-                          placeholder="Type your city name..."
-                          className={`mt-2 w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                          value={citySearch}
+                          onChange={(e) => {
+                            setCitySearch(e.target.value);
+                            set("city", "");
+                            setCityDropdownOpen(true);
+                          }}
+                          onFocus={() => setCityDropdownOpen(true)}
+                          placeholder={form.city || t.register.step2.citySelectPlaceholder}
+                          className={`w-full bg-slate-50 border rounded-xl px-4 py-3 pr-10 text-sm text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
                             errors.city ? "border-red-300" : "border-slate-200"
                           }`}
                         />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-xs">
+                          {cityDropdownOpen ? "▲" : "▼"}
+                        </span>
+                      </div>
+                      {cityDropdownOpen && (
+                        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                          <div className="max-h-52 overflow-y-auto">
+                            {(() => {
+                              const q = citySearch.trim().toLowerCase();
+                              const all = getCities(form.country);
+                              const filtered = q
+                                ? all.filter(c => c.toLowerCase().includes(q))
+                                : all;
+                              if (filtered.length === 0) {
+                                return (
+                                  <div className="px-4 py-3 text-sm text-slate-400 text-center">No cities found</div>
+                                );
+                              }
+                              return filtered.map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    set("city", c);
+                                    setCitySearch(c);
+                                    setCityDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 transition-colors ${
+                                    form.city === c ? "bg-blue-50 text-blue-700 font-semibold" : "text-slate-800"
+                                  }`}
+                                >
+                                  {c}
+                                </button>
+                              ));
+                            })()}
+                          </div>
+                          <div className="border-t border-slate-100">
+                            <button
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setCityCustom(true);
+                                setCitySearch("");
+                                set("city", "");
+                                setCityDropdownOpen(false);
+                              }}
+                              className="w-full text-left px-4 py-2.5 text-sm text-slate-500 hover:bg-slate-50 italic transition-colors"
+                            >
+                              + Other (type manually)
+                            </button>
+                          </div>
+                        </div>
                       )}
-                    </>
+                    </div>
+                  ) : cityCustom ? (
+                    <div className="flex gap-2">
+                      <input
+                        autoFocus
+                        value={form.city}
+                        onChange={(e) => set("city", e.target.value)}
+                        placeholder="Type your city name..."
+                        className={`flex-1 bg-slate-50 border rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-50 focus:border-blue-400 transition-all ${
+                          errors.city ? "border-red-300" : "border-slate-200"
+                        }`}
+                      />
+                      {getCities(form.country).length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => { setCityCustom(false); set("city", ""); setCitySearch(""); }}
+                          className="px-3 py-2 text-xs text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
+                        >
+                          ← List
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <input
                       value={form.city}
@@ -754,33 +969,34 @@ export default function RegisterPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {plans.map((plan) => {
                   const selected = form.plan === plan.id;
+                  const accentMap: Record<string, { border: string; shadow: string; radio: string; badge: string; price: string }> = {
+                    blue:   { border: "border-blue-500",   shadow: "shadow-blue-100",   radio: "border-blue-500 bg-blue-500",   badge: "bg-blue-600",   price: "text-blue-700"   },
+                    violet: { border: "border-violet-500", shadow: "shadow-violet-100", radio: "border-violet-500 bg-violet-500", badge: "bg-violet-600", price: "text-violet-700" },
+                    cyan:   { border: "border-cyan-500",   shadow: "shadow-cyan-100",   radio: "border-cyan-500 bg-cyan-500",   badge: "bg-cyan-600",   price: "text-cyan-700"   },
+                    amber:  { border: "border-amber-500",  shadow: "shadow-amber-100",  radio: "border-amber-500 bg-amber-500", badge: "bg-amber-600",  price: "text-amber-700"  },
+                  };
+                  const ac = accentMap[plan.accent] ?? accentMap.blue;
                   return (
                     <button
                       key={plan.id}
                       type="button"
                       onClick={() => set("plan", plan.id)}
-                      className={`relative text-left p-6 rounded-2xl border-2 transition-all bg-white shadow-sm ${
-                        selected
-                          ? plan.accent === "violet"
-                            ? "border-violet-500 shadow-violet-100 shadow-lg"
-                            : "border-blue-500 shadow-blue-100 shadow-lg"
-                          : "border-slate-200 hover:border-slate-300"
+                      className={`relative text-left p-5 rounded-2xl border-2 transition-all bg-white shadow-sm ${
+                        selected ? `${ac.border} shadow-lg ${ac.shadow}` : "border-slate-200 hover:border-slate-300"
                       }`}
                     >
                       {plan.popular && (
-                        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                        <span className={`absolute -top-3 left-1/2 -translate-x-1/2 ${ac.badge} text-white text-[10px] font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm`}>
                           {t.register.step3.mostPopular}
                         </span>
                       )}
                       <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <p className="font-bold text-slate-900 text-base">{plan.name}</p>
-                          <p className="text-slate-400 text-xs mt-0.5">{plan.tagline}</p>
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="font-bold text-slate-900 text-sm leading-snug">{plan.name}</p>
+                          <p className="text-slate-400 text-xs mt-0.5 leading-snug">{plan.tagline}</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
-                          selected
-                            ? plan.accent === "violet" ? "border-violet-500 bg-violet-500" : "border-blue-500 bg-blue-500"
-                            : "border-slate-300"
+                          selected ? ac.radio : "border-slate-300"
                         }`}>
                           {selected && (
                             <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} className="w-3 h-3">
@@ -789,14 +1005,14 @@ export default function RegisterPage() {
                           )}
                         </div>
                       </div>
-                      <div className="mb-4">
-                        <span className="text-3xl font-bold text-slate-900">{plan.price}</span>
+                      <div className="mb-3">
+                        <span className={`text-2xl font-black ${selected ? ac.price : "text-slate-900"}`}>{plan.price}</span>
                         <span className="text-slate-400 text-sm">{plan.period}</span>
                       </div>
-                      <ul className="space-y-2">
+                      <ul className="space-y-1.5">
                         {plan.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2 text-sm text-slate-600">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5">
+                          <li key={feature} className="flex items-start gap-2 text-xs text-slate-600">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                             </svg>
                             {feature}
@@ -1134,5 +1350,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterPageInner />
+    </Suspense>
   );
 }

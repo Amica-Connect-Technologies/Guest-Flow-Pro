@@ -9,7 +9,11 @@ import { useLanguage } from "@/lib/LanguageContext";
 export default function AdminOverview() {
   const router = useRouter();
   const { t } = useLanguage();
-  const [counts, setCounts] = useState({ hotels: 0, tours: 0, places: 0 });
+  const [counts, setCounts] = useState({
+    hotels: 0, tours: 0, places: 0,
+    total_guests: 0, marketing_optins: 0, total_reviews: 0, avg_rating: null as number | null,
+    top_hotels: [] as { hotel_id: string; hotel_name: string; guest_count: number }[],
+  });
   const [recentHotels, setRecentHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
@@ -260,6 +264,58 @@ export default function AdminOverview() {
               </Link>
             ))}
           </div>
+        </div>
+
+        {/* Enhanced stats — guests / reviews / marketing */}
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3">Guest Intelligence</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Total Guests", value: counts.total_guests, color: "#0891B2", bg: "#ECFEFF", icon: "👥" },
+              { label: "Marketing Opt-ins", value: counts.marketing_optins, color: "#059669", bg: "#ECFDF5", icon: "📧" },
+              { label: "Reviews Submitted", value: counts.total_reviews, color: "#D97706", bg: "#FFFBEB", icon: "⭐" },
+              { label: "Avg Rating", value: counts.avg_rating !== null ? `${counts.avg_rating}/5` : "—", color: "#7C3AED", bg: "#F5F3FF", icon: "📊" },
+            ].map(({ label, value, color, bg, icon }) => (
+              <div key={label} className="bg-white rounded-2xl p-4"
+                style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.05)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0"
+                    style={{ background: bg }}>{icon}</div>
+                  <p className="text-2xl font-black text-slate-900">{value}</p>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest" style={{ color }}>{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Top hotels by guest count */}
+          {counts.top_hotels.length > 0 && (
+            <div className="mt-3 bg-white rounded-2xl p-5"
+              style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.05)" }}>
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-3">Top Hotels by Guests</p>
+              <div className="space-y-2">
+                {counts.top_hotels.map((h, i) => {
+                  const max = counts.top_hotels[0]?.guest_count ?? 1;
+                  const pct = (h.guest_count / max) * 100;
+                  return (
+                    <div key={h.hotel_id} className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-slate-400 w-4 text-right">{i + 1}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="text-xs font-bold text-slate-800 truncate">{h.hotel_name}</p>
+                          <p className="text-xs font-black text-slate-500 ml-2 flex-shrink-0">{h.guest_count}</p>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-slate-100">
+                          <div className="h-full rounded-full transition-all"
+                            style={{ width: `${pct}%`, background: "linear-gradient(90deg,#0891B2,#0E7490)" }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Desktop 2-col: quick actions + recent hotels */}

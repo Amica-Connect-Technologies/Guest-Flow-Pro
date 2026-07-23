@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Google Translate — hide default toolbar, keep our own language buttons ── */
+/* The banner is a fixed iframe that Google injects. Hide it via CSS AND JS. */
+.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+}
+/* Google pushes body down by setting body.style.top — undo that */
+body {
+  top: 0 !important;
+}
+/* Hide widget mount point and all GT popups */
+#google_translate_element,
+.goog-te-gadget,
+.goog-te-gadget-icon,
+.goog-te-gadget-simple,
+.goog-te-menu-frame,
+.goog-tooltip,
+.goog-tooltip-vertical,
+.goog-te-balloon-frame,
+#goog-gt-tt {
+  display: none !important;
+}
+.goog-logo-link { display: none !important; }
+
 @layer base {
   html {
     scroll-behavior: smooth;

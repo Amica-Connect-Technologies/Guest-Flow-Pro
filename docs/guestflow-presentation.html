@@ -1,0 +1,1267 @@
+<title>GuestFlow Pro — Pitch Deck</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #020B12;
+  --navy2:  #0D2535;
+  --teal:   #0891B2;
+  --teal2:  #0E7490;
+  --cyan:   #06B6D4;
+  --amber:  #F59E0B;
+  --green:  #10B981;
+  --purple: #8B5CF6;
+  --text:   #F0F9FF;
+  --muted:  #7BAAB8;
+  --border: rgba(103,232,249,0.15);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── DECK CONTAINER ───────────────────────── */
+#deck {
+  width: 100vw; height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── SLIDES ───────────────────────────────── */
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.45s ease;
+  overflow: hidden;
+}
+.slide.active {
+  opacity: 1; pointer-events: all;
+}
+
+/* ── NAV ──────────────────────────────────── */
+#nav {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px;
+  z-index: 100;
+  background: rgba(2,11,18,0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  padding: 8px 16px;
+}
+.nav-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: white; font-size: 1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.nav-btn:hover { background: rgba(8,145,178,0.3); border-color: var(--teal); }
+.nav-btn:disabled { opacity: 0.25; cursor: default; }
+#slide-counter {
+  font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.5);
+  min-width: 54px; text-align: center; letter-spacing: 0.05em;
+}
+#progress-dots {
+  display: flex; gap: 5px; align-items: center;
+}
+.pdot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); cursor: pointer;
+  transition: all 0.2s;
+}
+.pdot.active { background: var(--cyan); width: 18px; border-radius: 3px; }
+
+/* ── FULLSCREEN BTN ───────────────────────── */
+#fs-btn {
+  position: fixed; top: 20px; right: 20px; z-index: 100;
+  background: rgba(2,11,18,0.7); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6); border-radius: 8px;
+  padding: 7px 12px; font-size: 0.75rem; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all 0.2s;
+}
+#fs-btn:hover { color: white; border-color: var(--teal); }
+
+/* ── PRINT MODE ───────────────────────────── */
+@media print {
+  html, body { overflow: visible; height: auto; }
+  #deck { height: auto; overflow: visible; }
+  #nav, #fs-btn { display: none !important; }
+  .slide {
+    position: relative; opacity: 1; pointer-events: all;
+    width: 100vw; height: 100vh;
+    page-break-after: always; break-after: page;
+  }
+  @page { size: landscape; margin: 0; }
+}
+
+/* ══════════════════════════════════════════
+   SLIDE BACKGROUNDS
+══════════════════════════════════════════ */
+.bg-dark {
+  background: linear-gradient(150deg, #020B12 0%, #083344 55%, #0E7490 100%);
+}
+.bg-navy { background: var(--navy); }
+.bg-navy2 { background: #071E2B; }
+.bg-light { background: #F0F7FA; }
+.bg-white { background: white; }
+
+.dot-pattern {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(rgba(103,232,249,0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* ── SHARED COMPONENTS ────────────────────── */
+.eyebrow {
+  font-size: clamp(0.55rem, 1vw, 0.7rem);
+  font-weight: 900; letter-spacing: 0.22em;
+  text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::before {
+  content: ''; display: block;
+  width: 28px; height: 2px;
+  background: currentColor; flex-shrink: 0;
+}
+.eyebrow.light { color: rgba(103,232,249,0.7); }
+.eyebrow.teal  { color: var(--teal); }
+
+.display {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+}
+.h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 4.5vw, 3.8rem);
+  font-weight: 900; letter-spacing: -0.035em; line-height: 1.05;
+}
+.h2 {
+  font-size: clamp(1.4rem, 3vw, 2.4rem);
+  font-weight: 900; letter-spacing: -0.025em; line-height: 1.1;
+}
+.h3 { font-size: clamp(0.95rem, 1.8vw, 1.3rem); font-weight: 800; line-height: 1.2; }
+.body-lg { font-size: clamp(0.85rem, 1.5vw, 1.1rem); line-height: 1.75; }
+.body { font-size: clamp(0.78rem, 1.3vw, 0.95rem); line-height: 1.7; }
+
+.text-white  { color: white; }
+.text-muted  { color: var(--muted); }
+.text-cyan   { color: var(--cyan); }
+.text-amber  { color: var(--amber); }
+.text-green  { color: var(--green); }
+.text-navy   { color: var(--navy); }
+.text-teal   { color: var(--teal); }
+.text-dark   { color: #0F172A; }
+.text-gray   { color: #475569; }
+
+.inner {
+  position: relative; z-index: 2;
+  width: 100%; height: 100%;
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(2.5rem, 6vw, 6rem);
+  display: flex; flex-direction: column;
+}
+
+/* ── SLIDE LABELS ─────────────────────────── */
+.slide-num {
+  position: absolute; bottom: clamp(3rem, 6vh, 5rem); right: clamp(2rem, 4vw, 4rem);
+  font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.2); text-transform: uppercase;
+}
+.slide-num.dark { color: rgba(0,0,0,0.15); }
+
+/* ── ACCENT BLOCKS ────────────────────────── */
+.accent-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 14px; border-radius: 100px; font-size: 0.7rem;
+  font-weight: 800; letter-spacing: 0.06em;
+}
+.pill-teal {
+  background: rgba(8,145,178,0.18); border: 1px solid rgba(8,145,178,0.3);
+  color: var(--cyan);
+}
+.pill-amber {
+  background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.25);
+  color: var(--amber);
+}
+.pill-green {
+  background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.25);
+  color: var(--green);
+}
+
+/* ── STAT BOX ─────────────────────────────── */
+.stat-box { text-align: center; }
+.stat-num {
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 900; letter-spacing: -0.05em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label {
+  font-size: clamp(0.6rem, 1vw, 0.75rem);
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+  margin-top: 6px;
+}
+
+/* ── CARD ─────────────────────────────────── */
+.card-dark {
+  background: rgba(13,37,53,0.8);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  position: relative;
+  overflow: hidden;
+}
+.card-dark::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--teal), transparent);
+}
+.card-light {
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* ── GRID LAYOUTS ─────────────────────────── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem, 2vw, 2rem); }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: clamp(0.75rem, 1.5vw, 1.5rem); }
+.g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: clamp(0.75rem, 1.5vw, 1.25rem); }
+
+/* ── LOGO ─────────────────────────────────── */
+.logo-mark {
+  width: clamp(32px,4vw,48px); height: clamp(32px,4vw,48px);
+  border-radius: clamp(8px,1vw,12px);
+  background: linear-gradient(135deg, var(--teal), var(--teal2));
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── RULE ─────────────────────────────────── */
+.rule-teal { width: 48px; height: 3px; background: linear-gradient(90deg, var(--teal), transparent); margin: 10px 0; }
+.rule-amber { width: 48px; height: 3px; background: linear-gradient(90deg, var(--amber), transparent); margin: 10px 0; }
+
+/* ══════════════════════════════════════════
+   SLIDE 1 — COVER
+══════════════════════════════════════════ */
+#s1 .inner {
+  justify-content: space-between;
+}
+.s1-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.s1-brand { display: flex; align-items: center; gap: 12px; }
+.s1-name { font-weight: 900; font-size: clamp(0.9rem, 1.5vw, 1.1rem); color: white; }
+.s1-by { font-size: clamp(0.6rem, 1vw, 0.75rem); color: rgba(255,255,255,0.35); }
+.s1-badge {
+  padding: 5px 14px; border-radius: 100px;
+  background: rgba(8,145,178,0.15); border: 1px solid rgba(8,145,178,0.3);
+  font-size: clamp(0.55rem, 0.9vw, 0.68rem); font-weight: 800;
+  letter-spacing: 0.1em; color: var(--cyan); text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+}
+.s1-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+.s1-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.s1-headline .accent { color: var(--cyan); }
+.s1-headline .gold   { color: var(--amber); }
+.s1-sub {
+  max-width: 520px; margin-top: clamp(0.75rem, 1.5vw, 1.25rem);
+  color: rgba(255,255,255,0.5); font-size: clamp(0.9rem, 1.5vw, 1.15rem); line-height: 1.7;
+}
+.s1-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: clamp(1.5rem, 3vw, 2.5rem); }
+.s1-pill {
+  padding: 6px 14px; border-radius: 100px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13);
+  font-size: clamp(0.6rem, 1vw, 0.75rem); font-weight: 700; color: rgba(255,255,255,0.65);
+}
+.s1-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-top: clamp(2rem, 4vw, 3rem);
+}
+.s1-stat {
+  padding: clamp(0.75rem, 1.5vw, 1.25rem) clamp(1rem, 2vw, 1.75rem);
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.s1-stat:last-child { border-right: 0; }
+.s1-stat-num { font-size: clamp(1.5rem, 3vw, 2.5rem); font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+.s1-stat-label { font-size: clamp(0.5rem, 0.8vw, 0.62rem); text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); margin-top: 4px; font-weight: 700; }
+
+/* ══════════════════════════════════════════
+   SLIDE 2 — THE PROBLEM
+══════════════════════════════════════════ */
+#s2 { background: #F8FAFC; }
+.s2-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(2rem, 4vw, 4rem); align-items: center; flex: 1; }
+.problem-list { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+.problem-item {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: clamp(0.75rem, 1.5vw, 1rem) clamp(1rem, 2vw, 1.25rem);
+  background: white; border: 1px solid #FEE2E2;
+  border-left: 4px solid #EF4444;
+  border-radius: 10px;
+}
+.problem-item .pi-icon { font-size: 1.3rem; flex-shrink: 0; }
+.problem-item h4 { font-size: clamp(0.78rem, 1.3vw, 0.9rem); font-weight: 800; color: #0F172A; margin-bottom: 2px; }
+.problem-item p { font-size: clamp(0.68rem, 1.1vw, 0.78rem); color: #64748B; line-height: 1.5; }
+.big-quote {
+  font-family: Georgia, serif;
+  font-size: clamp(1.5rem, 3vw, 2.8rem);
+  font-weight: 900; letter-spacing: -0.03em; line-height: 1.2;
+  color: #0F172A;
+}
+.big-quote .strike {
+  position: relative; color: #94A3B8;
+  text-decoration: line-through;
+  text-decoration-color: #EF4444;
+  text-decoration-thickness: 3px;
+}
+.big-quote .better { color: var(--teal2); }
+
+/* ══════════════════════════════════════════
+   SLIDE 3 — SOLUTION
+══════════════════════════════════════════ */
+#s3 .inner { justify-content: center; align-items: center; text-align: center; }
+.s3-icon { font-size: clamp(3rem, 6vw, 5rem); margin-bottom: clamp(1rem, 2vw, 1.5rem); }
+.s3-headline { margin-bottom: clamp(0.75rem, 1.5vw, 1.25rem); }
+.s3-sub { max-width: 560px; margin: 0 auto clamp(2rem, 4vw, 3rem); }
+.module-pills { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.mod-pill {
+  padding: 8px 16px; border-radius: 100px;
+  background: rgba(8,145,178,0.12); border: 1px solid rgba(8,145,178,0.25);
+  font-size: clamp(0.65rem, 1.1vw, 0.8rem); font-weight: 700; color: var(--cyan);
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ══════════════════════════════════════════
+   SLIDE 4 — GUEST JOURNEY
+══════════════════════════════════════════ */
+#s4 .inner { justify-content: space-between; }
+.journey-row {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0;
+  align-items: start;
+  flex: 1;
+  margin-top: clamp(1rem, 2vw, 1.75rem);
+}
+.jstep { text-align: center; position: relative; }
+.jstep::after {
+  content: '';
+  position: absolute; top: clamp(14px, 2.5vw, 20px);
+  left: 55%; width: 90%; height: 2px;
+  background: linear-gradient(90deg, var(--teal), rgba(14,116,144,0.25));
+}
+.jstep:last-child::after { display: none; }
+.jstep-dot {
+  width: clamp(32px, 4.5vw, 42px); height: clamp(32px, 4.5vw, 42px);
+  border-radius: 50%; margin: 0 auto clamp(0.5rem, 1vw, 0.75rem);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(0.85rem, 1.5vw, 1.2rem); position: relative; z-index: 1;
+}
+.jstep-dot.live { background: linear-gradient(135deg, var(--teal), var(--teal2)); box-shadow: 0 0 18px rgba(8,145,178,0.45); }
+.jstep-dot.soon { background: rgba(255,255,255,0.06); border: 2px dashed rgba(255,255,255,0.2); }
+.jstep-label { font-size: clamp(0.48rem, 0.85vw, 0.65rem); font-weight: 700; color: var(--muted); line-height: 1.3; padding: 0 2px; }
+.jstep-badge { font-size: clamp(0.38rem, 0.65vw, 0.5rem); font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+.jstep-badge.live { color: var(--green); }
+.jstep-badge.soon { color: var(--amber); opacity: 0.7; }
+.journey-bottom {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+.jb-card {
+  background: rgba(13,37,53,0.7);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+.jb-card h4 { font-size: clamp(0.75rem, 1.3vw, 0.95rem); font-weight: 800; color: white; margin-bottom: 4px; }
+.jb-card p { font-size: clamp(0.62rem, 1vw, 0.75rem); color: var(--muted); line-height: 1.55; }
+
+/* ══════════════════════════════════════════
+   SLIDE 5 — DASHBOARD SCREEN
+══════════════════════════════════════════ */
+#s5 .inner { justify-content: space-between; }
+.screen-pair { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: clamp(1.5rem, 3vw, 3rem); align-items: center; flex: 1; }
+.screen-frame {
+  background: #0A1A25;
+  border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(103,232,249,0.06);
+}
+.sf-bar {
+  background: #030C14; padding: clamp(4px,0.8vw,7px) clamp(8px,1.2vw,12px);
+  display: flex; align-items: center; gap: 7px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.sf-dots { display: flex; gap: 4px; }
+.sf-dot { width: 8px; height: 8px; border-radius: 50%; }
+.sf-url {
+  flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px;
+  padding: 2px 8px; font-size: clamp(0.45rem, 0.75vw, 0.55rem);
+  color: rgba(255,255,255,0.3); font-family: monospace;
+}
+/* Dashboard internals */
+.db-wrap { display: flex; height: clamp(200px, 35vh, 320px); }
+.db-side {
+  width: clamp(70px, 12vw, 110px); background: #0F1E29; padding: clamp(6px, 1vw, 10px);
+  border-right: 1px solid rgba(255,255,255,0.04); flex-shrink: 0;
+}
+.db-logo { width: clamp(22px,3vw,32px); height: clamp(22px,3vw,32px); border-radius: 8px; background: #2563EB; margin: 0 auto clamp(6px,1vw,10px); }
+.db-nav { height: 8px; border-radius: 4px; margin-bottom: 4px; background: rgba(255,255,255,0.06); }
+.db-nav.active { background: rgba(37,99,235,0.7); }
+.db-main { flex: 1; padding: clamp(6px,1.2vw,12px); background: #0A1A25; overflow: hidden; }
+.db-title { font-size: clamp(0.55rem, 1vw, 0.75rem); font-weight: 900; color: white; margin-bottom: clamp(4px,0.8vw,8px); }
+.db-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: clamp(6px,1vw,10px); }
+.db-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; padding: clamp(4px,0.7vw,7px); }
+.db-tile-n { font-size: clamp(0.9rem, 1.7vw, 1.3rem); font-weight: 900; line-height: 1; }
+.db-tile-l { font-size: clamp(0.3rem, 0.55vw, 0.42rem); color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.07em; }
+.db-row { display: flex; gap: clamp(4px,0.7vw,7px); align-items: center; background: rgba(255,255,255,0.03); border-radius: 5px; padding: clamp(3px,0.5vw,5px) clamp(4px,0.7vw,7px); margin-bottom: 3px; }
+.db-av { width: clamp(16px,2.5vw,22px); height: clamp(16px,2.5vw,22px); border-radius: 50%; flex-shrink: 0; }
+.db-nm { font-size: clamp(0.38rem, 0.65vw, 0.5rem); font-weight: 700; color: white; }
+.db-rm { font-size: clamp(0.3rem, 0.5vw, 0.38rem); color: rgba(255,255,255,0.3); }
+.db-bd { font-size: clamp(0.28rem, 0.48vw, 0.36rem); font-weight: 800; padding: 2px 5px; border-radius: 3px; }
+
+/* ══════════════════════════════════════════
+   SLIDE 6 — CHECK-IN SCREEN
+══════════════════════════════════════════ */
+#s6 .inner { justify-content: space-between; }
+.ci-frame { background: linear-gradient(135deg, #020B12, #083344, #0E7490); height: clamp(200px, 38vh, 330px); padding: clamp(12px, 2vw, 20px); overflow: hidden; }
+.ci-hotel { font-size: clamp(0.7rem, 1.2vw, 0.95rem); font-weight: 900; color: white; text-align: center; }
+.ci-city  { font-size: clamp(0.5rem, 0.8vw, 0.62rem); color: rgba(103,232,249,0.7); text-align: center; margin-bottom: clamp(6px, 1vw, 10px); }
+.ci-steps { display: flex; gap: 3px; justify-content: center; margin-bottom: clamp(6px, 1vw, 10px); }
+.ci-step { height: 4px; width: clamp(20px, 3.5vw, 32px); border-radius: 2px; }
+.ci-card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: clamp(8px, 1.5vw, 14px); }
+.ci-label { font-size: clamp(0.38rem, 0.62vw, 0.48rem); text-transform: uppercase; letter-spacing: 0.14em; color: rgba(103,232,249,0.6); font-weight: 800; margin-bottom: 4px; }
+.ci-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.ci-inp { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; height: clamp(18px, 3vw, 26px); }
+.ci-btn { background: linear-gradient(135deg, #0891B2, #0E7490); border-radius: 6px; height: clamp(22px, 3.5vw, 30px); margin-top: 6px; display: flex; align-items: center; justify-content: center; font-size: clamp(0.4rem, 0.7vw, 0.55rem); font-weight: 900; color: white; }
+.bullet-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.bullet-list li {
+  display: flex; gap: 12px; align-items: flex-start;
+  font-size: clamp(0.78rem, 1.3vw, 0.95rem); color: var(--muted); line-height: 1.5;
+}
+.bullet-list li::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--teal3, #0891B2); margin-top: 0.45em; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════
+   SLIDE 7 — CONCIERGE SCREEN
+══════════════════════════════════════════ */
+#s7 .inner { justify-content: space-between; }
+.conc-frame { height: clamp(200px, 38vh, 320px); overflow: hidden; }
+.conc-hero { background: linear-gradient(150deg, #020B12, #0E7490); padding: clamp(8px, 1.3vw, 14px); display: flex; align-items: center; gap: 8px; }
+.conc-logo { width: clamp(26px, 4vw, 36px); height: clamp(26px, 4vw, 36px); border-radius: 8px; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+.conc-name { font-size: clamp(0.62rem, 1vw, 0.85rem); font-weight: 900; color: white; }
+.conc-city { font-size: clamp(0.42rem, 0.68vw, 0.52rem); color: rgba(103,232,249,0.7); }
+.conc-tabs { display: flex; gap: 4px; padding: clamp(5px, 1vw, 8px); background: #ECEEF3; overflow: hidden; }
+.conc-tab { padding: clamp(3px,0.5vw,5px) clamp(7px,1.2vw,12px); border-radius: 8px; font-size: clamp(0.42rem, 0.72vw, 0.55rem); font-weight: 800; flex-shrink: 0; }
+.conc-cards { display: flex; gap: 6px; padding: clamp(5px, 1vw, 8px); background: #ECEEF3; }
+.conc-card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); flex-shrink: 0; width: clamp(90px, 16vw, 150px); }
+.conc-img { height: clamp(36px, 6vw, 56px); display: flex; align-items: center; justify-content: center; font-size: clamp(1rem, 2vw, 1.5rem); }
+.conc-body { padding: clamp(3px, 0.6vw, 5px) clamp(4px, 0.8vw, 7px); }
+.conc-cname { font-size: clamp(0.42rem, 0.72vw, 0.55rem); font-weight: 900; color: #0F172A; }
+.conc-price { font-size: clamp(0.6rem, 1vw, 0.8rem); font-weight: 900; color: #0F172A; }
+.conc-btn { margin: 0 clamp(3px,0.5vw,5px) clamp(3px,0.5vw,5px); border-radius: 6px; height: clamp(16px, 2.7vw, 22px); display: flex; align-items: center; justify-content: center; font-size: clamp(0.35rem, 0.55vw, 0.42rem); font-weight: 900; color: white; }
+
+/* ══════════════════════════════════════════
+   SLIDE 8 — REVIEW SCREEN
+══════════════════════════════════════════ */
+#s8 .inner { justify-content: space-between; }
+.rv-frame { background: linear-gradient(135deg, #020B12, #083344, #0E7490); padding: clamp(12px, 2vw, 20px); height: clamp(200px, 38vh, 330px); overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+.rv-hotel { font-size: clamp(0.65rem, 1.1vw, 0.9rem); font-weight: 900; color: white; }
+.rv-sub { font-size: clamp(0.42rem, 0.7vw, 0.55rem); color: rgba(255,255,255,0.4); margin-bottom: clamp(6px,1vw,10px); }
+.rv-stars { display: flex; gap: 4px; margin-bottom: clamp(4px, 0.7vw, 7px); }
+.rv-star { font-size: clamp(1.2rem, 2.5vw, 2rem); line-height: 1; }
+.rv-score { font-size: clamp(2rem, 5vw, 4rem); font-weight: 900; color: var(--cyan); line-height: 1; }
+.rv-sl { font-size: clamp(0.38rem, 0.62vw, 0.48rem); color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: clamp(6px,1vw,10px); }
+.rv-ta { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; height: clamp(30px, 5vw, 50px); width: 100%; margin-bottom: 6px; }
+.rv-btn { background: linear-gradient(135deg, #06B6D4, #0891B2); border-radius: 7px; height: clamp(22px, 3.5vw, 30px); width: 100%; display: flex; align-items: center; justify-content: center; font-size: clamp(0.4rem, 0.7vw, 0.55rem); font-weight: 800; color: white; }
+.rv-plat { display: flex; gap: 5px; margin-top: 5px; width: 100%; }
+.rv-p { flex: 1; height: clamp(18px, 3vw, 24px); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: clamp(0.35rem, 0.55vw, 0.42rem); font-weight: 800; }
+
+/* ══════════════════════════════════════════
+   SLIDE 9 — MANAGER BENEFITS
+══════════════════════════════════════════ */
+#s9 .inner { justify-content: space-between; }
+.ben-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.6rem, 1vw, 0.875rem); flex: 1; margin-top: clamp(1rem, 2vw, 1.5rem); }
+.ben-card {
+  background: rgba(13,37,53,0.75);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: clamp(0.75rem, 1.5vw, 1.125rem);
+  position: relative; overflow: hidden;
+}
+.ben-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.ben-card.c1::before { background: linear-gradient(90deg, var(--teal), var(--cyan)); }
+.ben-card.c2::before { background: linear-gradient(90deg, var(--green), #34D399); }
+.ben-card.c3::before { background: linear-gradient(90deg, var(--amber), #FCD34D); }
+.ben-card.c4::before { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
+.ben-card.c5::before { background: linear-gradient(90deg, var(--teal), var(--cyan)); }
+.ben-card.c6::before { background: linear-gradient(90deg, var(--amber), #FCD34D); }
+.ben-card.c7::before { background: linear-gradient(90deg, var(--green), #34D399); }
+.ben-card.c8::before { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
+.ben-card.c9::before { background: linear-gradient(90deg, var(--teal), var(--cyan)); }
+.ben-icon { font-size: clamp(1rem, 2vw, 1.5rem); margin-bottom: clamp(4px, 0.8vw, 8px); }
+.ben-card h4 { font-size: clamp(0.65rem, 1.1vw, 0.82rem); font-weight: 900; color: white; margin-bottom: 3px; }
+.ben-card p { font-size: clamp(0.55rem, 0.9vw, 0.68rem); color: var(--muted); line-height: 1.5; }
+
+/* ══════════════════════════════════════════
+   SLIDE 10 — ROI NUMBERS
+══════════════════════════════════════════ */
+#s10 { background: linear-gradient(150deg, #020B12 0%, #083344 55%, #0E7490 100%); }
+#s10 .inner { justify-content: space-between; align-items: stretch; }
+.roi-row {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.75rem, 1.5vw, 1.25rem);
+  flex: 1; margin-top: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: stretch;
+}
+.roi-card {
+  background: rgba(13,37,53,0.7);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.5rem);
+  text-align: center; display: flex; flex-direction: column; justify-content: center;
+}
+.roi-num {
+  font-size: clamp(2.5rem, 5.5vw, 5rem);
+  font-weight: 900; letter-spacing: -0.05em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: clamp(0.5rem, 1vw, 0.875rem);
+}
+.roi-desc { font-size: clamp(0.68rem, 1.1vw, 0.85rem); color: var(--muted); line-height: 1.55; }
+.roi-bottom {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2rem);
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: clamp(1rem, 2vw, 1.5rem);
+  gap: 2rem;
+}
+.roi-bottom p { font-size: clamp(0.78rem, 1.3vw, 0.95rem); color: rgba(255,255,255,0.55); line-height: 1.6; flex: 1; }
+.roi-bottom strong { color: white; font-weight: 800; }
+
+/* ══════════════════════════════════════════
+   SLIDE 11 — INTEGRATIONS
+══════════════════════════════════════════ */
+#s11 .inner { justify-content: space-between; }
+.int-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.75rem, 1.5vw, 1.25rem); flex: 1; margin-top: clamp(1rem, 2vw, 1.5rem); }
+.int-card {
+  background: rgba(13,37,53,0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: clamp(0.875rem, 1.8vw, 1.375rem);
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.int-icon { font-size: clamp(1.2rem, 2.2vw, 1.6rem); flex-shrink: 0; }
+.int-name { font-size: clamp(0.78rem, 1.3vw, 0.95rem); font-weight: 900; color: white; margin-bottom: 3px; }
+.int-desc { font-size: clamp(0.62rem, 1vw, 0.75rem); color: var(--muted); line-height: 1.55; }
+.api-box {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: clamp(0.875rem, 1.8vw, 1.375rem);
+  display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem, 2vw, 2rem);
+  align-items: center; margin-top: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+.api-box h4 { font-size: clamp(0.78rem, 1.3vw, 1rem); font-weight: 900; color: white; margin-bottom: 4px; }
+.api-box p { font-size: clamp(0.62rem, 1vw, 0.75rem); color: var(--muted); line-height: 1.55; }
+.code-block {
+  background: #030B11; border: 1px solid rgba(103,232,249,0.15);
+  border-radius: 8px; padding: clamp(6px, 1vw, 10px) clamp(8px, 1.2vw, 14px);
+  font-family: 'SF Mono', 'Fira Mono', monospace;
+  font-size: clamp(0.45rem, 0.8vw, 0.6rem); color: rgba(103,232,249,0.8);
+  line-height: 1.8;
+}
+.kw { color: #A78BFA; }
+.str { color: #34D399; }
+.cm { color: rgba(255,255,255,0.2); }
+
+/* ══════════════════════════════════════════
+   SLIDE 12 — CTA / CLOSE
+══════════════════════════════════════════ */
+#s12 { background: linear-gradient(150deg, #020B12 0%, #083344 55%, #0E7490 100%); }
+#s12 .inner { justify-content: space-between; }
+.s12-main { flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 600px; }
+.s12-headline { margin: clamp(0.75rem, 1.5vw, 1.25rem) 0; }
+.s12-sub { color: rgba(255,255,255,0.5); margin-bottom: clamp(2rem, 4vw, 3.5rem); }
+.contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.75rem, 1.5vw, 1.25rem); max-width: 480px; }
+.cg-item { }
+.cg-label { font-size: clamp(0.5rem, 0.8vw, 0.62rem); font-weight: 900; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(103,232,249,0.6); margin-bottom: 4px; }
+.cg-value { font-size: clamp(0.68rem, 1.1vw, 0.85rem); font-weight: 800; color: white; line-height: 1.4; }
+.next-steps-box {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: clamp(1.25rem, 2.5vw, 2rem);
+  margin-top: clamp(2rem, 4vw, 3rem);
+}
+.ns-eyebrow { font-size: clamp(0.5rem, 0.8vw, 0.62rem); font-weight: 900; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(103,232,249,0.6); margin-bottom: clamp(0.75rem, 1.5vw, 1.25rem); }
+.ns-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(0.75rem, 1.5vw, 1.25rem); }
+.ns-item { display: flex; gap: 10px; align-items: flex-start; }
+.ns-num {
+  width: clamp(22px, 3.5vw, 30px); height: clamp(22px, 3.5vw, 30px);
+  border-radius: 50%; background: var(--teal); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(0.5rem, 0.9vw, 0.68rem); font-weight: 900; flex-shrink: 0;
+}
+.ns-item h4 { font-size: clamp(0.62rem, 1vw, 0.78rem); font-weight: 900; color: white; margin-bottom: 3px; }
+.ns-item p { font-size: clamp(0.52rem, 0.85vw, 0.65rem); color: rgba(255,255,255,0.4); line-height: 1.5; }
+
+/* Right side visual */
+.s12-right { display: flex; flex-direction: column; gap: clamp(0.75rem, 1.5vw, 1.25rem); justify-content: center; }
+.s12-stat {
+  background: rgba(13,37,53,0.8);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: clamp(1rem, 2vw, 1.5rem) clamp(1.25rem, 2.5vw, 2rem);
+  text-align: center;
+}
+.s12-stat-num { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 900; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
+.s12-stat-label { font-size: clamp(0.55rem, 0.9vw, 0.7rem); color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 5px; font-weight: 700; }
+</style>
+
+<!-- ═══════════════════════════════════════════
+     FULLSCREEN BUTTON
+═══════════════════════════════════════════ -->
+<button id="fs-btn" onclick="toggleFS()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+  </svg>
+  Fullscreen
+</button>
+
+<!-- ═══════════════════════════════════════════
+     DECK
+═══════════════════════════════════════════ -->
+<div id="deck">
+
+<!-- ─── SLIDE 1 · COVER ───────────────────── -->
+<div class="slide bg-dark active" id="s1">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="s1-header">
+      <div class="s1-brand">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" width="60%" height="60%"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
+        </div>
+        <div>
+          <div class="s1-name">GuestFlow Pro</div>
+          <div class="s1-by">by Amica International</div>
+        </div>
+      </div>
+      <div class="s1-badge">Live Platform · 2026</div>
+    </div>
+
+    <div class="s1-main">
+      <div class="eyebrow light" style="margin-bottom:clamp(0.75rem,1.5vw,1.25rem)">Hotel Technology Platform</div>
+      <div class="display text-white s1-headline">
+        The Complete<br>
+        <span class="accent">Digital Guest</span><br>
+        <span class="gold">Experience.</span>
+      </div>
+      <p class="s1-sub">Online check-in · Digital concierge · Review automation · Marketing CRM — all in one platform, branded as your hotel.</p>
+      <div class="s1-pills">
+        <span class="s1-pill">📋 Digital Check-in</span>
+        <span class="s1-pill">🗺️ Guest Concierge</span>
+        <span class="s1-pill">⭐ Review Collection</span>
+        <span class="s1-pill">📊 Marketing CRM</span>
+        <span class="s1-pill">🔑 API & Webhooks</span>
+      </div>
+    </div>
+
+    <div class="s1-stats">
+      <div class="s1-stat">
+        <div class="s1-stat-num" style="color:#06B6D4">10</div>
+        <div class="s1-stat-label">Platform Modules</div>
+      </div>
+      <div class="s1-stat">
+        <div class="s1-stat-num" style="color:#F59E0B">100%</div>
+        <div class="s1-stat-label">Paperless</div>
+      </div>
+      <div class="s1-stat">
+        <div class="s1-stat-num" style="color:#10B981">3×</div>
+        <div class="s1-stat-label">More Reviews</div>
+      </div>
+      <div class="s1-stat">
+        <div class="s1-stat-num" style="color:white">24h</div>
+        <div class="s1-stat-label">Setup Time</div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">01 / 12</div>
+</div>
+
+<!-- ─── SLIDE 2 · THE PROBLEM ─────────────── -->
+<div class="slide" id="s2">
+  <div class="inner" style="background:#F8FAFC">
+    <div class="eyebrow teal" style="margin-bottom:clamp(0.5rem,1vw,0.875rem)">The Problem</div>
+    <div class="s2-grid">
+      <div>
+        <div class="big-quote text-dark">
+          Hotels still run on<br>
+          <span class="strike">paper forms</span><br>
+          and <span class="better">hope for the best.</span>
+        </div>
+        <p class="body text-gray" style="margin-top:clamp(1rem,2vw,1.5rem);max-width:380px">The hotel industry is one of the last sectors still relying on physical registration cards, manual review chasing, and disconnected marketing lists.</p>
+      </div>
+      <ul class="problem-list">
+        <li class="problem-item">
+          <div class="pi-icon">📝</div>
+          <div>
+            <h4>Paper registration cards</h4>
+            <p>Stored in folders, illegible, impossible to search or export for GDPR compliance.</p>
+          </div>
+        </li>
+        <li class="problem-item">
+          <div class="pi-icon">⭐</div>
+          <div>
+            <h4>No systematic review collection</h4>
+            <p>Staff verbally asking guests to leave a review at checkout — conversion under 5%.</p>
+          </div>
+        </li>
+        <li class="problem-item">
+          <div class="pi-icon">🗺️</div>
+          <div>
+            <h4>Reception as the concierge</h4>
+            <p>Staff fielding the same restaurant and parking questions 20 times a day.</p>
+          </div>
+        </li>
+        <li class="problem-item">
+          <div class="pi-icon">📊</div>
+          <div>
+            <h4>Zero marketing data</h4>
+            <p>No guest marketing list, no nationality analytics, no upsell visibility.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="slide-num dark">02 / 12</div>
+</div>
+
+<!-- ─── SLIDE 3 · THE SOLUTION ────────────── -->
+<div class="slide bg-navy2" id="s3">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="s3-icon">🏨</div>
+    <div class="eyebrow light" style="justify-content:center;margin-bottom:clamp(0.75rem,1.5vw,1.25rem)">The Solution</div>
+    <div class="h1 text-white s3-headline" style="text-align:center">
+      One platform that handles<br>
+      <span style="color:var(--cyan)">the complete guest journey.</span>
+    </div>
+    <p class="body-lg s3-sub text-muted" style="text-align:center">GuestFlow Pro replaces every paper form, phone call, and manual follow-up with a branded digital experience — from first enquiry to repeat booking.</p>
+    <div class="module-pills">
+      <span class="mod-pill">📋 Digital Check-in</span>
+      <span class="mod-pill">👥 Guest CRM</span>
+      <span class="mod-pill">📩 Booking Requests</span>
+      <span class="mod-pill">🗺️ Digital Concierge</span>
+      <span class="mod-pill">⭐ Review Collection</span>
+      <span class="mod-pill">📊 Marketing Analytics</span>
+      <span class="mod-pill">🎨 White-label</span>
+      <span class="mod-pill">🔁 Webhooks</span>
+      <span class="mod-pill">🔑 API Keys</span>
+      <span class="mod-pill">🛎️ Service Upsells</span>
+    </div>
+  </div>
+  <div class="slide-num">03 / 12</div>
+</div>
+
+<!-- ─── SLIDE 4 · GUEST JOURNEY ───────────── -->
+<div class="slide bg-dark" id="s4">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="eyebrow light" style="margin-bottom:8px">Guest Journey</div>
+        <div class="h2 text-white">From booking to repeat guest — every step covered</div>
+      </div>
+      <div style="display:flex;gap:16px;align-items:center;flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:6px;font-size:clamp(0.55rem,0.9vw,0.7rem);color:var(--green);font-weight:800"><div style="width:10px;height:10px;border-radius:50%;background:var(--green)"></div>Live</div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:clamp(0.55rem,0.9vw,0.7rem);color:var(--amber);font-weight:800;opacity:0.8"><div style="width:10px;height:10px;border-radius:50%;border:2px dashed var(--amber)"></div>Coming Soon</div>
+      </div>
+    </div>
+
+    <div class="journey-row">
+      <div class="jstep">
+        <div class="jstep-dot live">🏨</div>
+        <div class="jstep-label">Booking Request</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot live">📨</div>
+        <div class="jstep-label">Check-in Link Sent</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot live">✅</div>
+        <div class="jstep-label">Online Registration</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot live">🗺️</div>
+        <div class="jstep-label">Digital Concierge</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot live">🛎️</div>
+        <div class="jstep-label">In-stay Upsells</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot live">⭐</div>
+        <div class="jstep-label">Review Collection</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot soon">🏁</div>
+        <div class="jstep-label">Checkout</div>
+        <div class="jstep-badge soon">Soon</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot live">📣</div>
+        <div class="jstep-label">Future Promotions</div>
+        <div class="jstep-badge live">Live</div>
+      </div>
+      <div class="jstep">
+        <div class="jstep-dot soon">🔁</div>
+        <div class="jstep-label">Repeat Booking</div>
+        <div class="jstep-badge soon">Soon</div>
+      </div>
+    </div>
+
+    <div class="journey-bottom">
+      <div class="jb-card">
+        <h4>Before Arrival</h4>
+        <p>Guest submits booking enquiry, hotel confirms, check-in link sent via WhatsApp or email. Guest registers fully before arriving — no queues at reception.</p>
+      </div>
+      <div class="jb-card">
+        <h4>During Stay</h4>
+        <p>Guest accesses digital concierge for restaurants, tours, and parking. Orders hotel services directly. All activity tracked in the manager dashboard.</p>
+      </div>
+      <div class="jb-card">
+        <h4>After Checkout</h4>
+        <p>Review link sent automatically. Happy guests redirected to Google or TripAdvisor. Opted-in guests added to marketing list for future campaigns.</p>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">04 / 12</div>
+</div>
+
+<!-- ─── SLIDE 5 · DASHBOARD ───────────────── -->
+<div class="slide bg-navy2" id="s5">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Platform Screen 1 of 4</div>
+    <div class="screen-pair">
+      <div>
+        <div class="h2 text-white" style="margin-bottom:clamp(0.5rem,1vw,0.875rem)">Hotel Manager Dashboard</div>
+        <p class="body text-muted" style="margin-bottom:clamp(1rem,2vw,1.5rem)">One view for everything. Real-time check-in stats, guest CRM, booking requests, and review scores — all in a single sidebar-driven dashboard.</p>
+        <ul class="bullet-list">
+          <li>Live tiles: today's arrivals, pending registrations, total guests, average rating</li>
+          <li>Guest list with nationality, room number, document status, and marketing opt-in</li>
+          <li>Booking requests inbox — confirm or decline with one click</li>
+          <li>Marketing analytics: opt-in rate, top nationalities, 6-month trend</li>
+        </ul>
+      </div>
+      <div class="screen-frame">
+        <div class="sf-bar">
+          <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+          <div class="sf-url">guestflowpro.com/dashboard</div>
+        </div>
+        <div class="db-wrap">
+          <div class="db-side">
+            <div class="db-logo"></div>
+            <div class="db-nav active"></div>
+            <div class="db-nav"></div>
+            <div class="db-nav"></div>
+            <div class="db-nav"></div>
+            <div class="db-nav"></div>
+            <div class="db-nav"></div>
+            <div class="db-nav"></div>
+          </div>
+          <div class="db-main">
+            <div class="db-title">Kashaf Hotel · Florence</div>
+            <div class="db-tiles">
+              <div class="db-tile"><div class="db-tile-n" style="color:#06B6D4">12</div><div class="db-tile-l">Check-ins</div></div>
+              <div class="db-tile"><div class="db-tile-n" style="color:#F59E0B">3</div><div class="db-tile-l">Pending</div></div>
+              <div class="db-tile"><div class="db-tile-n" style="color:#10B981">248</div><div class="db-tile-l">Total Guests</div></div>
+              <div class="db-tile"><div class="db-tile-n" style="color:#A78BFA">4.8★</div><div class="db-tile-l">Avg Rating</div></div>
+            </div>
+            <div style="font-size:clamp(0.32rem,0.55vw,0.42rem);color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;font-weight:800">Recent Check-ins</div>
+            <div class="db-row"><div class="db-av" style="background:linear-gradient(135deg,#06B6D4,#0891B2)"></div><div><div class="db-nm">Marco Rossi</div><div class="db-rm">Room 204 · IT Passport</div></div><div class="db-bd" style="background:rgba(16,185,129,0.15);color:#10B981">Done</div></div>
+            <div class="db-row"><div class="db-av" style="background:linear-gradient(135deg,#F59E0B,#D97706)"></div><div><div class="db-nm">Sophie Laurent</div><div class="db-rm">Room 118 · FR Passport</div></div><div class="db-bd" style="background:rgba(245,158,11,0.15);color:#F59E0B">Pending</div></div>
+            <div class="db-row"><div class="db-av" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED)"></div><div><div class="db-nm">James Clarke</div><div class="db-rm">Room 307 · GB Passport</div></div><div class="db-bd" style="background:rgba(16,185,129,0.15);color:#10B981">Done</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">05 / 12</div>
+</div>
+
+<!-- ─── SLIDE 6 · CHECK-IN ────────────────── -->
+<div class="slide bg-navy" id="s6">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Platform Screen 2 of 4</div>
+    <div class="screen-pair">
+      <div class="screen-frame">
+        <div class="sf-bar">
+          <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+          <div class="sf-url">guestflowpro.com/checkin/a3f9b2…</div>
+        </div>
+        <div class="ci-frame">
+          <div class="ci-hotel">Kashaf Hotel</div>
+          <div class="ci-city">Florence, Italy</div>
+          <div class="ci-steps">
+            <div class="ci-step" style="background:#0891B2"></div>
+            <div class="ci-step" style="background:#0891B2"></div>
+            <div class="ci-step" style="background:rgba(255,255,255,0.15)"></div>
+            <div class="ci-step" style="background:rgba(255,255,255,0.15)"></div>
+          </div>
+          <div class="ci-card">
+            <div class="ci-label">Step 2 of 4 — Personal Details</div>
+            <div class="ci-row">
+              <div>
+                <div style="font-size:clamp(0.32rem,0.55vw,0.42rem);color:rgba(103,232,249,0.5);margin-bottom:2px">FIRST NAME</div>
+                <div class="ci-inp"></div>
+              </div>
+              <div>
+                <div style="font-size:clamp(0.32rem,0.55vw,0.42rem);color:rgba(103,232,249,0.5);margin-bottom:2px">LAST NAME</div>
+                <div class="ci-inp"></div>
+              </div>
+            </div>
+            <div style="margin-top:4px">
+              <div style="font-size:clamp(0.32rem,0.55vw,0.42rem);color:rgba(103,232,249,0.5);margin-bottom:2px">NATIONALITY</div>
+              <div class="ci-inp"></div>
+            </div>
+            <div style="margin-top:4px">
+              <div style="font-size:clamp(0.32rem,0.55vw,0.42rem);color:rgba(103,232,249,0.5);margin-bottom:2px">PASSPORT / DOCUMENT NO.</div>
+              <div class="ci-inp"></div>
+            </div>
+            <div class="ci-btn">Continue →</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="h2 text-white" style="margin-bottom:clamp(0.5rem,1vw,0.875rem)">Digital Check-in Form</div>
+        <p class="body text-muted" style="margin-bottom:clamp(1rem,2vw,1.5rem)">Guests register fully before arriving — on their phone, via a unique branded link sent by WhatsApp or email. No app download, no queue at reception.</p>
+        <ul class="bullet-list">
+          <li>Personal details, nationality, passport number and photo</li>
+          <li>Digital signature and GDPR consent captured in one flow</li>
+          <li>Marketing opt-in checkbox — builds your campaign list automatically</li>
+          <li>Fully branded: your hotel logo, name, and brand color</li>
+          <li>Works on any mobile — iOS, Android, any browser</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">06 / 12</div>
+</div>
+
+<!-- ─── SLIDE 7 · CONCIERGE ───────────────── -->
+<div class="slide bg-navy2" id="s7">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Platform Screen 3 of 4</div>
+    <div class="screen-pair">
+      <div>
+        <div class="h2 text-white" style="margin-bottom:clamp(0.5rem,1vw,0.875rem)">Digital Concierge Page</div>
+        <p class="body text-muted" style="margin-bottom:clamp(1rem,2vw,1.5rem)">Your hotel's public page is a full city guide — AI-described restaurants, parking, nightlife, and tours. Plus your own hotel services, orderable directly in-app.</p>
+        <ul class="bullet-list">
+          <li>Nearby restaurants with Google ratings, open hours, AI descriptions</li>
+          <li>Parking, nightlife, and attraction tabs — real-time Google Places data</li>
+          <li>GetYourGuide tour widgets — guests book, you earn affiliate commission</li>
+          <li>Hotel services (room service, spa, transport) with in-app ordering</li>
+          <li>WhatsApp contact button — one tap to reach reception</li>
+        </ul>
+      </div>
+      <div class="screen-frame">
+        <div class="sf-bar">
+          <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+          <div class="sf-url">guestflowpro.com/h/08b8a38a…</div>
+        </div>
+        <div class="conc-frame">
+          <div class="conc-hero">
+            <div class="conc-logo"></div>
+            <div>
+              <div class="conc-name">Kashaf Hotel</div>
+              <div class="conc-city">📍 Florence, Italy</div>
+            </div>
+            <div style="margin-left:auto"><div style="background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.4);border-radius:5px;padding:2px 7px;font-size:clamp(0.35rem,0.58vw,0.45rem);color:#10B981;font-weight:800">✓ Verified</div></div>
+          </div>
+          <div class="conc-tabs">
+            <div class="conc-tab" style="background:linear-gradient(135deg,#083344,#0E7490);color:white">🍽 Restaurant</div>
+            <div class="conc-tab" style="background:white;color:#334155">🅿 Parking</div>
+            <div class="conc-tab" style="background:white;color:#334155">🌙 Nightlife</div>
+            <div class="conc-tab" style="background:white;color:#334155">✈ Tours</div>
+          </div>
+          <div class="conc-cards">
+            <div class="conc-card">
+              <div class="conc-img" style="background:linear-gradient(135deg,#FFF7ED,#FED7AA)">🍕</div>
+              <div class="conc-body">
+                <div class="conc-cname">Club Sandwich</div>
+                <div class="conc-price">£8.50</div>
+              </div>
+              <div class="conc-btn" style="background:linear-gradient(135deg,#F97316,#EA580C)">Book Now</div>
+            </div>
+            <div class="conc-card">
+              <div class="conc-img" style="background:linear-gradient(135deg,#F0FDF4,#BBF7D0)">💆</div>
+              <div class="conc-body">
+                <div class="conc-cname">Full Massage</div>
+                <div class="conc-price">£65.00</div>
+              </div>
+              <div class="conc-btn" style="background:linear-gradient(135deg,#059669,#047857)">Book Now</div>
+            </div>
+            <div class="conc-card">
+              <div class="conc-img" style="background:linear-gradient(135deg,#EFF6FF,#BFDBFE)">🚕</div>
+              <div class="conc-body">
+                <div class="conc-cname">Airport Transfer</div>
+                <div class="conc-price">£45.00</div>
+              </div>
+              <div class="conc-btn" style="background:linear-gradient(135deg,#2563EB,#1D4ED8)">Book Now</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">07 / 12</div>
+</div>
+
+<!-- ─── SLIDE 8 · REVIEW ──────────────────── -->
+<div class="slide bg-navy" id="s8">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Platform Screen 4 of 4</div>
+    <div class="screen-pair">
+      <div class="screen-frame">
+        <div class="sf-bar">
+          <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+          <div class="sf-url">guestflowpro.com/review/f7c2a1…</div>
+        </div>
+        <div class="rv-frame">
+          <div class="rv-hotel">Kashaf Hotel</div>
+          <div class="rv-sub">Thank you for your stay, Marco</div>
+          <div class="rv-stars">
+            <span class="rv-star">⭐</span><span class="rv-star">⭐</span><span class="rv-star">⭐</span><span class="rv-star">⭐</span><span class="rv-star">⭐</span>
+          </div>
+          <div class="rv-score">5</div>
+          <div class="rv-sl">Excellent</div>
+          <div class="rv-ta"></div>
+          <div class="rv-btn">Submit Review</div>
+          <div class="rv-plat">
+            <div class="rv-p" style="background:rgba(234,67,53,0.15);color:#EA4335;border:1px solid rgba(234,67,53,0.2)">📍 Google</div>
+            <div class="rv-p" style="background:rgba(0,175,188,0.15);color:#00AFBC;border:1px solid rgba(0,175,188,0.2)">✈ TripAdvisor</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="h2 text-white" style="margin-bottom:clamp(0.5rem,1vw,0.875rem)">Review Collection</div>
+        <p class="body text-muted" style="margin-bottom:clamp(1rem,2vw,1.5rem)">After checkout, a branded review link is sent to the guest. They rate their stay privately — then satisfied guests are automatically redirected to post on Google or TripAdvisor.</p>
+        <ul class="bullet-list">
+          <li>5-star animated rating interface on a fully branded page</li>
+          <li>Private comment captured before any public redirect</li>
+          <li>Happy guests (4–5 stars) auto-redirected to Google or TripAdvisor</li>
+          <li>All reviews visible in the dashboard with date and score</li>
+          <li>Average score tracked over time with monthly trend chart</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">08 / 12</div>
+</div>
+
+<!-- ─── SLIDE 9 · MANAGER BENEFITS ───────── -->
+<div class="slide bg-dark" id="s9">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="eyebrow light" style="margin-bottom:8px">For Hotel Managers</div>
+        <div class="h2 text-white">9 ways GuestFlow Pro transforms your operations</div>
+      </div>
+    </div>
+    <div class="ben-grid">
+      <div class="ben-card c1"><div class="ben-icon">📋</div><h4>Paperless Check-in</h4><p>Full registration on the guest's phone before arrival. Passport, signature, GDPR — all digital, all searchable.</p></div>
+      <div class="ben-card c2"><div class="ben-icon">👥</div><h4>Guest CRM</h4><p>Every guest stored with nationality, contact, and marketing opt-in. Search, filter, export at any time.</p></div>
+      <div class="ben-card c3"><div class="ben-icon">📩</div><h4>Booking Requests</h4><p>Public enquiry form → confirm or decline dashboard. Private notes visible only to your team.</p></div>
+      <div class="ben-card c4"><div class="ben-icon">⭐</div><h4>Review Collection</h4><p>Automated post-checkout review links. Happy guests redirected to Google or TripAdvisor automatically.</p></div>
+      <div class="ben-card c5"><div class="ben-icon">🎨</div><h4>White-label Branding</h4><p>Your logo, your brand color, your welcome message. Guests see your hotel — not our platform.</p></div>
+      <div class="ben-card c6"><div class="ben-icon">🛎️</div><h4>Service Upsells</h4><p>Room service, spa, transport orderable in-app. Orders come to your dashboard with payment status.</p></div>
+      <div class="ben-card c7"><div class="ben-icon">📊</div><h4>Marketing Analytics</h4><p>Opt-in rate, nationality breakdown, 6-month trend. Export opted-in guest list as CSV for campaigns.</p></div>
+      <div class="ben-card c8"><div class="ben-icon">🔁</div><h4>Webhooks & API Keys</h4><p>Real-time event webhooks. API keys for n8n and Zapier. Build any integration in any language.</p></div>
+      <div class="ben-card c9"><div class="ben-icon">🌍</div><h4>Multi-language</h4><p>Guest pages in English, Italian, French, German, Spanish. Language set once per hotel — no extra work.</p></div>
+    </div>
+  </div>
+  <div class="slide-num">09 / 12</div>
+</div>
+
+<!-- ─── SLIDE 10 · ROI ────────────────────── -->
+<div class="slide" id="s10">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Return on Investment</div>
+    <div class="h2 text-white" style="margin-bottom:0">What hotels gain by switching to digital</div>
+    <div class="roi-row">
+      <div class="roi-card">
+        <div class="roi-num" style="color:var(--cyan)">−80%</div>
+        <div class="roi-desc">Less staff time at check-in desk per guest. Guests arrive pre-registered.</div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-num" style="color:var(--amber)">3×</div>
+        <div class="roi-desc">More Google and TripAdvisor reviews collected per month vs. verbal asking.</div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-num" style="color:var(--green)">+40%</div>
+        <div class="roi-desc">Increase in upsell revenue from in-stay service orders via the concierge.</div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-num" style="color:white">100%</div>
+        <div class="roi-desc">Guest data captured digitally with GDPR consent from day one. Zero paper.</div>
+      </div>
+    </div>
+    <div class="roi-bottom">
+      <p><strong>Setup in under 24 hours.</strong> Upload your logo, set your brand color — your hotel is ready to send its first digital check-in link the same day you sign up. No technical team required.</p>
+      <div style="display:flex;gap:12px;flex-shrink:0">
+        <span class="accent-pill pill-teal">24h Onboarding</span>
+        <span class="accent-pill pill-green">Full Support</span>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">10 / 12</div>
+</div>
+
+<!-- ─── SLIDE 11 · INTEGRATIONS ───────────── -->
+<div class="slide bg-navy2" id="s11">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Integrations & API</div>
+    <div class="h2 text-white" style="margin-bottom:0">Connects to the tools you already use</div>
+    <div class="int-grid">
+      <div class="int-card"><div class="int-icon">🔴</div><div><div class="int-name">n8n</div><div class="int-desc">Automate workflows on every guest event via API key or webhook. No code required.</div></div></div>
+      <div class="int-card"><div class="int-icon">⚡</div><div><div class="int-name">Zapier</div><div class="int-desc">Connect to 5000+ apps. New check-in → Mailchimp. New review → Slack notification.</div></div></div>
+      <div class="int-card"><div class="int-icon">📱</div><div><div class="int-name">WhatsApp</div><div class="int-desc">Send check-in and review links directly via WhatsApp Business from the dashboard.</div></div></div>
+      <div class="int-card"><div class="int-icon">🗺️</div><div><div class="int-name">Google Places</div><div class="int-desc">Nearby restaurants, parking, and attractions with live ratings and open hours.</div></div></div>
+      <div class="int-card"><div class="int-icon">🎟️</div><div><div class="int-name">GetYourGuide</div><div class="int-desc">Live tour widgets in the concierge page. Guests book, hotel earns affiliate commission.</div></div></div>
+      <div class="int-card"><div class="int-icon">🔑</div><div><div class="int-name">REST API</div><div class="int-desc">Per-hotel API keys with HMAC-signed webhooks. Build any custom integration.</div></div></div>
+    </div>
+    <div class="api-box">
+      <div>
+        <h4>Developer-ready from day one</h4>
+        <p>Full REST API with JWT and API key auth. Real-time webhooks fire on every guest event — check-in completed, booking confirmed, review submitted. Documented, versioned, production-ready.</p>
+      </div>
+      <div class="code-block">
+<span class="cm"># Webhook — new check-in</span>
+{
+  <span class="str">"event"</span>: <span class="str">"checkin.completed"</span>,
+  <span class="str">"hotel_id"</span>: <span class="str">"08b8a38a..."</span>,
+  <span class="str">"guest"</span>: {
+    <span class="str">"name"</span>: <span class="str">"Marco Rossi"</span>,
+    <span class="str">"nationality"</span>: <span class="str">"IT"</span>,
+    <span class="str">"marketing_opt_in"</span>: <span class="kw">true</span>
+  }
+}
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">11 / 12</div>
+</div>
+
+<!-- ─── SLIDE 12 · CTA ────────────────────── -->
+<div class="slide" id="s12">
+  <div class="dot-pattern"></div>
+  <div class="inner">
+    <div class="eyebrow light" style="margin-bottom:8px">Get Started</div>
+    <div style="display:grid;grid-template-columns:1.2fr 0.8fr;gap:clamp(2rem,4vw,4rem);flex:1;align-items:center">
+      <div>
+        <div class="h1 text-white s12-headline">
+          Ready to bring your hotel<br>into the <span style="color:var(--cyan)">digital age?</span>
+        </div>
+        <p class="body-lg s12-sub" style="margin-top:clamp(0.75rem,1.5vw,1.25rem)">GuestFlow Pro is live and running. Onboarding takes less than 24 hours — your hotel's first digital check-in link goes out the same day.</p>
+        <div class="contact-grid" style="margin-top:clamp(1.5rem,3vw,2.5rem)">
+          <div class="cg-item"><div class="cg-label">Email</div><div class="cg-value">razatechsolutions<br>.official@gmail.com</div></div>
+          <div class="cg-item"><div class="cg-label">Platform</div><div class="cg-value">GuestFlow Pro</div></div>
+          <div class="cg-item"><div class="cg-label">By</div><div class="cg-value">Amica International</div></div>
+        </div>
+        <div class="next-steps-box">
+          <div class="ns-eyebrow">4 Steps to Go Live</div>
+          <div class="ns-row">
+            <div class="ns-item"><div class="ns-num">1</div><div><h4>Initial Call</h4><p>30-min demo and Q&A session tailored to your hotel</p></div></div>
+            <div class="ns-item"><div class="ns-num">2</div><div><h4>Hotel Setup</h4><p>Logo, brand color, welcome message configured</p></div></div>
+            <div class="ns-item"><div class="ns-num">3</div><div><h4>First Check-in</h4><p>First digital link sent within 24h of signup</p></div></div>
+            <div class="ns-item"><div class="ns-num">4</div><div><h4>Full Go-live</h4><p>All modules active with ongoing support</p></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="s12-right">
+        <div class="s12-stat"><div class="s12-stat-num" style="color:var(--cyan)">10</div><div class="s12-stat-label">Platform Modules</div></div>
+        <div class="s12-stat"><div class="s12-stat-num" style="color:var(--amber)">3×</div><div class="s12-stat-label">More Reviews</div></div>
+        <div class="s12-stat"><div class="s12-stat-num" style="color:var(--green)">−80%</div><div class="s12-stat-label">Check-in Time</div></div>
+        <div class="s12-stat"><div class="s12-stat-num" style="color:white">24h</div><div class="s12-stat-label">Setup Time</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">12 / 12</div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ── NAVIGATION ──────────────────────────── -->
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="go(-1)" disabled>←</button>
+  <div id="progress-dots"></div>
+  <div id="slide-counter">1 / 12</div>
+  <button class="nav-btn" id="btn-next" onclick="go(1)">→</button>
+</div>
+
+<script>
+const TOTAL = 12;
+let cur = 1;
+
+const dots = document.getElementById('progress-dots');
+for (let i = 1; i <= TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'pdot' + (i === 1 ? ' active' : '');
+  d.onclick = () => goTo(i);
+  dots.appendChild(d);
+}
+
+function goTo(n) {
+  document.getElementById('s' + cur).classList.remove('active');
+  dots.children[cur - 1].classList.remove('active');
+  cur = Math.max(1, Math.min(TOTAL, n));
+  document.getElementById('s' + cur).classList.add('active');
+  dots.children[cur - 1].classList.add('active');
+  document.getElementById('slide-counter').textContent = cur + ' / ' + TOTAL;
+  document.getElementById('btn-prev').disabled = cur === 1;
+  document.getElementById('btn-next').disabled = cur === TOTAL;
+}
+
+function go(dir) { goTo(cur + dir); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); go(-1); }
+  if (e.key === 'f' || e.key === 'F') toggleFS();
+});
+
+function toggleFS() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+    document.getElementById('fs-btn').textContent = '✕ Exit';
+  } else {
+    document.exitFullscreen();
+    document.getElementById('fs-btn').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg> Fullscreen';
+  }
+}
+
+// Touch / swipe
+let tx = 0;
+document.addEventListener('touchstart', e => tx = e.touches[0].clientX);
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+});
+</script>

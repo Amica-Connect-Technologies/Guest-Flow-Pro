@@ -15,7 +15,7 @@ type PrimaryForm = {
   address_city: string; address_country: string; address_postal: string;
   document_type: DocType; document_number: string;
   document_issue_date: string; document_expiry_date: string;
-  document_image: File | null; gdpr_consent: boolean;
+  document_image: File | null; gdpr_consent: boolean; marketing_optin: boolean;
 };
 
 // ── Simplified form for Guests 2+ ─────────────────────────────────────────────
@@ -32,7 +32,7 @@ const EMPTY_PRIMARY = (): PrimaryForm => ({
   address_house: "", address_street: "", address_city: "", address_country: "", address_postal: "",
   document_type: "passport", document_number: "",
   document_issue_date: "", document_expiry_date: "",
-  document_image: null, gdpr_consent: false,
+  document_image: null, gdpr_consent: false, marketing_optin: false,
 });
 
 const EMPTY_EXTRA = (): ExtraGuestForm => ({
@@ -187,7 +187,8 @@ export default function GuestCheckinPage() {
     fd.append("document_number",      primary.document_number);
     fd.append("document_issue_date",  primary.document_issue_date);
     fd.append("document_expiry_date", primary.document_expiry_date);
-    fd.append("gdpr_consent",         String(primary.gdpr_consent));
+    fd.append("gdpr_consent",     String(primary.gdpr_consent));
+    fd.append("marketing_optin", String(primary.marketing_optin));
     fd.append("signature",            sig);
     if (primary.document_image) fd.append("document_image", primary.document_image);
     await checkinApi.submitRegistration(params.token, fd);
@@ -294,13 +295,18 @@ export default function GuestCheckinPage() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
+        style={{ background: booking.hotel_brand_color
+          ? `linear-gradient(135deg, #020B12 0%, ${booking.hotel_brand_color}99 55%, ${booking.hotel_brand_color} 100%)`
+          : "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
         <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(6,182,212,0.20) 0%, transparent 65%)" }} />
         <div className="px-5 pt-10 pb-5 max-w-2xl mx-auto relative z-10">
           <p className="text-cyan-300/80 text-[10px] font-bold uppercase tracking-widest mb-1">{c.welcomeAt}</p>
-          <h1 className="text-2xl font-black text-white mb-4">{booking.hotel_name}</h1>
-          <div className="flex gap-5">
+          <h1 className="text-2xl font-black text-white mb-1">{booking.hotel_name}</h1>
+          {booking.hotel_welcome_message && (
+            <p className="text-white/70 text-xs mb-2 leading-relaxed">{booking.hotel_welcome_message}</p>
+          )}
+          <div className="flex gap-5 mt-3">
             {[
               { label: c.checkIn,  val: new Date(booking.check_in_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) },
               { label: c.checkOut, val: new Date(booking.check_out_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) },
@@ -546,6 +552,24 @@ export default function GuestCheckinPage() {
                 <span className="text-sm text-slate-700 leading-snug">{c.fields.gdprConsent}</span>
               </label>
               <Err msg={pErrors.gdpr_consent} />
+
+              {/* Marketing opt-in — optional */}
+              <label className="flex gap-3 cursor-pointer mt-4">
+                <div className="relative flex-shrink-0 mt-0.5">
+                  <input type="checkbox" checked={primary.marketing_optin}
+                    onChange={e => setP("marketing_optin", e.target.checked)} className="sr-only peer" />
+                  <div className="w-5 h-5 rounded-md border-2 border-slate-300 peer-checked:border-cyan-600 peer-checked:bg-cyan-600 transition-all flex items-center justify-center">
+                    {primary.marketing_optin && (
+                      <svg viewBox="0 0 12 10" fill="none" className="w-3 h-3">
+                        <path d="M1 5l3.5 3.5L11 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <span className="text-sm text-slate-500 leading-snug">
+                  I agree to receive future offers and promotions from this property. <span className="text-xs text-slate-400">(Optional)</span>
+                </span>
+              </label>
             </div>
           </>
         )}

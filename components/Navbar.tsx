@@ -19,9 +19,10 @@ export default function Navbar() {
   }, [pathname]);
 
   const links = [
-    { href: "/hotels", label: t.nav.hotels },
-    { href: "/tours",  label: t.nav.tours  },
-    { href: "/places", label: t.nav.places },
+    { href: "/hotels",     label: t.nav.hotels },
+    { href: "/tours",      label: t.nav.tours  },
+    { href: "/places",     label: t.nav.places },
+    { href: "/for-hotels", label: "For Hotels", highlight: true },
   ];
 
   function handleSignOut() {
@@ -49,18 +50,27 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <ul className="hidden md:flex gap-8 items-center text-sm font-medium">
-          {links.map(({ href, label }) => (
+          {links.map(({ href, label, highlight }) => (
             <li key={href}>
-              <Link
-                href={href}
-                className={`relative pb-1 transition-colors duration-200 hover:text-blue-600 after:absolute after:left-0 after:bottom-0 after:h-0.5 after:bg-blue-600 after:transition-all after:duration-200 ${
-                  pathname === href
-                    ? "text-blue-600 after:w-full"
-                    : "text-slate-600 after:w-0 hover:after:w-full"
-                }`}
-              >
-                {label}
-              </Link>
+              {highlight ? (
+                <Link
+                  href={href}
+                  className="bg-gradient-to-r from-cyan-700 to-cyan-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  {label}
+                </Link>
+              ) : (
+                <Link
+                  href={href}
+                  className={`relative pb-1 transition-colors duration-200 hover:text-blue-600 after:absolute after:left-0 after:bottom-0 after:h-0.5 after:bg-blue-600 after:transition-all after:duration-200 ${
+                    pathname === href
+                      ? "text-blue-600 after:w-full"
+                      : "text-slate-600 after:w-0 hover:after:w-full"
+                  }`}
+                >
+                  {label}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
@@ -89,6 +99,16 @@ export default function Navbar() {
             >
               <span className="text-base leading-none">🇮🇹</span>
               <span className="hidden sm:inline">IT</span>
+            </button>
+            <button
+              onClick={() => setLang("es")}
+              title="Español"
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-all ${
+                lang === "es" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <span className="text-base leading-none">🇪🇸</span>
+              <span className="hidden sm:inline">ES</span>
             </button>
           </div>
 

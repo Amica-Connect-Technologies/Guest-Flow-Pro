@@ -79,6 +79,7 @@ class GuestRegistration(models.Model):
     )
     signature = models.TextField(blank=True)
     gdpr_consent = models.BooleanField(default=False)
+    marketing_optin = models.BooleanField(default=False)
     completed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -88,6 +89,95 @@ class GuestRegistration(models.Model):
 
     def __str__(self):
         return f"Guest {self.guest_number}: {self.first_name} {self.last_name} (Booking: {self.booking_id})"
+
+
+class BookingRequest(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_CONFIRMED = "confirmed"
+    STATUS_DECLINED = "declined"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_DECLINED, "Declined"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    hotel = models.ForeignKey(
+        "hotels.Hotel", on_delete=models.CASCADE, related_name="booking_requests"
+    )
+    guest_name = models.CharField(max_length=200)
+    guest_email = models.EmailField(blank=True)
+    guest_phone = models.CharField(max_length=30, blank=True)
+    check_in_date = models.DateField()
+    check_out_date = models.DateField()
+    num_guests = models.PositiveIntegerField(default=1)
+    room_type = models.CharField(max_length=100, blank=True)
+    message = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    hotel_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.guest_name} – {self.check_in_date} ({self.hotel.name}) [{self.status}]"
+
+
+class ReviewRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    booking = models.OneToOneField(
+        Booking, on_delete=models.CASCADE, related_name="review_request"
+    )
+    review_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    # Guest response
+    rating = models.PositiveSmallIntegerField(null=True, blank=True)  # 1-5
+    comment = models.TextField(blank=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    # Platform links (hotel fills in after review is submitted)
+    google_review_url = models.URLField(blank=True)
+    tripadvisor_url = models.URLField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_submitted(self):
+        return self.submitted_at is not None
+
+    def __str__(self):
+        return f"Review for {self.booking} – rating: {self.rating}"
+
+
+class WebhookConfig(models.Model):
+    """Per-hotel webhook endpoint for n8n / Zapier / custom integrations."""
+    EVENT_CHOICES = [
+        ("guest_registered",   "Guest Registered"),
+        ("booking_created",    "Booking Created"),
+        ("review_submitted",   "Review Submitted"),
+        ("booking_request",    "Booking Request Submitted"),
+        ("all",                "All Events"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    hotel = models.ForeignKey(
+        "hotels.Hotel", on_delete=models.CASCADE, related_name="webhooks"
+    )
+    url = models.URLField(max_length=500)
+    event = models.CharField(max_length=40, choices=EVENT_CHOICES, default="all")
+    secret = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.hotel.name} → {self.url} [{self.event}]"
 
 
 class MessageLog(models.Model):

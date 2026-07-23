@@ -82,10 +82,41 @@ class AdminStatsView(APIView):
             raise PermissionDenied()
         from tours.models import Tour
         from places.models import Place
+        from checkin.models import GuestRegistration, ReviewRequest
+        from django.db.models import Avg, Count
+
+        total_guests = GuestRegistration.objects.count()
+        marketing_optins = GuestRegistration.objects.filter(marketing_optin=True).count()
+
+        review_qs = ReviewRequest.objects.filter(submitted_at__isnull=False)
+        total_reviews = review_qs.count()
+        avg_rating = review_qs.aggregate(avg=Avg("rating"))["avg"]
+        avg_rating = round(avg_rating, 1) if avg_rating else None
+
+        top_hotels = (
+            GuestRegistration.objects
+            .values("booking__hotel__id", "booking__hotel__name")
+            .annotate(guest_count=Count("id"))
+            .order_by("-guest_count")[:5]
+        )
+
         return Response({
             "hotels": Hotel.objects.count(),
             "tours": Tour.objects.count(),
             "places": Place.objects.count(),
+            # Enhanced
+            "total_guests": total_guests,
+            "marketing_optins": marketing_optins,
+            "total_reviews": total_reviews,
+            "avg_rating": avg_rating,
+            "top_hotels": [
+                {
+                    "hotel_id": str(h["booking__hotel__id"]),
+                    "hotel_name": h["booking__hotel__name"],
+                    "guest_count": h["guest_count"],
+                }
+                for h in top_hotels
+            ],
         })
 
 

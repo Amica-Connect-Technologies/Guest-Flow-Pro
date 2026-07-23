@@ -1,0 +1,1444 @@
+<title>GuestFlow Pro — Marketing Brochure</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:   #020B12;
+  --navy2:  #0D2535;
+  --teal:   #0891B2;
+  --teal2:  #0E7490;
+  --teallt: #E0F2FE;
+  --cyan:   #06B6D4;
+  --amber:  #F59E0B;
+  --green:  #059669;
+  --red:    #DC2626;
+  --text:   #0F172A;
+  --muted:  #475569;
+  --rule:   #E2E8F0;
+  --light:  #F8FAFC;
+}
+
+html { font-size: 13px; background: #9CA3AF; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── PAGE SIMULATION ──────────────────────────── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  margin: 16px auto;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+}
+
+/* ── PRINT RULES ──────────────────────────────── */
+@media print {
+  html { background: white; font-size: 12px; }
+  body { background: white; }
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+    width: 100%;
+    min-height: 100vh;
+  }
+  .page:last-child { page-break-after: avoid; }
+  .print-btn { display: none !important; }
+  @page { size: A4; margin: 0; }
+}
+
+/* ── PRINT BUTTON ─────────────────────────────── */
+.print-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 100;
+  background: var(--teal); color: white;
+  border: none; border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 4px 16px rgba(8,145,178,0.4);
+}
+.print-btn:hover { background: var(--teal2); }
+
+/* ── TYPOGRAPHY ───────────────────────────────── */
+.display { font-size: 3.6rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; font-family: Georgia, 'Times New Roman', serif; }
+.h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1.05; font-family: Georgia, serif; }
+.h2 { font-size: 1.5rem; font-weight: 900; letter-spacing: -0.025em; line-height: 1.1; }
+.h3 { font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+.body { font-size: 0.85rem; line-height: 1.75; color: var(--muted); }
+.small { font-size: 0.75rem; line-height: 1.5; }
+.tiny { font-size: 0.625rem; line-height: 1.4; }
+.eyebrow {
+  font-size: 0.55rem; font-weight: 900; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--teal);
+}
+.num-big { font-size: 2.8rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* ── COLORS ───────────────────────────────────── */
+.text-navy   { color: var(--navy); }
+.text-teal   { color: var(--teal); }
+.text-amber  { color: var(--amber); }
+.text-green  { color: var(--green); }
+.text-muted  { color: var(--muted); }
+.text-white  { color: white; }
+.bg-navy     { background: var(--navy); }
+.bg-teal     { background: var(--teal); }
+.bg-light    { background: var(--light); }
+
+/* ── LAYOUT HELPERS ───────────────────────────── */
+.cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.cols4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 1 — COVER
+──────────────────────────────────────────────────────── */
+#cover {
+  background: linear-gradient(155deg, #020B12 0%, #083344 50%, #0E7490 100%);
+  min-height: 297mm;
+  display: flex; flex-direction: column;
+}
+.cover-dot-bg {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(rgba(103,232,249,0.12) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.cover-top {
+  position: relative; z-index: 2;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 22px 28px 0;
+}
+.cover-logo-row { display: flex; align-items: center; gap: 10px; }
+.cover-logo-box {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, #0891B2, #0E7490);
+  display: flex; align-items: center; justify-content: center;
+}
+.cover-brand { font-weight: 900; font-size: 1rem; color: white; }
+.cover-by { font-size: 0.6875rem; color: rgba(255,255,255,0.4); }
+.cover-date { font-size: 0.625rem; color: rgba(255,255,255,0.35); letter-spacing: 0.1em; font-weight: 700; text-transform: uppercase; }
+
+.cover-body {
+  position: relative; z-index: 2;
+  flex: 1; display: flex; flex-direction: column;
+  padding: 48px 28px 0;
+}
+.cover-eyebrow {
+  font-size: 0.6rem; font-weight: 900; letter-spacing: 0.22em;
+  text-transform: uppercase; color: rgba(103,232,249,0.7);
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.cover-eyebrow::before { content: ''; display: block; width: 28px; height: 2px; background: var(--cyan); }
+.cover-headline {
+  font-family: Georgia, serif;
+  font-size: 3.8rem; font-weight: 900;
+  letter-spacing: -0.04em; line-height: 1;
+  color: white; margin-bottom: 6px;
+}
+.cover-headline .accent { color: var(--cyan); }
+.cover-sub {
+  font-size: 1rem; color: rgba(255,255,255,0.55);
+  max-width: 300px; line-height: 1.65; margin-bottom: 40px;
+}
+.cover-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 44px; }
+.cover-pill {
+  padding: 5px 12px; border-radius: 100px;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+  font-size: 0.6875rem; font-weight: 700; color: rgba(255,255,255,0.7);
+}
+.cover-stats {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  margin-bottom: 36px;
+}
+.cover-stat {
+  padding: 18px 0 18px 20px;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.cover-stat:last-child { border-right: 0; }
+.cover-stat-num { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1; }
+.cover-stat-label { font-size: 0.5625rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; font-weight: 700; }
+
+.cover-mockup-strip {
+  position: relative; z-index: 2;
+  padding: 0 28px 0;
+  flex: 1; display: flex; align-items: flex-end;
+}
+.mockup-preview {
+  background: #0D2535;
+  border: 1px solid rgba(103,232,249,0.18);
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  width: 100%;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+}
+.mp-bar {
+  background: rgba(3,15,25,0.95);
+  padding: 6px 10px;
+  display: flex; align-items: center; gap: 5px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.mp-dots { display: flex; gap: 4px; }
+.mp-dot { width: 7px; height: 7px; border-radius: 50%; }
+.mp-url {
+  flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px;
+  padding: 2px 6px; font-size: 0.5rem; color: rgba(255,255,255,0.3);
+  font-family: monospace;
+}
+.mp-inner { display: flex; height: 100px; }
+.mp-side {
+  width: 90px; background: #0A1E2D; padding: 8px 6px;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+.mp-nav-i {
+  height: 9px; border-radius: 4px; margin-bottom: 4px;
+  background: rgba(255,255,255,0.06);
+}
+.mp-nav-i.active { background: rgba(8,145,178,0.6); }
+.mp-content { flex: 1; padding: 8px; }
+.mp-greeting { font-size: 0.6rem; font-weight: 900; color: white; margin-bottom: 4px; }
+.mp-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.mp-tile {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 5px; padding: 5px;
+}
+.mp-tile-n { font-size: 0.8rem; font-weight: 900; }
+.mp-tile-l { font-size: 0.35rem; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.cover-footer {
+  position: relative; z-index: 2;
+  padding: 16px 28px 20px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.cover-footer-label { font-size: 0.5625rem; color: rgba(255,255,255,0.25); letter-spacing: 0.08em; }
+.cover-conf { font-size: 0.5rem; color: rgba(255,255,255,0.18); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; }
+
+/* ────────────────────────────────────────────────────────
+   INNER PAGE CHROME (header + footer)
+──────────────────────────────────────────────────────── */
+.inner-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 28px;
+  border-bottom: 2px solid var(--navy);
+}
+.ih-brand { display: flex; align-items: center; gap: 7px; }
+.ih-logo {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--teal), var(--teal2));
+  display: flex; align-items: center; justify-content: center;
+}
+.ih-name { font-weight: 900; font-size: 0.8125rem; color: var(--navy); }
+.ih-section { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.18em; color: var(--teal); }
+
+.inner-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 10px 28px;
+  border-top: 1px solid var(--rule);
+  display: flex; justify-content: space-between; align-items: center;
+  background: white;
+}
+.if-left { font-size: 0.5625rem; color: #94A3B8; }
+.if-page {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--navy); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.5rem; font-weight: 900;
+}
+
+.inner-body { padding: 22px 28px 50px; }
+
+/* Section title block */
+.section-block { margin-bottom: 20px; }
+.section-block .eyebrow { margin-bottom: 5px; }
+.section-block .h2 { color: var(--navy); }
+.section-block .body { margin-top: 6px; max-width: 440px; }
+.rule { height: 3px; background: linear-gradient(90deg, var(--teal), transparent); width: 48px; margin: 8px 0; }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 2 — WHAT IS GUESTFLOW PRO
+──────────────────────────────────────────────────────── */
+.what-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.what-text { }
+.what-text p { font-size: 0.85rem; line-height: 1.8; color: var(--muted); margin-bottom: 10px; }
+.what-text strong { color: var(--navy); font-weight: 800; }
+
+.problem-box {
+  background: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.problem-box .eyebrow { color: #D97706; margin-bottom: 6px; }
+.problem-box ul { list-style: none; }
+.problem-box li {
+  font-size: 0.78rem; color: #92400E; padding: 3px 0;
+  display: flex; gap: 6px; align-items: flex-start;
+}
+.problem-box li::before { content: '✗'; color: #DC2626; font-weight: 900; margin-top: 1px; }
+
+.solution-box {
+  background: #F0FDF4;
+  border: 1px solid #A7F3D0;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.solution-box .eyebrow { color: var(--green); margin-bottom: 6px; }
+.solution-box ul { list-style: none; }
+.solution-box li {
+  font-size: 0.78rem; color: #065F46; padding: 3px 0;
+  display: flex; gap: 6px; align-items: flex-start;
+}
+.solution-box li::before { content: '✓'; color: var(--green); font-weight: 900; margin-top: 1px; }
+
+.tech-strip {
+  background: var(--light);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.tech-strip .eyebrow { color: var(--navy); margin-bottom: 10px; }
+.tech-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.tech-pill {
+  padding: 4px 10px; border-radius: 6px;
+  background: white; border: 1px solid var(--rule);
+  font-size: 0.625rem; font-weight: 800; color: var(--navy);
+}
+.tech-pill.highlight { background: var(--teallt); border-color: rgba(8,145,178,0.25); color: var(--teal2); }
+
+.module-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+.module-table th {
+  background: var(--navy); color: white;
+  font-size: 0.55rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 8px 10px; text-align: left;
+}
+.module-table th:first-child { border-radius: 6px 0 0 0; }
+.module-table th:last-child { border-radius: 0 6px 0 0; }
+.module-table td {
+  font-size: 0.72rem; padding: 7px 10px;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.module-table tr:last-child td { border-bottom: 0; }
+.module-table tr:nth-child(even) td { background: var(--light); }
+.status-live { background: #D1FAE5; color: #065F46; padding: 2px 7px; border-radius: 4px; font-size: 0.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+.status-soon { background: #FEF3C7; color: #92400E; padding: 2px 7px; border-radius: 4px; font-size: 0.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 3 — GUEST JOURNEY
+──────────────────────────────────────────────────────── */
+.journey-flow {
+  display: flex; flex-direction: column; gap: 0;
+}
+.jf-item {
+  display: grid; grid-template-columns: 52px 1fr;
+  gap: 0 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.jf-item:last-child { border-bottom: 0; }
+.jf-left { display: flex; flex-direction: column; align-items: center; }
+.jf-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; flex-shrink: 0;
+}
+.jf-line { flex: 1; width: 2px; background: var(--rule); margin: 3px 0; }
+.jf-right { padding-bottom: 4px; }
+.jf-right h4 { font-size: 0.8rem; font-weight: 900; color: var(--navy); margin-bottom: 2px; }
+.jf-right p { font-size: 0.72rem; color: var(--muted); line-height: 1.55; }
+.jf-badge {
+  display: inline-block; margin-top: 3px;
+  padding: 1px 6px; border-radius: 4px; font-size: 0.475rem; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.jf-badge.live { background: #D1FAE5; color: #065F46; }
+.jf-badge.soon { background: #FEF3C7; color: #92400E; }
+
+.jf-sidebar {
+  background: var(--navy);
+  border-radius: 10px;
+  padding: 16px;
+  color: white;
+}
+.jf-sidebar .eyebrow { color: var(--cyan); margin-bottom: 10px; }
+.jf-sidebar h3 { font-size: 0.9rem; font-weight: 900; margin-bottom: 6px; }
+.jf-sidebar p { font-size: 0.72rem; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 10px; }
+.jf-mini-stat { text-align: center; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.08); }
+.jf-mini-num { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+.jf-mini-label { font-size: 0.5rem; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; font-weight: 700; }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 4 — HOTEL MANAGER BENEFITS
+──────────────────────────────────────────────────────── */
+.benefit-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.bc {
+  border: 1px solid var(--rule);
+  border-radius: 10px; padding: 12px;
+  position: relative; overflow: hidden;
+}
+.bc::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+}
+.bc.teal::before { background: linear-gradient(90deg, var(--teal), var(--cyan)); }
+.bc.amber::before { background: linear-gradient(90deg, var(--amber), #FCD34D); }
+.bc.green::before { background: linear-gradient(90deg, var(--green), #34D399); }
+.bc.purple::before { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
+.bc-icon { font-size: 1.25rem; margin-bottom: 6px; }
+.bc h4 { font-size: 0.78rem; font-weight: 900; color: var(--navy); margin-bottom: 4px; }
+.bc p { font-size: 0.68rem; color: var(--muted); line-height: 1.55; }
+
+.highlights-strip {
+  background: linear-gradient(135deg, var(--navy), #0D2535);
+  border-radius: 10px; padding: 16px 18px;
+  margin-top: 14px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px;
+}
+.hs-item { text-align: center; }
+.hs-num { font-size: 1.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.hs-label { font-size: 0.475rem; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.35); margin-top: 3px; font-weight: 700; }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 5 — PLATFORM SCREENS
+──────────────────────────────────────────────────────── */
+.screens-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.screen-wrap { }
+.screen-label { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; color: var(--teal); margin-bottom: 5px; }
+.screen-title { font-size: 0.8rem; font-weight: 900; color: var(--navy); margin-bottom: 8px; }
+.screen-frame {
+  border: 1px solid #CBD5E1;
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.sf-bar {
+  background: #1E293B; padding: 5px 8px;
+  display: flex; align-items: center; gap: 5px;
+}
+.sf-dots { display: flex; gap: 3px; }
+.sf-dot { width: 7px; height: 7px; border-radius: 50%; }
+.sf-url { flex: 1; background: rgba(255,255,255,0.07); border-radius: 3px; padding: 2px 6px; font-size: 0.45rem; color: rgba(255,255,255,0.35); font-family: monospace; }
+
+/* Dashboard screen */
+.sf-dashboard { display: flex; height: 150px; }
+.sf-db-side { width: 70px; background: #0F1E29; padding: 6px 5px; border-right: 1px solid rgba(255,255,255,0.04); }
+.sf-db-logo { width: 20px; height: 20px; border-radius: 5px; background: #2563EB; margin: 0 auto 6px; }
+.sf-db-nav { height: 7px; border-radius: 3px; margin-bottom: 3px; background: rgba(255,255,255,0.06); }
+.sf-db-nav.active { background: rgba(37,99,235,0.7); }
+.sf-db-main { flex: 1; padding: 6px 7px; background: #0A1A25; }
+.sf-db-title { font-size: 0.55rem; font-weight: 900; color: white; margin-bottom: 4px; }
+.sf-db-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 5px; }
+.sf-db-tile { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 4px; padding: 4px 5px; }
+.sf-db-tile-n { font-size: 0.8rem; font-weight: 900; line-height: 1; }
+.sf-db-tile-l { font-size: 0.3rem; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.06em; }
+.sf-db-row { display: flex; gap: 4px; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 3px 5px; margin-bottom: 2px; }
+.sf-db-av { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.sf-db-nm { font-size: 0.4rem; font-weight: 700; color: white; }
+.sf-db-rm { font-size: 0.3rem; color: rgba(255,255,255,0.3); }
+.sf-db-bd { font-size: 0.3rem; font-weight: 800; padding: 1px 4px; border-radius: 3px; }
+
+/* Checkin screen */
+.sf-checkin {
+  background: linear-gradient(135deg, #020B12, #083344, #0E7490);
+  padding: 10px; height: 150px; overflow: hidden;
+}
+.sf-ci-hotel { font-size: 0.6rem; font-weight: 900; color: white; text-align: center; margin-bottom: 2px; }
+.sf-ci-city { font-size: 0.4rem; color: rgba(103,232,249,0.7); text-align: center; margin-bottom: 7px; }
+.sf-ci-pills { display: flex; gap: 2px; justify-content: center; margin-bottom: 7px; }
+.sf-ci-pill { height: 3px; width: 22px; border-radius: 2px; }
+.sf-ci-card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 7px; padding: 7px; }
+.sf-ci-label { font-size: 0.35rem; color: rgba(103,232,249,0.6); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 800; margin-bottom: 3px; }
+.sf-ci-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.sf-ci-input { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; height: 16px; }
+.sf-ci-btn { background: linear-gradient(135deg, #0891B2, #0E7490); border-radius: 4px; height: 18px; margin-top: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.4rem; font-weight: 900; color: white; }
+
+/* Concierge screen */
+.sf-conc { height: 150px; overflow: hidden; }
+.sf-conc-hero { background: linear-gradient(150deg, #020B12, #0E7490); padding: 7px 8px; display: flex; align-items: center; gap: 5px; }
+.sf-conc-logo { width: 22px; height: 22px; border-radius: 5px; background: rgba(255,255,255,0.15); flex-shrink: 0; }
+.sf-conc-name { font-size: 0.55rem; font-weight: 900; color: white; }
+.sf-conc-city { font-size: 0.35rem; color: rgba(103,232,249,0.7); }
+.sf-conc-tabs { display: flex; gap: 3px; padding: 5px 6px; background: #ECEEF3; }
+.sf-conc-tab { padding: 3px 7px; border-radius: 5px; font-size: 0.4rem; font-weight: 800; flex-shrink: 0; }
+.sf-conc-cards { display: flex; gap: 5px; padding: 5px 6px; background: #ECEEF3; overflow: hidden; }
+.sf-conc-card { background: white; border-radius: 7px; overflow: hidden; flex-shrink: 0; width: 70px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.sf-conc-img { height: 30px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; }
+.sf-conc-body { padding: 3px 4px; }
+.sf-conc-n { font-size: 0.4rem; font-weight: 900; color: #0F172A; }
+.sf-conc-p { font-size: 0.5rem; font-weight: 900; color: #0F172A; }
+.sf-conc-btn { margin: 0 3px 3px; border-radius: 4px; height: 14px; display: flex; align-items: center; justify-content: center; font-size: 0.325rem; font-weight: 900; color: white; }
+
+/* Review screen */
+.sf-review {
+  background: linear-gradient(135deg, #020B12, #083344, #0E7490);
+  padding: 10px; height: 150px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+}
+.sf-rv-hotel { font-size: 0.6rem; font-weight: 900; color: white; }
+.sf-rv-sub { font-size: 0.375rem; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.sf-rv-stars { display: flex; gap: 3px; margin-bottom: 4px; }
+.sf-rv-star { font-size: 1.1rem; line-height: 1; }
+.sf-rv-score { font-size: 2.2rem; font-weight: 900; color: var(--cyan); line-height: 1; }
+.sf-rv-sl { font-size: 0.375rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.sf-rv-ta { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; height: 24px; width: 100%; margin-bottom: 5px; }
+.sf-rv-btn { background: linear-gradient(135deg, #06B6D4, #0891B2); border-radius: 5px; height: 18px; width: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.4rem; font-weight: 800; color: white; }
+.sf-rv-plat { display: flex; gap: 4px; margin-top: 4px; width: 100%; }
+.sf-rv-p { flex: 1; height: 16px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.35rem; font-weight: 800; }
+
+.screen-desc { font-size: 0.72rem; color: var(--muted); line-height: 1.55; margin-top: 7px; }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 6 — ROI & INTEGRATIONS
+──────────────────────────────────────────────────────── */
+.roi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.roi-card {
+  background: var(--light); border: 1px solid var(--rule);
+  border-radius: 10px; padding: 14px 14px;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.roi-icon { font-size: 1.5rem; flex-shrink: 0; }
+.roi-num { font-size: 1.8rem; font-weight: 900; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.roi-label { font-size: 0.72rem; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+
+.int-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.int-card { border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 8px; }
+.int-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.int-name { font-size: 0.72rem; font-weight: 900; color: var(--navy); margin-bottom: 2px; }
+.int-desc { font-size: 0.62rem; color: var(--muted); line-height: 1.5; }
+
+.api-block {
+  background: var(--navy);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-top: 14px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 20px; align-items: center;
+}
+.ab-left h3 { font-size: 0.9rem; font-weight: 900; color: white; margin-bottom: 4px; }
+.ab-left p { font-size: 0.72rem; color: rgba(255,255,255,0.45); line-height: 1.6; }
+.ab-right { }
+.ab-code {
+  background: #030B11; border: 1px solid rgba(103,232,249,0.15);
+  border-radius: 7px; padding: 8px 10px;
+  font-family: 'SF Mono', 'Fira Mono', monospace;
+  font-size: 0.55rem; color: rgba(103,232,249,0.8);
+  line-height: 1.7;
+}
+.ab-code .kw { color: #A78BFA; }
+.ab-code .str { color: #34D399; }
+.ab-code .cm { color: rgba(255,255,255,0.2); }
+
+/* ────────────────────────────────────────────────────────
+   PAGE 7 — BACK / CTA
+──────────────────────────────────────────────────────── */
+#backpage {
+  background: linear-gradient(155deg, #020B12 0%, #083344 55%, #0E7490 100%);
+  min-height: 297mm;
+  display: flex; flex-direction: column;
+}
+.bp-top {
+  position: relative; z-index: 2;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 22px 28px 0;
+}
+.bp-logo-row { display: flex; align-items: center; gap: 10px; }
+.bp-logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg,#0891B2,#0E7490); display: flex; align-items: center; justify-content: center; }
+.bp-brand-name { font-weight: 900; font-size: 1rem; color: white; }
+.bp-by { font-size: 0.6875rem; color: rgba(255,255,255,0.35); }
+
+.bp-body {
+  position: relative; z-index: 2;
+  flex: 1; padding: 40px 28px 0;
+  display: flex; flex-direction: column;
+}
+.bp-eyebrow { font-size: 0.6rem; font-weight: 900; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(103,232,249,0.7); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+.bp-eyebrow::before { content: ''; width: 28px; height: 2px; background: var(--cyan); }
+.bp-headline { font-family: Georgia, serif; font-size: 2.8rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1.05; color: white; margin-bottom: 10px; }
+.bp-headline .accent { color: var(--cyan); }
+.bp-sub { font-size: 0.9rem; color: rgba(255,255,255,0.5); max-width: 340px; line-height: 1.7; margin-bottom: 32px; }
+
+.contact-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 32px; }
+.cc {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 14px 14px;
+}
+.cc-label { font-size: 0.5rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(103,232,249,0.6); margin-bottom: 5px; }
+.cc-value { font-size: 0.78rem; font-weight: 800; color: white; line-height: 1.4; }
+
+.next-steps {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; padding: 16px 18px;
+  margin-bottom: 28px;
+}
+.next-steps .bp-eyebrow { margin-bottom: 12px; }
+.ns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ns-item { display: flex; gap: 8px; align-items: flex-start; }
+.ns-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--teal); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem; font-weight: 900; flex-shrink: 0;
+}
+.ns-item h4 { font-size: 0.72rem; font-weight: 900; color: white; margin-bottom: 2px; }
+.ns-item p { font-size: 0.6rem; color: rgba(255,255,255,0.4); line-height: 1.5; }
+
+.bp-footer {
+  position: relative; z-index: 2;
+  padding: 16px 28px 20px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.bp-footer-left { font-size: 0.5625rem; color: rgba(255,255,255,0.25); }
+.bp-footer-right { font-size: 0.5rem; color: rgba(255,255,255,0.18); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; }
+</style>
+
+<button class="print-btn" onclick="window.print()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" /></svg>
+  Print / Save PDF
+</button>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 1 — COVER
+══════════════════════════════════════════════ -->
+<div class="page" id="cover">
+  <div class="cover-dot-bg"></div>
+
+  <div class="cover-top">
+    <div class="cover-logo-row">
+      <div class="cover-logo-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
+      </div>
+      <div>
+        <div class="cover-brand">GuestFlow Pro</div>
+        <div class="cover-by">by Amica International</div>
+      </div>
+    </div>
+    <div class="cover-date">Marketing Brochure · 2026</div>
+  </div>
+
+  <div class="cover-body">
+    <div class="cover-eyebrow">Hotel Technology Platform</div>
+    <div class="cover-headline">
+      The Complete<br>
+      <span class="accent">Digital Guest</span><br>
+      Experience.
+    </div>
+    <p class="cover-sub">
+      Online check-in, digital concierge, upsell services, review collection, and marketing automation — all in one platform, branded as your hotel.
+    </p>
+    <div class="cover-pills">
+      <div class="cover-pill">📋 Digital Check-in</div>
+      <div class="cover-pill">🗺️ Guest Concierge</div>
+      <div class="cover-pill">⭐ Review Collection</div>
+      <div class="cover-pill">📊 Marketing CRM</div>
+      <div class="cover-pill">🔑 API & Webhooks</div>
+    </div>
+    <div class="cover-stats">
+      <div class="cover-stat">
+        <div class="cover-stat-num" style="color:#06B6D4">10</div>
+        <div class="cover-stat-label">Platform Modules</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num" style="color:#F59E0B">100%</div>
+        <div class="cover-stat-label">Paperless</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num" style="color:#10B981">3×</div>
+        <div class="cover-stat-label">More Reviews</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num" style="color:white">24h</div>
+        <div class="cover-stat-label">Setup Time</div>
+      </div>
+    </div>
+
+    <div class="cover-mockup-strip">
+      <div class="mockup-preview">
+        <div class="mp-bar">
+          <div class="mp-dots">
+            <div class="mp-dot" style="background:#FF5F57"></div>
+            <div class="mp-dot" style="background:#FFBD2E"></div>
+            <div class="mp-dot" style="background:#28C840"></div>
+          </div>
+          <div class="mp-url">guestflowpro.com/dashboard</div>
+        </div>
+        <div class="mp-inner">
+          <div class="mp-side">
+            <div class="mp-nav-i active"></div>
+            <div class="mp-nav-i"></div>
+            <div class="mp-nav-i"></div>
+            <div class="mp-nav-i"></div>
+            <div class="mp-nav-i"></div>
+            <div class="mp-nav-i"></div>
+          </div>
+          <div class="mp-content">
+            <div class="mp-greeting">Kashaf Hotel · Florence</div>
+            <div class="mp-tiles">
+              <div class="mp-tile"><div class="mp-tile-n" style="color:#06B6D4">12</div><div class="mp-tile-l">Check-ins</div></div>
+              <div class="mp-tile"><div class="mp-tile-n" style="color:#F59E0B">3</div><div class="mp-tile-l">Pending</div></div>
+              <div class="mp-tile"><div class="mp-tile-n" style="color:#10B981">248</div><div class="mp-tile-l">Guests</div></div>
+              <div class="mp-tile"><div class="mp-tile-n" style="color:#A78BFA">4.8★</div><div class="mp-tile-l">Rating</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div class="cover-footer-label">Confidential — Prepared for Hotel Partners</div>
+    <div class="cover-conf">Amica International · razatechsolutions.official@gmail.com</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 2 — WHAT IS GUESTFLOW PRO
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-header">
+    <div class="ih-brand">
+      <div class="ih-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18" /></svg>
+      </div>
+      <span class="ih-name">GuestFlow Pro</span>
+    </div>
+    <div class="ih-section">Platform Overview</div>
+  </div>
+
+  <div class="inner-body">
+    <div class="section-block">
+      <div class="eyebrow">What is GuestFlow Pro?</div>
+      <div class="rule"></div>
+      <h2 class="h2">A complete digital system for the modern hotel</h2>
+      <p class="body">Built specifically for independent hotels and small hotel chains who want to modernise the guest experience without managing multiple tools.</p>
+    </div>
+
+    <div class="what-grid" style="margin-bottom:16px">
+      <div class="what-text">
+        <p>GuestFlow Pro replaces paper check-in forms, printed city guides, manual review collection, and disconnected marketing lists with a <strong>single branded platform</strong> that works on every guest's phone.</p>
+        <p>Hotel managers access everything from one dashboard — guest registrations, booking requests, service orders, review scores, and marketing analytics — without switching between different tools or providers.</p>
+        <p>The entire platform is <strong>white-labelled to your hotel</strong>: your logo, your brand color, your welcome message. Guests never see "GuestFlow" — they see your hotel.</p>
+      </div>
+      <div>
+        <div class="problem-box">
+          <div class="eyebrow">The old way</div>
+          <ul>
+            <li>Paper registration cards stored in folders</li>
+            <li>Staff manually chasing reviews after checkout</li>
+            <li>Guests asking reception for restaurant tips</li>
+            <li>Marketing lists built by hand from email signups</li>
+            <li>No visibility into upsell revenue or guest trends</li>
+          </ul>
+        </div>
+        <div class="solution-box">
+          <div class="eyebrow">With GuestFlow Pro</div>
+          <ul>
+            <li>Guest checks in on phone before arriving</li>
+            <li>Review requests sent automatically post-checkout</li>
+            <li>AI-powered city guide on guest's phone at all times</li>
+            <li>Marketing opt-ins captured at registration</li>
+            <li>Full dashboard with live stats and export tools</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="tech-strip" style="margin-bottom:16px">
+      <div class="eyebrow">Technology Stack</div>
+      <div class="tech-grid">
+        <span class="tech-pill highlight">Next.js 16</span>
+        <span class="tech-pill highlight">Django 4.2</span>
+        <span class="tech-pill highlight">PostgreSQL</span>
+        <span class="tech-pill">REST API</span>
+        <span class="tech-pill">JWT Auth</span>
+        <span class="tech-pill">HMAC Webhooks</span>
+        <span class="tech-pill">Google Places API</span>
+        <span class="tech-pill">GetYourGuide</span>
+        <span class="tech-pill">WhatsApp Integration</span>
+        <span class="tech-pill">Hosted on VPS</span>
+      </div>
+    </div>
+
+    <table class="module-table">
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>What it does</th>
+          <th>Who uses it</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Digital Check-in</strong></td><td>Guests register online via unique link — no paper forms</td><td>Guests + Reception</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Guest CRM</strong></td><td>Full registry with nationality, contact, marketing opt-in</td><td>Hotel Manager</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Booking Requests</strong></td><td>Public enquiry form → confirm/decline dashboard</td><td>Hotel Manager</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Digital Concierge</strong></td><td>AI city guide, services, tours on the guest's phone</td><td>Guests</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Review Collection</strong></td><td>Post-checkout branded review page → Google redirect</td><td>Hotel Manager</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Marketing & CRM</strong></td><td>Opt-in analytics, nationality data, CSV export</td><td>Hotel Manager</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>White-label</strong></td><td>Logo, brand color, welcome text — fully custom</td><td>Hotel Manager</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Webhooks</strong></td><td>Real-time event notifications to external systems</td><td>Tech / Developers</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>API Keys</strong></td><td>Secure external API access for n8n / Zapier</td><td>Tech / Developers</td><td><span class="status-live">Live</span></td></tr>
+        <tr><td><strong>Checkout + Repeat</strong></td><td>Automated checkout flow + re-engagement campaigns</td><td>Hotel Manager</td><td><span class="status-soon">Coming Soon</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inner-footer">
+    <div class="if-left">GuestFlow Pro · Amica International · 2026</div>
+    <div class="if-page">2</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 3 — GUEST JOURNEY
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-header">
+    <div class="ih-brand">
+      <div class="ih-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18" /></svg>
+      </div>
+      <span class="ih-name">GuestFlow Pro</span>
+    </div>
+    <div class="ih-section">Complete Guest Journey</div>
+  </div>
+
+  <div class="inner-body">
+    <div class="section-block" style="margin-bottom:16px">
+      <div class="eyebrow">End-to-End Guest Flow</div>
+      <div class="rule"></div>
+      <h2 class="h2">Every step of the guest experience, connected</h2>
+      <p class="body">From the first enquiry to a repeat booking — GuestFlow Pro manages the full journey. 8 of 9 steps are live; checkout and repeat booking are in development.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 200px;gap:16px">
+      <div class="journey-flow">
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#E0F2FE">🏨</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 1 — Booking Request</h4>
+            <p>Guest submits a room enquiry via the hotel's public page. Hotel receives it in the Booking Requests dashboard and confirms or declines with one click. Notes added internally, never shown to the guest.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#FEF3C7">📨</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 2 — Pre-arrival Check-in Link</h4>
+            <p>Hotel sends a unique digital check-in link via WhatsApp or email. Guest receives a branded registration form on their phone — no app download required.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#D1FAE5">✅</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 3 — Online Registration</h4>
+            <p>Guest completes full registration before arrival: name, nationality, passport number, photo, digital signature, GDPR consent, and optional marketing opt-in. All stored securely in the hotel dashboard.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#EDE9FE">🗺️</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 4 — Digital Concierge</h4>
+            <p>Guest accesses the hotel's branded concierge page: AI-described restaurants, parking, nightlife, tours, and local attractions — powered by Google Places and GetYourGuide.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#FFEDD5">🛎️</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 5 — In-stay Upsells</h4>
+            <p>From the same concierge page, guests order hotel services: room service, spa treatments, airport transfers, late checkout. Payments processed at point of order. Orders visible in hotel dashboard.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#FEF9C3">⭐</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 6 — Review Collection</h4>
+            <p>Hotel sends branded review link post-checkout. Guest rates stay privately (1–5 stars). Satisfied guests redirected to Google or TripAdvisor to post publicly — growing hotel's reputation automatically.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#F1F5F9">🏁</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 7 — Checkout</h4>
+            <p>Automated checkout reminder sent to guest. Hotel staff notified of departures. Checkout tracked in dashboard alongside full stay summary.</p>
+            <span class="jf-badge soon">Coming Soon</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#E0F2FE">📣</div>
+            <div class="jf-line"></div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 8 — Future Promotions</h4>
+            <p>Opted-in guests stored in marketing list. Export as CSV or pull via API. Analytics show opt-in rate, nationality breakdown, and 6-month trends. Ready for email campaign tools.</p>
+            <span class="jf-badge live">Live</span>
+          </div>
+        </div>
+        <div class="jf-item">
+          <div class="jf-left">
+            <div class="jf-icon" style="background:#D1FAE5">🔁</div>
+          </div>
+          <div class="jf-right">
+            <h4>Step 9 — Repeat Booking</h4>
+            <p>Personalised re-engagement message sent to past guests with a return offer. The loop closes — a one-time guest becomes a loyal repeat customer.</p>
+            <span class="jf-badge soon">Coming Soon</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="jf-sidebar">
+          <div class="eyebrow">Journey Score</div>
+          <h3>8 of 9 steps live today</h3>
+          <p>The full guest journey from booking to return is mapped and ready. Two final steps — checkout automation and repeat booking campaigns — are in active development.</p>
+          <div class="jf-mini-stat">
+            <div class="jf-mini-num" style="color:#10B981">89%</div>
+            <div class="jf-mini-label">Journey Complete</div>
+          </div>
+          <div class="jf-mini-stat">
+            <div class="jf-mini-num" style="color:#06B6D4">10</div>
+            <div class="jf-mini-label">Total Modules</div>
+          </div>
+          <div class="jf-mini-stat">
+            <div class="jf-mini-num" style="color:#F59E0B">0</div>
+            <div class="jf-mini-label">Paper Forms</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inner-footer">
+    <div class="if-left">GuestFlow Pro · Amica International · 2026</div>
+    <div class="if-page">3</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 4 — HOTEL MANAGER BENEFITS
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-header">
+    <div class="ih-brand">
+      <div class="ih-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18" /></svg>
+      </div>
+      <span class="ih-name">GuestFlow Pro</span>
+    </div>
+    <div class="ih-section">Hotel Manager Benefits</div>
+  </div>
+
+  <div class="inner-body">
+    <div class="section-block">
+      <div class="eyebrow">What the Hotel Gets</div>
+      <div class="rule"></div>
+      <h2 class="h2">Nine ways GuestFlow Pro improves your operations</h2>
+    </div>
+
+    <div class="benefit-grid">
+      <div class="bc teal">
+        <div class="bc-icon">📋</div>
+        <h4>Paperless Check-in</h4>
+        <p>Guests register fully before arrival on any device. Passport, photo, signature, and GDPR consent captured digitally. No more paper forms stored in folders.</p>
+      </div>
+      <div class="bc green">
+        <div class="bc-icon">👥</div>
+        <h4>Guest CRM</h4>
+        <p>Every registered guest stored with nationality, contact details, and marketing opt-in status. Search, filter, and export opted-in guests for campaigns at any time.</p>
+      </div>
+      <div class="bc amber">
+        <div class="bc-icon">📩</div>
+        <h4>Booking Requests Inbox</h4>
+        <p>Guests submit enquiries from your hotel page. Confirm or decline with one click. Add private internal notes visible only to your team.</p>
+      </div>
+      <div class="bc purple">
+        <div class="bc-icon">⭐</div>
+        <h4>Automated Review Collection</h4>
+        <p>Send a branded review link after checkout. Happy guests redirected to Google or TripAdvisor automatically. Your public rating grows without manual effort.</p>
+      </div>
+      <div class="bc teal">
+        <div class="bc-icon">🎨</div>
+        <h4>White-label Branding</h4>
+        <p>Upload your logo, set your brand color, write a custom welcome message. Every guest-facing page reflects your hotel identity — guests never see the platform name.</p>
+      </div>
+      <div class="bc amber">
+        <div class="bc-icon">🛎️</div>
+        <h4>Service Upsells</h4>
+        <p>Publish services — room service, spa, transport, late checkout — on your concierge page. Guests order directly. Orders appear in your dashboard with payment status.</p>
+      </div>
+      <div class="bc green">
+        <div class="bc-icon">📊</div>
+        <h4>Marketing Analytics</h4>
+        <p>Opt-in rate, top nationalities, 6-month guest trend, and review metrics in one view. Export opted-in guest list as CSV for email marketing tools like Mailchimp.</p>
+      </div>
+      <div class="bc purple">
+        <div class="bc-icon">🔁</div>
+        <h4>Webhooks & API Keys</h4>
+        <p>Real-time webhooks fire on every guest event — new check-in, booking request, review. API keys for secure external access from n8n, Zapier, or custom tools.</p>
+      </div>
+      <div class="bc teal">
+        <div class="bc-icon">🌍</div>
+        <h4>Multi-language Concierge</h4>
+        <p>Guest concierge page available in English, Italian, French, German, and Spanish. Language set at hotel level — no extra configuration or translation work needed.</p>
+      </div>
+    </div>
+
+    <div class="highlights-strip">
+      <div class="hs-item">
+        <div class="hs-num" style="color:#06B6D4">−80%</div>
+        <div class="hs-label">Reception Time per Guest</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-num" style="color:#10B981">3×</div>
+        <div class="hs-label">Reviews per Month</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-num" style="color:#F59E0B">+40%</div>
+        <div class="hs-label">Upsell Revenue</div>
+      </div>
+      <div class="hs-item">
+        <div class="hs-num" style="color:white">24h</div>
+        <div class="hs-label">Onboarding Time</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inner-footer">
+    <div class="if-left">GuestFlow Pro · Amica International · 2026</div>
+    <div class="if-page">4</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 5 — PLATFORM SCREENS
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-header">
+    <div class="ih-brand">
+      <div class="ih-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18" /></svg>
+      </div>
+      <span class="ih-name">GuestFlow Pro</span>
+    </div>
+    <div class="ih-section">Platform — Live Screens</div>
+  </div>
+
+  <div class="inner-body">
+    <div class="section-block">
+      <div class="eyebrow">Real Platform UI</div>
+      <div class="rule"></div>
+      <h2 class="h2">How the platform looks — today, in production</h2>
+      <p class="body">These are renderings of the actual platform screens, reproduced from the live codebase.</p>
+    </div>
+
+    <div class="screens-grid">
+
+      <!-- Dashboard -->
+      <div class="screen-wrap">
+        <div class="screen-label">Hotel Dashboard</div>
+        <div class="screen-title">Manager Overview</div>
+        <div class="screen-frame">
+          <div class="sf-bar">
+            <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+            <div class="sf-url">guestflowpro.com/dashboard</div>
+          </div>
+          <div class="sf-dashboard">
+            <div class="sf-db-side">
+              <div class="sf-db-logo"></div>
+              <div class="sf-db-nav active"></div>
+              <div class="sf-db-nav"></div>
+              <div class="sf-db-nav"></div>
+              <div class="sf-db-nav"></div>
+              <div class="sf-db-nav"></div>
+              <div class="sf-db-nav"></div>
+            </div>
+            <div class="sf-db-main">
+              <div class="sf-db-title">Kashaf Hotel · Florence</div>
+              <div class="sf-db-tiles">
+                <div class="sf-db-tile"><div class="sf-db-tile-n" style="color:#06B6D4">12</div><div class="sf-db-tile-l">Check-ins</div></div>
+                <div class="sf-db-tile"><div class="sf-db-tile-n" style="color:#F59E0B">3</div><div class="sf-db-tile-l">Pending</div></div>
+                <div class="sf-db-tile"><div class="sf-db-tile-n" style="color:#10B981">248</div><div class="sf-db-tile-l">Total Guests</div></div>
+                <div class="sf-db-tile"><div class="sf-db-tile-n" style="color:#A78BFA">4.8★</div><div class="sf-db-tile-l">Avg Rating</div></div>
+              </div>
+              <div class="sf-db-row"><div class="sf-db-av" style="background:linear-gradient(135deg,#06B6D4,#0891B2)"></div><div><div class="sf-db-nm">Marco Rossi</div><div class="sf-db-rm">Room 204 · IT Passport</div></div><div class="sf-db-bd" style="background:rgba(16,185,129,0.15);color:#10B981">Done</div></div>
+              <div class="sf-db-row"><div class="sf-db-av" style="background:linear-gradient(135deg,#F59E0B,#D97706)"></div><div><div class="sf-db-nm">Sophie Laurent</div><div class="sf-db-rm">Room 118 · FR Passport</div></div><div class="sf-db-bd" style="background:rgba(245,158,11,0.15);color:#F59E0B">Pending</div></div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-desc">Hotel manager's central hub. Real-time stats: today's check-ins, pending registrations, total guest count, and average review score. Guest list with status badges below.</p>
+      </div>
+
+      <!-- Check-in -->
+      <div class="screen-wrap">
+        <div class="screen-label">Guest-facing · Mobile</div>
+        <div class="screen-title">Digital Check-in Form</div>
+        <div class="screen-frame">
+          <div class="sf-bar">
+            <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+            <div class="sf-url">guestflowpro.com/checkin/a3f9b2…</div>
+          </div>
+          <div class="sf-checkin">
+            <div class="sf-ci-hotel">Kashaf Hotel</div>
+            <div class="sf-ci-city">Florence, Italy</div>
+            <div class="sf-ci-pills">
+              <div class="sf-ci-pill" style="background:#0891B2"></div>
+              <div class="sf-ci-pill" style="background:#0891B2"></div>
+              <div class="sf-ci-pill" style="background:rgba(255,255,255,0.15)"></div>
+              <div class="sf-ci-pill" style="background:rgba(255,255,255,0.15)"></div>
+            </div>
+            <div class="sf-ci-card">
+              <div class="sf-ci-label">Guest Details</div>
+              <div class="sf-ci-row2">
+                <div class="sf-ci-input"></div>
+                <div class="sf-ci-input"></div>
+              </div>
+              <div style="margin-top:3px"><div class="sf-ci-input"></div></div>
+              <div style="margin-top:3px"><div class="sf-ci-input"></div></div>
+              <div class="sf-ci-btn">Continue →</div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-desc">Branded in hotel colors. Multi-step form: personal details, document info, photo upload, digital signature, GDPR consent. Works on any mobile device.</p>
+      </div>
+
+      <!-- Concierge -->
+      <div class="screen-wrap">
+        <div class="screen-label">Guest-facing · Mobile</div>
+        <div class="screen-title">Digital Concierge Page</div>
+        <div class="screen-frame">
+          <div class="sf-bar">
+            <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+            <div class="sf-url">guestflowpro.com/h/08b8a38a…</div>
+          </div>
+          <div class="sf-conc">
+            <div class="sf-conc-hero">
+              <div class="sf-conc-logo"></div>
+              <div><div class="sf-conc-name">Kashaf Hotel</div><div class="sf-conc-city">📍 Florence, Italy</div></div>
+            </div>
+            <div class="sf-conc-tabs">
+              <div class="sf-conc-tab" style="background:linear-gradient(135deg,#083344,#0E7490);color:white">🍽 Food</div>
+              <div class="sf-conc-tab" style="background:white;color:#334155">🅿 Parking</div>
+              <div class="sf-conc-tab" style="background:white;color:#334155">🌙 Night</div>
+              <div class="sf-conc-tab" style="background:white;color:#334155">✈ Tours</div>
+            </div>
+            <div class="sf-conc-cards">
+              <div class="sf-conc-card">
+                <div class="sf-conc-img" style="background:linear-gradient(135deg,#FFF7ED,#FED7AA)">🍕</div>
+                <div class="sf-conc-body"><div class="sf-conc-n">Club Sandwich</div><div class="sf-conc-p">£8.50</div></div>
+                <div class="sf-conc-btn" style="background:linear-gradient(135deg,#F97316,#EA580C)">Book Now</div>
+              </div>
+              <div class="sf-conc-card">
+                <div class="sf-conc-img" style="background:linear-gradient(135deg,#F0FDF4,#BBF7D0)">💆</div>
+                <div class="sf-conc-body"><div class="sf-conc-n">Full Massage</div><div class="sf-conc-p">£65.00</div></div>
+                <div class="sf-conc-btn" style="background:linear-gradient(135deg,#059669,#047857)">Book Now</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-desc">Hotel's public page. Tabs for restaurants, parking, nightlife, tours. Service cards with prices. Guests order directly from here. URL shareable via WhatsApp.</p>
+      </div>
+
+      <!-- Review -->
+      <div class="screen-wrap">
+        <div class="screen-label">Guest-facing · Post-checkout</div>
+        <div class="screen-title">Review Collection</div>
+        <div class="screen-frame">
+          <div class="sf-bar">
+            <div class="sf-dots"><div class="sf-dot" style="background:#FF5F57"></div><div class="sf-dot" style="background:#FFBD2E"></div><div class="sf-dot" style="background:#28C840"></div></div>
+            <div class="sf-url">guestflowpro.com/review/f7c2a1…</div>
+          </div>
+          <div class="sf-review">
+            <div class="sf-rv-hotel">Kashaf Hotel</div>
+            <div class="sf-rv-sub">Thank you for your stay, Marco</div>
+            <div class="sf-rv-stars">
+              <span class="sf-rv-star">⭐</span>
+              <span class="sf-rv-star">⭐</span>
+              <span class="sf-rv-star">⭐</span>
+              <span class="sf-rv-star">⭐</span>
+              <span class="sf-rv-star">⭐</span>
+            </div>
+            <div class="sf-rv-score">5</div>
+            <div class="sf-rv-sl">Excellent</div>
+            <div class="sf-rv-ta"></div>
+            <div class="sf-rv-btn">Submit Review</div>
+            <div class="sf-rv-plat">
+              <div class="sf-rv-p" style="background:rgba(234,67,53,0.15);color:#EA4335;border:1px solid rgba(234,67,53,0.2)">📍 Google</div>
+              <div class="sf-rv-p" style="background:rgba(0,175,188,0.15);color:#00AFBC;border:1px solid rgba(0,175,188,0.2)">✈ TripAdvisor</div>
+            </div>
+          </div>
+        </div>
+        <p class="screen-desc">Post-checkout branded page. Guest rates privately. Satisfied guests automatically redirected to Google or TripAdvisor to post publicly. Grows your public score passively.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="inner-footer">
+    <div class="if-left">GuestFlow Pro · Amica International · 2026</div>
+    <div class="if-page">5</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 6 — ROI & INTEGRATIONS
+══════════════════════════════════════════════ -->
+<div class="page">
+  <div class="inner-header">
+    <div class="ih-brand">
+      <div class="ih-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="13" height="13"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18" /></svg>
+      </div>
+      <span class="ih-name">GuestFlow Pro</span>
+    </div>
+    <div class="ih-section">ROI & Integrations</div>
+  </div>
+
+  <div class="inner-body">
+    <div class="section-block" style="margin-bottom:14px">
+      <div class="eyebrow">Return on Investment</div>
+      <div class="rule"></div>
+      <h2 class="h2">What hotels gain by switching to digital</h2>
+    </div>
+
+    <div class="roi-grid">
+      <div class="roi-card">
+        <div class="roi-icon">⏱️</div>
+        <div>
+          <div class="roi-num" style="color:var(--teal)">−80%</div>
+          <div class="roi-label">Less staff time spent at check-in desk per guest. Guests arrive pre-registered — reception simply hands over the key.</div>
+        </div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-icon">⭐</div>
+        <div>
+          <div class="roi-num" style="color:var(--amber)">3×</div>
+          <div class="roi-label">More Google and TripAdvisor reviews collected per month compared to verbally asking guests at checkout.</div>
+        </div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-icon">💰</div>
+        <div>
+          <div class="roi-num" style="color:var(--green)">+40%</div>
+          <div class="roi-label">Increase in upsell revenue from in-stay service orders placed via the digital concierge. Guests buy more when it's frictionless.</div>
+        </div>
+      </div>
+      <div class="roi-card">
+        <div class="roi-icon">🔒</div>
+        <div>
+          <div class="roi-num" style="color:var(--navy)">100%</div>
+          <div class="roi-label">Guest data captured digitally with GDPR consent at the point of collection. No compliance gaps, no paper records to manage.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block" style="margin:18px 0 12px">
+      <div class="eyebrow">Integrations</div>
+      <div class="rule"></div>
+      <h2 class="h2" style="font-size:1.2rem">Connects to the tools you already use</h2>
+    </div>
+
+    <div class="int-grid">
+      <div class="int-card">
+        <div class="int-icon">🔴</div>
+        <div>
+          <div class="int-name">n8n</div>
+          <div class="int-desc">Automate workflows on every guest event via API key or webhook. No code required.</div>
+        </div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">⚡</div>
+        <div>
+          <div class="int-name">Zapier</div>
+          <div class="int-desc">Connect to 5000+ apps. New check-in → Mailchimp. New review → Slack.</div>
+        </div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">📱</div>
+        <div>
+          <div class="int-name">WhatsApp</div>
+          <div class="int-desc">Send check-in and review links directly via WhatsApp Business from the dashboard.</div>
+        </div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🗺️</div>
+        <div>
+          <div class="int-name">Google Places</div>
+          <div class="int-desc">Nearby restaurants, parking, and attractions with ratings and open hours — live data.</div>
+        </div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🎟️</div>
+        <div>
+          <div class="int-name">GetYourGuide</div>
+          <div class="int-desc">Live tour widgets embedded in concierge page. Guests book, hotel earns commission.</div>
+        </div>
+      </div>
+      <div class="int-card">
+        <div class="int-icon">🔑</div>
+        <div>
+          <div class="int-name">REST API</div>
+          <div class="int-desc">Per-hotel API keys with HMAC-signed webhooks. Build any custom integration.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="api-block">
+      <div class="ab-left">
+        <h3>Developer-ready API</h3>
+        <p>Full REST API with JWT and API key authentication. Real-time webhooks fire on every guest event. Documented, versioned, and production-ready.</p>
+      </div>
+      <div class="ab-right">
+        <div class="ab-code">
+<span class="cm"># New check-in webhook payload</span>
+{
+  <span class="str">"event"</span>: <span class="str">"checkin.completed"</span>,
+  <span class="str">"hotel_id"</span>: <span class="str">"08b8a38a..."</span>,
+  <span class="str">"guest"</span>: {
+    <span class="str">"name"</span>: <span class="str">"Marco Rossi"</span>,
+    <span class="str">"nationality"</span>: <span class="str">"IT"</span>,
+    <span class="str">"marketing_opt_in"</span>: <span class="kw">true</span>
+  },
+  <span class="str">"timestamp"</span>: <span class="str">"2026-07-15T14:30:00Z"</span>
+}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inner-footer">
+    <div class="if-left">GuestFlow Pro · Amica International · 2026</div>
+    <div class="if-page">6</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 7 — BACK COVER / CTA
+══════════════════════════════════════════════ -->
+<div class="page" id="backpage">
+  <div class="cover-dot-bg"></div>
+
+  <div class="bp-top">
+    <div class="bp-logo-row">
+      <div class="bp-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" /></svg>
+      </div>
+      <div>
+        <div class="bp-brand-name">GuestFlow Pro</div>
+        <div class="bp-by">by Amica International</div>
+      </div>
+    </div>
+    <div style="font-size:0.5625rem;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.12em;font-weight:700">Page 7 of 7</div>
+  </div>
+
+  <div class="bp-body">
+    <div class="bp-eyebrow">Get Started Today</div>
+    <div class="bp-headline">
+      Ready to bring your<br>
+      hotel into the <span class="accent">digital age</span>?
+    </div>
+    <p class="bp-sub">
+      GuestFlow Pro is live and running. Onboarding takes less than 24 hours — upload your logo, set your brand color, and your hotel is ready to send its first digital check-in link.
+    </p>
+
+    <div class="contact-cards">
+      <div class="cc">
+        <div class="cc-label">Email</div>
+        <div class="cc-value">razatechsolutions.official<br>@gmail.com</div>
+      </div>
+      <div class="cc">
+        <div class="cc-label">Platform</div>
+        <div class="cc-value">GuestFlow Pro<br>by Amica International</div>
+      </div>
+      <div class="cc">
+        <div class="cc-label">Onboarding</div>
+        <div class="cc-value">Under 24 hours<br>Full setup included</div>
+      </div>
+    </div>
+
+    <div class="next-steps">
+      <div class="bp-eyebrow">Next Steps</div>
+      <div class="ns-grid">
+        <div class="ns-item">
+          <div class="ns-num">1</div>
+          <div>
+            <h4>Initial Call</h4>
+            <p>30-minute demo call to walk through the platform and answer questions specific to your hotel's needs.</p>
+          </div>
+        </div>
+        <div class="ns-item">
+          <div class="ns-num">2</div>
+          <div>
+            <h4>Hotel Setup</h4>
+            <p>We create your hotel account, upload your logo and brand color, and configure your public hotel page.</p>
+          </div>
+        </div>
+        <div class="ns-item">
+          <div class="ns-num">3</div>
+          <div>
+            <h4>Send First Check-in</h4>
+            <p>Your first digital check-in link sent within 24 hours of signup. Guest experience starts from day one.</p>
+          </div>
+        </div>
+        <div class="ns-item">
+          <div class="ns-num">4</div>
+          <div>
+            <h4>Go Live</h4>
+            <p>Full platform activated: check-in, concierge, reviews, and marketing all running. Ongoing support included.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bp-footer">
+    <div class="bp-footer-left">© 2026 Amica International. All rights reserved. Confidential — prepared for hotel partners only.</div>
+    <div class="bp-footer-right">GuestFlow Pro</div>
+  </div>
+</div>

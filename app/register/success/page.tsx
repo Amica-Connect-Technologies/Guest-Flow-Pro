@@ -11,7 +11,15 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
   const { t } = useLanguage();
   const NEXT_STEPS = [t.registerFlow.step1, t.registerFlow.step2, t.registerFlow.step3, t.registerFlow.step4];
   const isBank = method === "bank_transfer";
-  const planLabel = plan === "pro" ? t.registerFlow.planPro : t.registerFlow.planBasic;
+  const PLAN_LABEL_MAP: Record<string, string> = {
+    concierge:         "Digital Concierge — €25/month",
+    checkin:           "Smart Check-in — €50/month",
+    concierge_checkin: "Guest Experience Pro — €75/month",
+    full:              "Full Suite — €100/month",
+    basic:             t.registerFlow.planBasic,
+    pro:               t.registerFlow.planPro,
+  };
+  const planLabel = PLAN_LABEL_MAP[plan] ?? plan;
 
   return (
     <div>
@@ -172,7 +180,7 @@ function SuccessContent() {
   const method = sp.get("method");
   const sessionId = sp.get("session_id");
   const businessName = sp.get("business_name") ?? "";
-  const plan = sp.get("plan") ?? "basic";
+  const plan = sp.get("plan") ?? "concierge";
 
   if (method && method !== "stripe") {
     return <ManualSuccess businessName={businessName} method={method} plan={plan} />;

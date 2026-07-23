@@ -17,8 +17,13 @@ from .serializers import RegisterRequestSerializer, RegistrationSerializer
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 STRIPE_PRICES = {
-    "basic": settings.STRIPE_PRICE_BASIC,
-    "pro": settings.STRIPE_PRICE_PRO,
+    "concierge":         getattr(settings, "STRIPE_PRICE_CONCIERGE",         ""),
+    "checkin":           getattr(settings, "STRIPE_PRICE_CHECKIN",           ""),
+    "concierge_checkin": getattr(settings, "STRIPE_PRICE_CONCIERGE_CHECKIN", ""),
+    "full":              getattr(settings, "STRIPE_PRICE_FULL",              ""),
+    # legacy — keep so old sessions don't break
+    "basic": getattr(settings, "STRIPE_PRICE_BASIC", ""),
+    "pro":   getattr(settings, "STRIPE_PRICE_PRO",   ""),
 }
 
 # Hardcoded bank account details — update these for production
@@ -70,7 +75,9 @@ class RegisterView(APIView):
             email=email,
             phone=d.get("phone", ""),
             city=d["city"],
+            country=d.get("country", "Italy"),
             whatsapp_number=d.get("whatsapp_number", ""),
+            website=d.get("website", ""),
             plan=d["plan"],
             payment_method=payment_method,
             user=user,
@@ -253,7 +260,10 @@ class ApproveRegistrationView(APIView):
         hotel = Hotel.objects.create(
             name=reg.business_name,
             city=reg.city,
+            country=getattr(reg, "country", "Italy") or "Italy",
             whatsapp_number=reg.whatsapp_number,
+            website=getattr(reg, "website", "") or "",
+            plan=reg.plan,
             language_default="en",
         )
 

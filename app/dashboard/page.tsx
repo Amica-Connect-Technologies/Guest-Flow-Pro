@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling, Dumbbell, Car, Shirt,
   Home, Bell, Briefcase, Sparkles, ClipboardList, Banknote, User, Phone, Mail,
   MessageCircle, MapPin, LogIn, LogOut, Clock, Wifi, LayoutDashboard, QrCode,
-  ClipboardCheck, type LucideIcon,
+  ClipboardCheck, Users, Star, KeyRound, Images, Trash2, type LucideIcon,
 } from "lucide-react";
 import {
-  auth, hotelsApi, servicesApi, bookingsApi,
-  type Hotel, type HotelService, type ServiceBooking,
+  auth, hotelsApi, servicesApi, bookingsApi, galleryApi,
+  type Hotel, type HotelService, type ServiceBooking, type HotelGalleryImage,
 } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 import Image from "next/image";
@@ -103,15 +103,26 @@ const SERVICE_SUGGESTIONS: SvcSug[] = [
   { name: "Business Lounge Access",     description: "Full-day access to our business lounge with workspace and Wi-Fi.",            category: "business",    price: "20.00" },
 ];
 
-type SectionKey = "overview" | "qr" | "services" | "bookings" | "profile";
+type SectionKey = "overview" | "qr" | "services" | "bookings" | "profile" | "gallery";
 
 export default function HotelDashboard() {
   const router = useRouter();
   const { t } = useLanguage();
+  const searchParams = useSearchParams();
   const [hotel, setHotel]     = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
   const [section, setSection] = useState<SectionKey>("qr");
+
+  // Sync section with URL ?tab= param (set by the layout sidebar)
+  useEffect(() => {
+    const tab = searchParams.get("tab") as SectionKey | null;
+    if (tab && ["overview","qr","services","bookings","profile","gallery"].includes(tab)) {
+      setSection(tab);
+    } else if (!tab) {
+      setSection("overview");
+    }
+  }, [searchParams]);
 
   const CAT_LABEL: Record<string, string> = t.dashboard.services.categories;
   const AMENITIES = AMENITY_META.map(a => ({ ...a, label: t.dashboard.amenities[a.key] }));
@@ -142,6 +153,8 @@ export default function HotelDashboard() {
     check_in_time: string; check_out_time: string; wifi_info: string;
     language_default: string; amenities: string[];
     is_24_7: boolean; open_time: string; close_time: string;
+    brand_color: string; welcome_message: string;
+    google_review_url: string; tripadvisor_url: string;
     logoFile: File | null; logoPreview: string;
   };
   const [showProfileForm, setShowProfileForm] = useState(false);
@@ -149,11 +162,20 @@ export default function HotelDashboard() {
     name: "", city: "", phone: "", email: "", whatsapp_number: "", address: "",
     description: "", check_in_time: "14:00", check_out_time: "11:00", wifi_info: "",
     language_default: "en", amenities: [], is_24_7: false,
-    open_time: "09:00", close_time: "22:00", logoFile: null, logoPreview: "",
+    open_time: "09:00", close_time: "22:00",
+    brand_color: "#0E7490", welcome_message: "",
+    google_review_url: "", tripadvisor_url: "",
+    logoFile: null, logoPreview: "",
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError]   = useState("");
   const logoRef = useRef<HTMLInputElement>(null);
+
+  // ── gallery ───────────────────────────────────────────────────────────────────
+  const [galleryImages, setGalleryImages]     = useState<HotelGalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading]   = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const [toast, setToast] = useState({ msg: "", ok: true });
 
@@ -187,6 +209,7 @@ export default function HotelDashboard() {
     if (!hotel) return;
     if (section === "services" || section === "overview") fetchServices();
     if (section === "bookings" || section === "overview") fetchBookings();
+    if (section === "gallery") fetchGallery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, hotel]);
 
@@ -199,6 +222,37 @@ export default function HotelDashboard() {
     setBookLoading(true);
     try { setBookings(await bookingsApi.list()); } catch { /* stay */ }
     setBookLoading(false);
+  }
+  async function fetchGallery() {
+    if (!hotel) return;
+    setGalleryLoading(true);
+    try { setGalleryImages(await galleryApi.list(hotel.id)); } catch { /* stay */ }
+    setGalleryLoading(false);
+  }
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (galleryImages.length >= 5) { showToast("Maximum 5 images allowed", false); return; }
+    setGalleryUploading(true);
+    try {
+      const newImg = await galleryApi.upload(file);
+      setGalleryImages(prev => [...prev, newImg]);
+      showToast("Image uploaded successfully");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Upload failed", false);
+    }
+    setGalleryUploading(false);
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
+  }
+  async function deleteGalleryImage(id: string) {
+    if (!confirm("Delete this gallery image?")) return;
+    try {
+      await galleryApi.delete(id);
+      setGalleryImages(prev => prev.filter(img => img.id !== id));
+      showToast("Image deleted");
+    } catch {
+      showToast("Delete failed", false);
+    }
   }
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -254,13 +308,17 @@ export default function HotelDashboard() {
     if (!hotel) return;
     setProfileForm({
       name: hotel.name, city: hotel.city, phone: hotel.phone ?? "",
-      email: hotel.email ?? "", whatsapp_number: hotel.whatsapp_number ?? "",
+      email: hotel.email || userEmail || "", whatsapp_number: hotel.whatsapp_number ?? "",
       address: hotel.address ?? "", description: hotel.description ?? "",
       check_in_time: hotel.check_in_time || "14:00",
       check_out_time: hotel.check_out_time || "11:00",
       wifi_info: hotel.wifi_info ?? "", language_default: hotel.language_default || "en",
       amenities: hotel.amenities ?? [], is_24_7: hotel.is_24_7 ?? false,
       open_time: hotel.open_time || "09:00", close_time: hotel.close_time || "22:00",
+      brand_color: hotel.brand_color || "#0E7490",
+      welcome_message: hotel.welcome_message ?? "",
+      google_review_url: hotel.google_review_url ?? "",
+      tripadvisor_url: hotel.tripadvisor_url ?? "",
       logoFile: null, logoPreview: hotel.logo_url ?? "",
     });
     setProfileError(""); setShowProfileForm(true);
@@ -286,6 +344,10 @@ export default function HotelDashboard() {
       fd.append("open_time",        profileForm.is_24_7 ? "" : profileForm.open_time);
       fd.append("close_time",       profileForm.is_24_7 ? "" : profileForm.close_time);
       if (profileForm.logoFile) fd.append("logo", profileForm.logoFile);
+      fd.append("brand_color",       profileForm.brand_color);
+      fd.append("welcome_message",   profileForm.welcome_message.trim());
+      fd.append("google_review_url", profileForm.google_review_url.trim());
+      fd.append("tripadvisor_url",   profileForm.tripadvisor_url.trim());
       const updated = await hotelsApi.updateProfile(fd);
       setHotel(updated); setShowProfileForm(false); showToast(t.dashboard.profileForm.saved);
     } catch (e) {
@@ -329,23 +391,59 @@ export default function HotelDashboard() {
     </div>
   );
 
-  const guestUrl = typeof window !== "undefined" ? `${window.location.origin}/h/${hotel.id}` : `/h/${hotel.id}`;
+  const langParam = hotel.language_default ? `?lang=${hotel.language_default}` : "";
+  const guestUrl = typeof window !== "undefined" ? `${window.location.origin}/h/${hotel.id}${langParam}` : `/h/${hotel.id}${langParam}`;
   const filteredBookings = bookFilter === "all" ? bookings : bookings.filter(b => b.status === bookFilter);
   const pendingCount = bookings.filter(b => b.status === "pending").length;
 
+  const plan = hotel.plan ?? "";
+  const IS_LEGACY     = ["starter", "basic", "pro"].includes(plan);
+  const HAS_CONCIERGE = IS_LEGACY || ["concierge", "concierge_checkin", "full"].includes(plan);
+  const HAS_CHECKIN   = IS_LEGACY || ["checkin", "concierge_checkin", "full"].includes(plan);
+  const HAS_FULL      = IS_LEGACY || plan === "full";
+
+  const PLAN_BADGE: Record<string, string> = {
+    concierge:         "Digital Concierge · €25/mo",
+    checkin:           "Smart Check-in · €50/mo",
+    concierge_checkin: "Guest Experience Pro · €75/mo",
+    full:              "Full Suite · €100/mo",
+    starter:           "Starter (Legacy)",
+    basic:             "Basic (Legacy) · £29/mo",
+    pro:               "Pro (Legacy) · £79/mo",
+  };
+
+  const PLAN_PRICE: Record<string, string> = {
+    concierge: "€25/mo", checkin: "€50/mo",
+    concierge_checkin: "€75/mo", full: "€100/mo",
+    starter: "Legacy", basic: "£29/mo", pro: "£79/mo",
+  };
+
   // sidebar items (desktop nav)
   const SIDEBAR_ITEMS = [
-    { key: "overview",  label: "Overview",       Icon: LayoutDashboard, link: null as string | null },
-    { key: "qr",        label: "QR Code",        Icon: QrCode,          link: null as string | null },
-    { key: "checkin",   label: "Guest Check-in", Icon: ClipboardCheck,  link: "/dashboard/checkin" },
-    { key: "services",  label: "Services",       Icon: Bell,            link: null as string | null },
-    { key: "bookings",  label: "Bookings",       Icon: ClipboardList,   link: null as string | null },
-    { key: "profile",   label: "Hotel Profile",  Icon: User,            link: null as string | null },
+    { key: "overview",  label: "Overview",         Icon: LayoutDashboard, link: null as string | null },
+    { key: "gallery",   label: "Gallery",           Icon: Images,          link: null as string | null },
+    { key: "services",  label: "Services",          Icon: Bell,            link: null as string | null },
+    ...(HAS_CONCIERGE ? [
+      { key: "qr",       label: "QR Code",          Icon: QrCode,        link: null as string | null },
+      { key: "bookings", label: "Bookings",          Icon: ClipboardList, link: null as string | null },
+    ] : []),
+    ...(HAS_CHECKIN ? [
+      { key: "checkin",  label: "Guest Check-in",   Icon: ClipboardCheck, link: "/dashboard/checkin" },
+      { key: "guests",   label: "Guest CRM",         Icon: Users,          link: "/dashboard/guests"  },
+    ] : []),
+    { key: "requests",  label: "Direct Enquiries",   Icon: MessageCircle,   link: "/dashboard/requests" },
+    ...(HAS_FULL ? [
+      { key: "reviews",   label: "Reviews",   Icon: Star,     link: "/dashboard/reviews"   },
+      { key: "marketing", label: "Marketing", Icon: Mail,     link: "/dashboard/marketing" },
+      { key: "api-keys",  label: "API Keys",  Icon: KeyRound, link: "/dashboard/api-keys"  },
+    ] : []),
+    { key: "profile",   label: "Hotel Profile",     Icon: User,            link: null as string | null },
   ];
 
   function handleNav(key: string, link: string | null) {
     if (link) { router.push(link); return; }
     setSection(key as SectionKey);
+    router.push(`/dashboard?tab=${key}`, { scroll: false });
   }
 
   return (
@@ -357,73 +455,6 @@ export default function HotelDashboard() {
           {toast.msg}
         </div>
       )}
-
-      {/* ════════════════════════════════════════════════════════════════════════
-          DESKTOP SIDEBAR
-      ════════════════════════════════════════════════════════════════════════ */}
-      <aside className="hidden md:flex flex-col fixed inset-y-0 left-0 w-64 z-40"
-        style={{ background: "linear-gradient(180deg, #020B12 0%, #0c3344 100%)", borderRight: "1px solid rgba(6,182,212,0.12)" }}>
-
-        {/* Hotel identity */}
-        <div className="px-5 py-5 flex items-center gap-3 border-b border-white/10">
-          {hotel.logo_url ? (
-            <div className="relative flex-shrink-0">
-              <div className="absolute -inset-0.5 rounded-xl opacity-60"
-                style={{ background: "linear-gradient(135deg, #F59E0B, #06B6D4)" }} />
-              <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={40} height={40}
-                className="relative w-10 h-10 rounded-xl object-cover" />
-            </div>
-          ) : (
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, #083344, #0E7490)", border: "1.5px solid rgba(6,182,212,0.4)" }}>
-              {hotel.name.slice(0, 2).toUpperCase()}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-sm leading-tight truncate">{hotel.name}</p>
-            <p className="text-cyan-300/70 text-xs mt-0.5 font-medium truncate">{hotel.city}</p>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {SIDEBAR_ITEMS.map(({ key, label, Icon, link }) => {
-            const active = !link && section === key;
-            return (
-              <button key={key} onClick={() => handleNav(key, link)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left ${
-                  active ? "text-white" : "text-white/55 hover:text-white"
-                }`}
-                style={active
-                  ? { background: "rgba(255,255,255,0.14)" }
-                  : { background: "transparent" }
-                }
-                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
-                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-                <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-                <span className="flex-1">{label}</span>
-                {key === "bookings" && pendingCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full leading-none">
-                    {pendingCount}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* User + sign out */}
-        <div className="px-3 pb-4 border-t border-white/10 pt-3">
-          <p className="px-3 pb-2 text-white/35 text-[11px] font-medium truncate">{userEmail}</p>
-          <button onClick={() => { auth.logout(); router.push("/login"); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/50 transition-all"
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.cssText += "color:#f87171;background:rgba(239,68,68,0.1)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.cssText = "color:rgba(255,255,255,0.5);background:transparent"; }}>
-            <LogOut className="w-4 h-4 flex-shrink-0" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
 
       {/* ════════════════════════════════════════════════════════════════════════
           MOBILE HEADER
@@ -461,16 +492,27 @@ export default function HotelDashboard() {
         <div className="px-4 pb-3 max-w-2xl mx-auto">
           <div className="flex gap-1.5">
             {([
-              { key: "qr",       label: t.dashboard.nav.qrCode,  Icon: QrCode,         link: null as string | null },
-              { key: "checkin",  label: t.checkin.navLabel,       Icon: ClipboardCheck, link: "/dashboard/checkin"  },
-              { key: "services", label: t.dashboard.nav.services, Icon: Bell,           link: null as string | null },
-              { key: "bookings", label: t.dashboard.nav.bookings, Icon: ClipboardList,  link: null as string | null },
-              { key: "profile",  label: t.dashboard.nav.profile,  Icon: User,           link: null as string | null },
-            ]).map(({ key, label, Icon, link }) => {
+              { key: "gallery",   label: "Gallery",                Icon: Images,         link: null as string | null },
+              { key: "services",  label: t.dashboard.nav.services, Icon: Bell,           link: null as string | null },
+              ...(HAS_CONCIERGE ? [
+                { key: "qr",       label: t.dashboard.nav.qrCode,  Icon: QrCode,        link: null as string | null },
+                { key: "bookings", label: t.dashboard.nav.bookings, Icon: ClipboardList, link: null as string | null },
+              ] : []),
+              ...(HAS_CHECKIN ? [
+                { key: "checkin",  label: t.checkin.navLabel, Icon: ClipboardCheck, link: "/dashboard/checkin" },
+                { key: "guests",   label: "CRM",              Icon: Users,          link: "/dashboard/guests"  },
+              ] : []),
+              { key: "requests", label: "Requests", Icon: MessageCircle, link: "/dashboard/requests" },
+              ...(HAS_FULL ? [
+                { key: "reviews",   label: "Reviews",   Icon: Star, link: "/dashboard/reviews"   },
+                { key: "marketing", label: "Marketing", Icon: Mail, link: "/dashboard/marketing" },
+              ] : []),
+              { key: "profile", label: t.dashboard.nav.profile, Icon: User, link: null as string | null },
+            ] as { key: string; label: string; Icon: React.ElementType; link: string | null }[]).map(({ key, label, Icon, link }) => {
               const active = !link && section === key;
               return (
                 <button key={key}
-                  onClick={() => link ? router.push(link) : setSection(key as SectionKey)}
+                  onClick={() => { if (link) { router.push(link); } else { setSection(key as SectionKey); router.push(`/dashboard?tab=${key}`, { scroll: false }); } }}
                   className="flex-1 flex flex-col items-center justify-center gap-1 py-2 rounded-xl text-[10px] font-black transition-all active:scale-95"
                   style={{
                     touchAction: "manipulation",
@@ -495,7 +537,7 @@ export default function HotelDashboard() {
       {/* ════════════════════════════════════════════════════════════════════════
           MAIN CONTENT
       ════════════════════════════════════════════════════════════════════════ */}
-      <div className="md:pl-64">
+      <div>
 
         {/* Desktop page header bar */}
         <div className="hidden md:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 sticky top-0 z-20"
@@ -503,6 +545,7 @@ export default function HotelDashboard() {
           <div className="flex items-center gap-2.5">
             {section === "overview" && <><LayoutDashboard className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">Overview</h1></>}
             {section === "qr"       && <><QrCode          className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">QR Code</h1></>}
+            {section === "gallery"  && <><Images          className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">Hotel Gallery</h1></>}
             {section === "services" && <><Bell            className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">Services</h1></>}
             {section === "bookings" && <><ClipboardList   className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">Bookings</h1></>}
             {section === "profile"  && <><User            className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">Hotel Profile</h1></>}
@@ -525,6 +568,12 @@ export default function HotelDashboard() {
                 <p className="text-cyan-300/80 text-xs font-bold uppercase tracking-widest mb-1">Hotel Dashboard</p>
                 <h2 className="text-2xl font-black text-white">{hotel.name}</h2>
                 <p className="text-cyan-200/70 text-sm mt-1">{hotel.city} · Manage your hotel from one place</p>
+                {PLAN_BADGE[plan] && (
+                  <span className="inline-flex items-center mt-2 text-[11px] font-bold px-3 py-1 rounded-full"
+                    style={{ background: "rgba(6,182,212,0.18)", color: "#67E8F9", border: "1px solid rgba(6,182,212,0.25)" }}>
+                    {PLAN_BADGE[plan]}
+                  </span>
+                )}
                 <a href={guestUrl} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 mt-4 text-xs font-bold px-4 py-2 rounded-xl"
                   style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.85)" }}>
@@ -533,12 +582,149 @@ export default function HotelDashboard() {
                 </a>
               </div>
 
+              {/* Plan timeline card — always shown */}
+              {(() => {
+                const now       = new Date();
+                const PERIOD    = 30;
+                const createdAt = hotel.created_at ? new Date(hotel.created_at) : null;
+                const explicitExpiry = hotel.plan_expires_at ? new Date(hotel.plan_expires_at) : null;
+
+                // Calculate current billing period
+                let periodStart: Date;
+                let periodEnd: Date;
+                if (explicitExpiry) {
+                  periodEnd   = explicitExpiry;
+                  periodStart = new Date(explicitExpiry.getTime() - PERIOD * 86400000);
+                } else if (createdAt) {
+                  // Find which 30-day cycle we're in based on activation date
+                  const daysSince = Math.max(0, Math.floor((now.getTime() - createdAt.getTime()) / 86400000));
+                  const cycleNum  = Math.floor(daysSince / PERIOD);
+                  periodStart = new Date(createdAt.getTime() + cycleNum * PERIOD * 86400000);
+                  periodEnd   = new Date(createdAt.getTime() + (cycleNum + 1) * PERIOD * 86400000);
+                } else {
+                  return null;
+                }
+
+                const daysUsed  = Math.max(0, Math.floor((now.getTime() - periodStart.getTime()) / 86400000));
+                const daysLeft  = Math.max(0, Math.floor((periodEnd.getTime() - now.getTime()) / 86400000));
+                const progress  = Math.min(100, Math.round((daysUsed / PERIOD) * 100));
+                const isWarn    = daysLeft <= 5;
+                const isExpired = daysLeft === 0 && now > periodEnd;
+
+                const activatedLabel = createdAt
+                  ? createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+                  : "—";
+                const renewsLabel = periodEnd.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+
+                return (
+                  <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                    {/* Header bar */}
+                    <div className="px-5 py-4 flex items-center justify-between"
+                      style={{ background: "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 mb-0.5">Subscription Plan</p>
+                        <p className="text-white font-black text-sm">{PLAN_BADGE[plan] ?? plan}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-xs font-black px-3 py-1.5 rounded-full ${
+                          isExpired ? "bg-red-500/20 text-red-400"
+                          : isWarn  ? "bg-amber-500/20 text-amber-300"
+                          : "bg-emerald-500/20 text-emerald-400"
+                        }`}>
+                          {isExpired ? "Expired" : `${daysLeft} days left`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-5 space-y-4">
+                      {/* Progress bar */}
+                      <div>
+                        <div className="flex justify-between text-[10px] font-semibold text-slate-400 mb-1.5">
+                          <span>Day 1</span>
+                          <span className="font-bold text-slate-600">{daysUsed} of {PERIOD} days used</span>
+                          <span>Day {PERIOD}</span>
+                        </div>
+                        <div className="relative h-3 rounded-full overflow-hidden" style={{ background: "#F0F2F7" }}>
+                          <div className="h-full rounded-full transition-all duration-500" style={{
+                            width: `${progress}%`,
+                            background: isExpired
+                              ? "#ef4444"
+                              : isWarn
+                              ? "linear-gradient(90deg, #F59E0B, #ef4444)"
+                              : "linear-gradient(90deg, #0E7490, #06B6D4)",
+                          }} />
+                        </div>
+                      </div>
+
+                      {/* Stats tiles */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="rounded-xl p-3 text-center" style={{ background: "#ECFEFF" }}>
+                          <p className="text-base font-black" style={{ color: "#0E7490" }}>{daysUsed}</p>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">Days Used</p>
+                        </div>
+                        <div className="rounded-xl p-3 text-center" style={{
+                          background: isExpired ? "#FEF2F2" : isWarn ? "#FFFBEB" : "#ECFDF5",
+                        }}>
+                          <p className="text-base font-black" style={{
+                            color: isExpired ? "#ef4444" : isWarn ? "#D97706" : "#059669",
+                          }}>{isExpired ? "0" : daysLeft}</p>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">Days Left</p>
+                        </div>
+                        <div className="rounded-xl p-3 text-center" style={{ background: "#F5F3FF" }}>
+                          <p className="text-sm font-black" style={{ color: "#7C3AED" }}>
+                            {periodEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                          </p>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">Renews</p>
+                        </div>
+                      </div>
+
+                      {/* Payment info row */}
+                      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#EFF6FF" }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth={2} className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v1.5M17.25 3v1.5M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Activated</p>
+                            <p className="text-xs font-bold text-slate-700">{activatedLabel}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#F0FDF4" }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth={2} className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Amount</p>
+                            <p className="text-xs font-bold text-slate-700">{PLAN_PRICE[plan] ?? "Custom"}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 col-span-2">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#FDF4FF" }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#9333ea" strokeWidth={2} className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Next Renewal</p>
+                            <p className="text-xs font-bold text-slate-700">{renewsLabel}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { label: "Total Services",  value: services.length,                                      color: "#0E7490", bg: "#ECFEFF", border: "#A5F3FC", Icon: Bell          },
                   { label: "Total Bookings",  value: bookings.length,                                      color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", Icon: ClipboardList  },
-                  { label: "Pending Orders",  value: bookings.filter(b => b.status === "pending").length,  color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", Icon: Clock          },
+                  { label: "Pending Requests", value: bookings.filter(b => b.status === "pending").length,  color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", Icon: Clock          },
                   { label: "Completed",       value: bookings.filter(b => b.status === "completed").length,color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", Icon: ClipboardCheck },
                 ].map(({ label, value, color, bg, border, Icon: Ic }) => (
                   <div key={label} className="bg-white rounded-2xl p-5 flex items-center gap-4"
@@ -559,10 +745,14 @@ export default function HotelDashboard() {
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Quick Actions</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
-                    { label: "View QR Code",   desc: "Show guest link",     Icon: QrCode,         action: () => setSection("qr"),      color: "#0E7490", bg: "#ECFEFF" },
-                    { label: "Guest Check-in", desc: "Manage check-ins",    Icon: ClipboardCheck, action: () => router.push("/dashboard/checkin"), color: "#7C3AED", bg: "#F5F3FF" },
-                    { label: "Add Service",    desc: "Create new service",  Icon: Bell,           action: () => { setSection("services"); setTimeout(openAddService, 100); }, color: "#2563EB", bg: "#EFF6FF" },
-                    { label: "All Bookings",   desc: "See all orders",      Icon: ClipboardList,  action: () => setSection("bookings"), color: "#059669", bg: "#ECFDF5" },
+                    ...(HAS_CONCIERGE ? [
+                      { label: "View QR Code",  desc: "Show guest link",    Icon: QrCode,        action: () => setSection("qr"),      color: "#0E7490", bg: "#ECFEFF" },
+                      { label: "Add Service",   desc: "Create new service", Icon: Bell,          action: () => { setSection("services"); setTimeout(openAddService, 100); }, color: "#2563EB", bg: "#EFF6FF" },
+                      { label: "All Bookings",  desc: "See all orders",     Icon: ClipboardList, action: () => setSection("bookings"), color: "#059669", bg: "#ECFDF5" },
+                    ] : []),
+                    ...(HAS_CHECKIN ? [
+                      { label: "Guest Check-in", desc: "Manage check-ins",  Icon: ClipboardCheck, action: () => router.push("/dashboard/checkin"), color: "#7C3AED", bg: "#F5F3FF" },
+                    ] : []),
                   ].map(({ label, desc, Icon: Ic, action, color, bg }) => (
                     <button key={label} onClick={action}
                       className="bg-white rounded-2xl p-4 text-left hover:shadow-md transition-all active:scale-[0.98] flex items-start gap-3 group"
@@ -670,6 +860,102 @@ export default function HotelDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
+            </div>
+          )}
+
+          {/* ════ GALLERY SECTION ════════════════════════════════════════════ */}
+          {section === "gallery" && (
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-black text-slate-800 text-base">Hotel Gallery</p>
+                  <p className="text-slate-400 text-xs font-medium">{galleryImages.length}/5 photos uploaded</p>
+                </div>
+                {galleryImages.length < 5 && (
+                  <button
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={galleryUploading}
+                    style={{ touchAction: "manipulation", background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 4px 16px rgba(14,116,144,0.35)" }}
+                    className="flex items-center gap-2 text-white text-xs font-black px-4 py-3 rounded-2xl active:scale-95 transition-all disabled:opacity-60"
+                  >
+                    {galleryUploading ? (
+                      <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Uploading…</>
+                    ) : (
+                      <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg> Add Photo</>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleGalleryUpload}
+              />
+
+              {/* Gallery grid */}
+              {galleryLoading ? (
+                <div className="bg-white rounded-3xl p-10 flex items-center justify-center" style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}>
+                  <div className="w-8 h-8 rounded-full border-[3px] border-t-transparent animate-spin" style={{ borderColor: "#0E7490", borderTopColor: "transparent" }} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {galleryImages.map(img => (
+                    <div key={img.id} className="relative rounded-3xl overflow-hidden bg-slate-100 group" style={{ aspectRatio: "16/10", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}>
+                      <Image
+                        unoptimized
+                        src={img.image_url}
+                        alt="Gallery photo"
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        onClick={() => deleteGalleryImage(img.id)}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                        style={{ touchAction: "manipulation" }}
+                      >
+                        <Trash2 className="w-4 h-4 text-white" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 text-[10px] font-bold text-white px-2 py-0.5 rounded-full" style={{ background: "rgba(0,0,0,0.45)" }}>
+                        #{img.order + 1}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Empty upload slots */}
+                  {Array.from({ length: Math.max(0, 5 - galleryImages.length) }).map((_, i) => (
+                    <button
+                      key={`slot-${i}`}
+                      onClick={() => galleryInputRef.current?.click()}
+                      disabled={galleryUploading}
+                      className="rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 transition-all hover:border-cyan-400 hover:bg-cyan-50 disabled:opacity-40 group"
+                      style={{ aspectRatio: "16/10", touchAction: "manipulation" }}
+                    >
+                      <Images className="w-7 h-7 text-slate-300 group-hover:text-cyan-400 transition-colors" />
+                      <span className="text-xs font-bold text-slate-300 group-hover:text-cyan-600 transition-colors">Add Photo</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Info banner */}
+              <div className="rounded-3xl p-5 border border-cyan-100" style={{ background: "linear-gradient(135deg, #ECFEFF, #F0F9FF)" }}>
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#ECFEFF" }}>
+                    <Images className="w-4 h-4" style={{ color: "#0E7490" }} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-800 mb-1">Gallery Photos</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Upload up to 5 photos of your hotel. These appear on your hotel&apos;s concierge page and the GuestFlowPro homepage.
+                      Best size: 1200×800px or wider, JPG or PNG.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -901,8 +1187,8 @@ export default function HotelDashboard() {
 
                 <div style={{ background: "#F0F8FA" }} className="px-4 py-4 grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   {[
-                    { label: t.dashboard.profile.phone,    val: hotel.phone            || "—", Icon: Phone,         color: "#0E7490", bg: "#ECFEFF" },
-                    { label: t.dashboard.profile.email,    val: hotel.email            || "—", Icon: Mail,          color: "#0E7490", bg: "#ECFEFF" },
+                    { label: t.dashboard.profile.phone,    val: hotel.phone                       || "—", Icon: Phone,         color: "#0E7490", bg: "#ECFEFF" },
+                    { label: t.dashboard.profile.email,    val: hotel.email || userEmail          || "—", Icon: Mail,          color: "#0E7490", bg: "#ECFEFF" },
                     { label: t.dashboard.profile.whatsapp, val: hotel.whatsapp_number  || "—", Icon: MessageCircle, color: "#059669", bg: "#ECFDF5" },
                     { label: t.dashboard.profile.address,  val: hotel.address          || "—", Icon: MapPin,        color: "#7C3AED", bg: "#F5F3FF" },
                     { label: t.dashboard.profile.checkIn,  val: hotel.check_in_time    || "14:00", Icon: LogIn,     color: "#0E7490", bg: "#ECFEFF" },
@@ -1105,6 +1391,48 @@ export default function HotelDashboard() {
                       </div>
                     </div>
                   )}
+                </div>
+                {/* ── Branding ── */}
+                <div className="pt-2 border-t border-slate-100">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Branding & Reviews</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-600 block mb-1">Brand Colour</label>
+                        <div className="flex items-center gap-2">
+                          <input type="color" value={profileForm.brand_color}
+                            onChange={e => setProfileForm(s => ({ ...s, brand_color: e.target.value }))}
+                            className="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5" />
+                          <input value={profileForm.brand_color}
+                            onChange={e => setProfileForm(s => ({ ...s, brand_color: e.target.value }))}
+                            placeholder="#0E7490" maxLength={7}
+                            className="w-28 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400" />
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-1">Used on the guest check-in page header</p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 block mb-1">Welcome Message</label>
+                      <textarea value={profileForm.welcome_message}
+                        onChange={e => setProfileForm(s => ({ ...s, welcome_message: e.target.value }))}
+                        rows={2} placeholder="Shown on the guest check-in page..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400 resize-none" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 block mb-1">Google Review URL</label>
+                      <input value={profileForm.google_review_url}
+                        onChange={e => setProfileForm(s => ({ ...s, google_review_url: e.target.value }))}
+                        placeholder="https://g.page/your-hotel/review"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-600 block mb-1">TripAdvisor URL</label>
+                      <input value={profileForm.tripadvisor_url}
+                        onChange={e => setProfileForm(s => ({ ...s, tripadvisor_url: e.target.value }))}
+                        placeholder="https://www.tripadvisor.com/Hotel_Review-..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-400" />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-600 block mb-2">{t.dashboard.profileForm.servicesAndBenefits}</label>

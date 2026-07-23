@@ -53,7 +53,10 @@ export default function HotelsView() {
   };
 
   useEffect(() => {
-    hotelsApi.list().then(setHotels).catch(() => {}).finally(() => setLoading(false));
+    hotelsApi.list()
+      .then(all => setHotels(all.filter(h => h.is_verified)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const results = useMemo(() => {
@@ -360,7 +363,7 @@ export default function HotelsView() {
 function FeaturedCard({ h, idx, t }: { h: Hotel; idx: number; t: ReturnType<typeof useLanguage>["t"] }) {
   const pal = paletteFor(h.id);
   return (
-    <Link href={`/h/${h.id}`}
+    <Link href={`/hotels/${h.id}`}
       className="flex-shrink-0 w-60 md:w-full rounded-3xl overflow-hidden block"
       style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)", transition: "transform 0.28s ease, box-shadow 0.28s ease" }}
       onMouseEnter={e => {
@@ -375,8 +378,14 @@ function FeaturedCard({ h, idx, t }: { h: Hotel; idx: number; t: ReturnType<type
       {/* Gradient top */}
       <div className="relative flex flex-col justify-between p-5"
         style={{ height: 196, background: `linear-gradient(150deg, ${pal[0]}, ${pal[1]}, ${pal[2]})` }}>
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: "radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.16) 0%, transparent 55%)",
+        {h.gallery_images?.[0]?.image_url && (
+          <Image unoptimized src={h.gallery_images[0].image_url} alt={h.name}
+            fill className="object-cover" style={{ zIndex: 0 }} />
+        )}
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
+          background: h.gallery_images?.[0]?.image_url
+            ? "linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.62) 100%)"
+            : "radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.16) 0%, transparent 55%)",
         }} />
 
         {/* Top row */}
@@ -474,11 +483,17 @@ function HotelCard({ h, t }: { h: Hotel; t: ReturnType<typeof useLanguage>["t"] 
             minHeight: 180,
             background: `linear-gradient(150deg, ${pal[0]} 0%, ${pal[1]} 55%, ${pal[2]} 100%)`,
           }}>
-          <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: "radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.13) 0%, transparent 58%)",
+          {h.gallery_images?.[0]?.image_url && (
+            <Image unoptimized src={h.gallery_images[0].image_url} alt={h.name}
+              fill className="object-cover" style={{ zIndex: 0 }} />
+          )}
+          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
+            background: h.gallery_images?.[0]?.image_url
+              ? "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.65) 100%)"
+              : "radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.13) 0%, transparent 58%)",
           }} />
           <div className="hidden md:block absolute inset-y-0 right-0 w-10 pointer-events-none"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.14))" }} />
+            style={{ zIndex: 2, background: "linear-gradient(90deg, transparent, rgba(0,0,0,0.14))" }} />
 
           {/* Logo + 24/7 */}
           <div className="relative z-10 flex items-start justify-between">
@@ -597,7 +612,7 @@ function HotelCard({ h, t }: { h: Hotel; t: ReturnType<typeof useLanguage>["t"] 
               </a>
             )}
 
-            <Link href={`/h/${h.id}`}
+            <Link href={`/hotels/${h.id}`}
               className="flex-1 inline-flex items-center justify-center gap-2.5 py-3 rounded-2xl text-sm font-black text-white"
               style={{
                 background: `linear-gradient(135deg, #0B1F45 0%, #1a3a70 50%, #0f2d5c 100%)`,

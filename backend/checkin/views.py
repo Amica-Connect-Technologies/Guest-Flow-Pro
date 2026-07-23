@@ -12,11 +12,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import HotelUser
-from .models import Booking, GuestRegistration, MessageLog
+from hotels.plan_permissions import require_feature, require_guest_capacity
+from .models import Booking, BookingRequest, GuestRegistration, MessageLog, ReviewRequest, WebhookConfig
+from .webhooks import dispatch as webhook_dispatch
 from .serializers import (
     BookingSerializer,
+    BookingRequestSerializer,
+    PublicBookingRequestSerializer,
     GuestRegistrationSerializer,
     PublicBookingSerializer,
+    ReviewRequestSerializer,
+    PublicReviewSerializer,
+    WebhookConfigSerializer,
 )
 
 
@@ -71,7 +78,16 @@ class BookingListCreateView(APIView):
             )
         serializer = BookingSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
-            serializer.save(hotel=hotel)
+            booking = serializer.save(hotel=hotel)
+            webhook_dispatch(hotel, "booking_created", {
+                "booking_id": str(booking.id),
+                "booking_reference": booking.booking_reference,
+                "guest_name": booking.guest_name,
+                "guest_email": booking.guest_email,
+                "check_in_date": str(booking.check_in_date),
+                "check_out_date": str(booking.check_out_date),
+                "num_guests": booking.num_guests,
+            })
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -186,6 +202,10 @@ class ExportCSVView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        hotel = _hotel_for(request.user)
+        err = require_feature(hotel, "guest_export")
+        if err:
+            return err
         qs = _booking_qs(request.user)
         output = io.StringIO()
         writer = csv.writer(output)
@@ -223,6 +243,381 @@ class ExportCSVView(APIView):
         return response
 
 
+# ── CRM: Guest list ───────────────────────────────────────────────────────────
+
+class GuestListView(APIView):
+    """Return all registered guests for this hotel with search + filter support."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        hotel = _hotel_for(request.user)
+        qs = GuestRegistration.objects.select_related("booking", "booking__hotel")
+        if hotel:
+            qs = qs.filter(booking__hotel=hotel)
+
+        search = request.query_params.get("search", "").strip()
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(nationality__icontains=search) |
+                Q(booking__guest_email__icontains=search) |
+                Q(booking__guest_phone__icontains=search)
+            )
+
+        if request.query_params.get("marketing_optin") == "true":
+            err = require_feature(hotel, "marketing")
+            if err:
+                return err
+            qs = qs.filter(marketing_optin=True)
+
+        if request.query_params.get("gdpr_consent") == "true":
+            qs = qs.filter(gdpr_consent=True)
+
+        nationality = request.query_params.get("nationality", "").strip()
+        if nationality:
+            qs = qs.filter(nationality__iexact=nationality)
+
+        qs = qs.order_by("-booking__check_in_date", "guest_number")
+
+        guests = []
+        for reg in qs:
+            b = reg.booking
+            document_image_url = None
+            if reg.document_image:
+                document_image_url = request.build_absolute_uri(reg.document_image.url)
+            guests.append({
+                "id": str(reg.id),
+                "guest_number": reg.guest_number,
+                "first_name": reg.first_name,
+                "last_name": reg.last_name,
+                "gender": reg.gender,
+                "date_of_birth": str(reg.date_of_birth) if reg.date_of_birth else None,
+                "nationality": reg.nationality,
+                "residence_address": reg.residence_address,
+                "document_type": reg.document_type,
+                "document_number": reg.document_number,
+                "document_image_url": document_image_url,
+                "gdpr_consent": reg.gdpr_consent,
+                "marketing_optin": reg.marketing_optin,
+                "completed_at": reg.completed_at.isoformat(),
+                "booking_id": str(b.id),
+                "booking_reference": b.booking_reference,
+                "hotel_name": b.hotel.name,
+                "guest_email": b.guest_email,
+                "guest_phone": b.guest_phone,
+                "check_in_date": str(b.check_in_date),
+                "check_out_date": str(b.check_out_date),
+                "booking_status": b.status,
+            })
+
+        # Stats for CRM header
+        total = qs.count()
+        from django.db.models import Count
+        top_countries = (
+            qs.exclude(nationality="")
+            .values("nationality")
+            .annotate(count=Count("nationality"))
+            .order_by("-count")[:5]
+        )
+
+        stats = {
+            "total": total,
+            "top_countries": list(top_countries),
+        }
+        # Marketing stats only available on Pro+ plans
+        if hotel is None or hotel.can("marketing"):
+            stats["marketing_optins"] = qs.filter(marketing_optin=True).count()
+
+        return Response({
+            "guests": guests,
+            "stats": stats,
+        })
+
+
+# ── Booking Requests ──────────────────────────────────────────────────────────
+
+class BookingRequestListView(APIView):
+    """Hotel-authenticated: list all requests + stats; admin sees all."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        hotel = _hotel_for(request.user)
+        qs = BookingRequest.objects.select_related("hotel").all()
+        if hotel:
+            qs = qs.filter(hotel=hotel)
+
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        return Response(BookingRequestSerializer(qs, many=True, context={"request": request}).data)
+
+
+class BookingRequestDetailView(APIView):
+    """Hotel-authenticated: update status + hotel_notes; delete."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get(self, pk, user):
+        hotel = _hotel_for(user)
+        try:
+            obj = BookingRequest.objects.select_related("hotel").get(pk=pk)
+        except BookingRequest.DoesNotExist:
+            return None, Response({"detail": "Not found."}, status=404)
+        if hotel and obj.hotel != hotel:
+            return None, Response({"detail": "Forbidden."}, status=403)
+        return obj, None
+
+    def patch(self, request, pk):
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        allowed = {k: v for k, v in request.data.items() if k in ("status", "hotel_notes")}
+        serializer = BookingRequestSerializer(obj, data=allowed, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, pk):
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PublicBookingRequestView(APIView):
+    """Public: guest submits a booking request for a specific hotel."""
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request, hotel_id):
+        from hotels.models import Hotel
+        try:
+            hotel = Hotel.objects.get(pk=hotel_id)
+        except Hotel.DoesNotExist:
+            return Response({"detail": "Hotel not found."}, status=404)
+        serializer = PublicBookingRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+        obj = serializer.save(hotel=hotel)
+        webhook_dispatch(hotel, "booking_request", {
+            "request_id": str(obj.id),
+            "guest_name": obj.guest_name,
+            "guest_email": obj.guest_email,
+            "check_in_date": str(obj.check_in_date),
+            "check_out_date": str(obj.check_out_date),
+            "num_guests": obj.num_guests,
+            "room_type": obj.room_type,
+        })
+        return Response({"detail": "Booking request submitted.", "id": str(obj.id)}, status=201)
+
+
+# ── Review Requests ───────────────────────────────────────────────────────────
+
+class ReviewRequestListView(APIView):
+    """Hotel-authenticated: list reviews + send review link to guest."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        hotel = _hotel_for(request.user)
+        qs = ReviewRequest.objects.select_related("booking", "booking__hotel").all()
+        if hotel:
+            qs = qs.filter(booking__hotel=hotel)
+        return Response(ReviewRequestSerializer(qs, many=True, context={"request": request}).data)
+
+
+class ReviewRequestDetailView(APIView):
+    """Hotel-authenticated: send link, update google/tripadvisor URLs, delete."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get(self, pk, user):
+        hotel = _hotel_for(user)
+        try:
+            obj = ReviewRequest.objects.select_related("booking", "booking__hotel").get(pk=pk)
+        except ReviewRequest.DoesNotExist:
+            return None, Response({"detail": "Not found."}, status=404)
+        if hotel and obj.booking.hotel != hotel:
+            return None, Response({"detail": "Forbidden."}, status=403)
+        return obj, None
+
+    def post(self, request, pk):
+        """Send review-request email to guest."""
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        booking = obj.booking
+        if not booking.guest_email:
+            return Response({"detail": "Booking has no guest email."}, status=400)
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        link = f"{frontend_url}/review/{obj.review_token}"
+        message = (
+            f"Dear {booking.guest_name},\n\n"
+            f"Thank you for staying with us at {booking.hotel.name}.\n\n"
+            f"We would love to hear your feedback. Please share your experience:\n{link}\n\n"
+            f"It only takes 30 seconds!\n\nThank you."
+        )
+        try:
+            send_mail(
+                subject=f"How was your stay at {booking.hotel.name}?",
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[booking.guest_email],
+                fail_silently=False,
+            )
+            obj.sent_at = timezone.now()
+            obj.save(update_fields=["sent_at"])
+            return Response({"detail": "Review request sent.", "sent_at": obj.sent_at})
+        except Exception as exc:
+            return Response({"detail": f"Failed: {exc}"}, status=500)
+
+    def patch(self, request, pk):
+        """Update google_review_url / tripadvisor_url."""
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        allowed = {k: v for k, v in request.data.items() if k in ("google_review_url", "tripadvisor_url")}
+        for k, v in allowed.items():
+            setattr(obj, k, v)
+        obj.save(update_fields=list(allowed.keys()))
+        return Response(ReviewRequestSerializer(obj, context={"request": request}).data)
+
+    def delete(self, request, pk):
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SendCheckinReviewView(APIView):
+    """Hotel triggers a review request for a completed booking (creates ReviewRequest if not exists)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, booking_pk):
+        hotel = _hotel_for(request.user)
+        try:
+            booking = Booking.objects.select_related("hotel").get(pk=booking_pk)
+        except Booking.DoesNotExist:
+            return Response({"detail": "Not found."}, status=404)
+        if hotel and booking.hotel != hotel:
+            return Response({"detail": "Forbidden."}, status=403)
+        review_req, _ = ReviewRequest.objects.get_or_create(booking=booking)
+        # Proxy to ReviewRequestDetailView.post logic
+        view = ReviewRequestDetailView()
+        view.request = request
+        return view.post(request, review_req.pk)
+
+
+class PublicReviewView(APIView):
+    """Guest submits their review via the tokenised URL."""
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request, token):
+        try:
+            obj = ReviewRequest.objects.select_related("booking", "booking__hotel").get(review_token=token)
+        except ReviewRequest.DoesNotExist:
+            return Response({"detail": "Invalid review link."}, status=404)
+        return Response({
+            "hotel_name": obj.booking.hotel.name,
+            "guest_name": obj.booking.guest_name,
+            "check_in_date": str(obj.booking.check_in_date),
+            "check_out_date": str(obj.booking.check_out_date),
+            "is_submitted": obj.is_submitted,
+            "google_review_url": obj.google_review_url,
+            "tripadvisor_url": obj.tripadvisor_url,
+        })
+
+    def post(self, request, token):
+        try:
+            obj = ReviewRequest.objects.select_related("booking").get(review_token=token)
+        except ReviewRequest.DoesNotExist:
+            return Response({"detail": "Invalid review link."}, status=404)
+        if obj.is_submitted:
+            return Response({"detail": "Review already submitted."}, status=400)
+        ser = PublicReviewSerializer(data=request.data)
+        if not ser.is_valid():
+            return Response(ser.errors, status=400)
+        obj.rating = ser.validated_data["rating"]
+        obj.comment = ser.validated_data.get("comment", "")
+        obj.submitted_at = timezone.now()
+        obj.save(update_fields=["rating", "comment", "submitted_at"])
+        webhook_dispatch(obj.booking.hotel, "review_submitted", {
+            "booking_id": str(obj.booking.id),
+            "booking_reference": obj.booking.booking_reference,
+            "guest_name": obj.booking.guest_name,
+            "rating": obj.rating,
+            "comment": obj.comment,
+        })
+        return Response({"detail": "Thank you for your review!", "rating": obj.rating})
+
+
+# ── Webhook Management ────────────────────────────────────────────────────────
+
+class WebhookListView(APIView):
+    """Hotel: list and create webhook endpoints. Pro+ plan required."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        hotel = _hotel_for(request.user)
+        err = require_feature(hotel, "webhooks")
+        if err:
+            return err
+        qs = WebhookConfig.objects.filter(hotel=hotel) if hotel else WebhookConfig.objects.all()
+        return Response(WebhookConfigSerializer(qs, many=True).data)
+
+    def post(self, request):
+        hotel = _hotel_for(request.user)
+        if not hotel:
+            return Response({"detail": "Use a hotel account."}, status=403)
+        err = require_feature(hotel, "webhooks")
+        if err:
+            return err
+        ser = WebhookConfigSerializer(data=request.data)
+        if not ser.is_valid():
+            return Response(ser.errors, status=400)
+        ser.save(hotel=hotel)
+        return Response(ser.data, status=status.HTTP_201_CREATED)
+
+
+class WebhookDetailView(APIView):
+    """Hotel: update or delete a webhook. Pro+ plan required."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get(self, pk, user):
+        hotel = _hotel_for(user)
+        err = require_feature(hotel, "webhooks")
+        if err:
+            return None, err
+        try:
+            obj = WebhookConfig.objects.get(pk=pk)
+        except WebhookConfig.DoesNotExist:
+            return None, Response({"detail": "Not found."}, status=404)
+        if hotel and obj.hotel != hotel:
+            return None, Response({"detail": "Forbidden."}, status=403)
+        return obj, None
+
+    def patch(self, request, pk):
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        ser = WebhookConfigSerializer(obj, data=request.data, partial=True)
+        if ser.is_valid():
+            ser.save()
+            return Response(ser.data)
+        return Response(ser.errors, status=400)
+
+    def delete(self, request, pk):
+        obj, err = self._get(pk, request.user)
+        if err:
+            return err
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 # ── Public (no auth) views ────────────────────────────────────────────────────
 
 class PublicCheckinVerifyView(APIView):
@@ -254,6 +649,11 @@ class PublicGuestSubmitView(APIView):
         except Booking.DoesNotExist:
             return Response({"detail": "Invalid check-in link."}, status=404)
 
+        # Check monthly guest capacity before accepting a new registration
+        err = require_guest_capacity(booking.hotel)
+        if err:
+            return err
+
         data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
         if request.FILES.get("document_image"):
             data["document_image"] = request.FILES["document_image"]
@@ -280,6 +680,18 @@ class PublicGuestSubmitView(APIView):
             return Response(serializer.errors, status=400)
 
         instance = serializer.save(booking=booking, guest_number=guest_number)
+
+        # Fire webhook
+        webhook_dispatch(booking.hotel, "guest_registered", {
+            "booking_id": str(booking.id),
+            "booking_reference": booking.booking_reference,
+            "guest_number": guest_number,
+            "first_name": instance.first_name,
+            "last_name": instance.last_name,
+            "nationality": instance.nationality,
+            "document_type": instance.document_type,
+            "marketing_optin": instance.marketing_optin,
+        })
 
         # Mark booking completed when all guests have registered
         registered_count = booking.registrations.count()

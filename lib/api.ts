@@ -1,12 +1,28 @@
 const BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
+export type HotelGalleryImage = {
+  id: string;
+  image_url: string;
+  order: number;
+  created_at: string;
+};
+
 export type Hotel = {
-  id: string; name: string; city: string; whatsapp_number: string;
+  id: string; name: string; city: string; country: string; whatsapp_number: string;
   language_default: string; logo_url: string; created_at: string;
   // extended profile fields
-  description: string; address: string; phone: string; email: string;
+  description: string; address: string; phone: string; email: string; website: string;
   check_in_time: string; check_out_time: string; wifi_info: string;
   amenities: string[]; is_24_7: boolean; open_time: string; close_time: string;
+  // white-label / branding
+  brand_color: string; welcome_message: string;
+  google_review_url: string; tripadvisor_url: string;
+  // gallery
+  gallery_images?: HotelGalleryImage[];
+  // plan & verification
+  plan: string;
+  plan_expires_at: string | null;
+  is_verified: boolean;
 };
 export type Tour = {
   id: string; city: string; title: string; description: string;
@@ -125,13 +141,42 @@ export const hotelsApi = {
 
   delete: (id: string) => req<void>(`/api/hotels/${id}/`, { method: "DELETE" }),
 
-  stats: () => req<{ hotels: number; tours: number; places: number }>("/api/auth/stats/"),
+  stats: () => req<{
+    hotels: number; tours: number; places: number;
+    total_guests: number; marketing_optins: number;
+    total_reviews: number; avg_rating: number | null;
+    top_hotels: { hotel_id: string; hotel_name: string; guest_count: number }[];
+  }>("/api/auth/stats/"),
 
   getProfile: () => req<Hotel>("/api/hotels/profile/"),
   updateProfile: (data: FormData | Record<string, unknown>) => {
     const body = data instanceof FormData ? data : JSON.stringify(data);
     return req<Hotel>("/api/hotels/profile/", { method: "PATCH", body });
   },
+};
+
+// ── Hotel Gallery ─────────────────────────────────────────────────────────────
+export const galleryApi = {
+  list: (hotelId: string) =>
+    req<HotelGalleryImage[]>(`/api/hotels/gallery/?hotel_id=${encodeURIComponent(hotelId)}`),
+
+  upload: (imageFile: File) => {
+    const fd = new FormData();
+    fd.append("image", imageFile);
+    return req<HotelGalleryImage>("/api/hotels/gallery/", { method: "POST", body: fd });
+  },
+
+  delete: (id: string) => req<void>(`/api/hotels/gallery/${id}/`, { method: "DELETE" }),
+
+  // Admin: upload image to any hotel by hotel_id
+  adminUpload: (hotelId: string, imageFile: File) => {
+    const fd = new FormData();
+    fd.append("hotel_id", hotelId);
+    fd.append("image", imageFile);
+    return req<HotelGalleryImage>("/api/hotels/gallery/", { method: "POST", body: fd });
+  },
+
+  adminDelete: (id: string) => req<void>(`/api/hotels/gallery/${id}/`, { method: "DELETE" }),
 };
 
 // ── Tours ────────────────────────────────────────────────────────────────────
@@ -181,7 +226,8 @@ export const placesApi = {
 export const registrationsApi = {
   register: (data: {
     owner_name: string; business_name: string; email: string; password: string;
-    phone?: string; city: string; whatsapp_number?: string; plan: string; payment_method: string;
+    phone?: string; city: string; country?: string; whatsapp_number?: string;
+    website?: string; plan: string; payment_method: string;
   }) =>
     req<
       | { checkout_url: string; registration_id: string }
@@ -300,6 +346,7 @@ export type CheckinRegistration = {
   document_image_url: string | null;
   signature: string;
   gdpr_consent: boolean;
+  marketing_optin: boolean;
   completed_at: string;
 };
 
@@ -326,6 +373,9 @@ export type PublicBookingInfo = {
   check_out_date: string;
   num_guests: number;
   hotel_name: string;
+  hotel_logo_url: string;
+  hotel_brand_color: string;
+  hotel_welcome_message: string;
   is_completed: boolean;
 };
 
@@ -369,6 +419,156 @@ export const checkinApi = {
 
   submitRegistration: (token: string, data: FormData) =>
     req<{ detail: string }>(`/api/checkin/register/${token}/`, { method: "POST", body: data }),
+};
+
+// ── CRM Guests ───────────────────────────────────────────────────────────────
+export type CRMGuest = {
+  id: string; guest_number: number;
+  first_name: string; last_name: string; gender: string;
+  date_of_birth: string | null; nationality: string; residence_address: string;
+  document_type: string; document_number: string; document_image_url: string | null;
+  gdpr_consent: boolean; marketing_optin: boolean; completed_at: string;
+  booking_id: string; booking_reference: string; hotel_name: string;
+  guest_email: string; guest_phone: string;
+  check_in_date: string; check_out_date: string; booking_status: string;
+};
+export type CRMStats = { total: number; marketing_optins: number; top_countries: { nationality: string; count: number }[] };
+
+export const guestsApi = {
+  list: (params?: { search?: string; marketing_optin?: string; nationality?: string }) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return req<{ guests: CRMGuest[]; stats: CRMStats }>(`/api/checkin/guests/${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// ── API Keys ──────────────────────────────────────────────────────────────────
+export type APIKey = {
+  id: string; name: string; key_prefix: string;
+  is_active: boolean; last_used_at: string | null; created_at: string;
+  key?: string; // only present on creation — shown once
+};
+export const apiKeysApi = {
+  list: () => req<APIKey[]>("/api/hotels/api-keys/"),
+  create: (name: string) => req<APIKey>("/api/hotels/api-keys/", { method: "POST", body: JSON.stringify({ name }) }),
+  toggle: (id: string, is_active: boolean) =>
+    req<{ id: string; is_active: boolean }>(`/api/hotels/api-keys/${id}/`, { method: "PATCH", body: JSON.stringify({ is_active }) }),
+  delete: (id: string) => req<void>(`/api/hotels/api-keys/${id}/`, { method: "DELETE" }),
+};
+
+// ── Booking Requests ─────────────────────────────────────────────────────────
+export type BookingRequest = {
+  id: string; hotel: string; hotel_name: string;
+  guest_name: string; guest_email: string; guest_phone: string;
+  check_in_date: string; check_out_date: string; num_guests: number;
+  room_type: string; message: string;
+  status: "pending" | "confirmed" | "declined";
+  hotel_notes: string; created_at: string; updated_at: string;
+};
+
+export const bookingRequestsApi = {
+  list: (status?: string) => {
+    const qs = status ? `?status=${status}` : "";
+    return req<BookingRequest[]>(`/api/checkin/requests/${qs}`);
+  },
+  update: (id: string, data: { status?: string; hotel_notes?: string }) =>
+    req<BookingRequest>(`/api/checkin/requests/${id}/`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) => req<void>(`/api/checkin/requests/${id}/`, { method: "DELETE" }),
+  // Public — no auth needed
+  submitPublic: (hotelId: string, data: {
+    guest_name: string; guest_email?: string; guest_phone?: string;
+    check_in_date: string; check_out_date: string; num_guests: number;
+    room_type?: string; message?: string;
+  }) => req<{ detail: string }>(`/api/checkin/request/${hotelId}/`, { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ── Review Requests ───────────────────────────────────────────────────────────
+export type ReviewRequest = {
+  id: string; booking_reference: string; guest_name: string; hotel_name: string;
+  check_in_date: string; check_out_date: string;
+  review_link: string; sent_at: string | null;
+  rating: number | null; comment: string; submitted_at: string | null; is_submitted: boolean;
+  google_review_url: string; tripadvisor_url: string;
+  created_at: string;
+};
+export type PublicReviewInfo = {
+  hotel_name: string; guest_name: string;
+  check_in_date: string; check_out_date: string;
+  is_submitted: boolean; google_review_url: string; tripadvisor_url: string;
+};
+
+export const reviewsApi = {
+  list: () => req<ReviewRequest[]>("/api/checkin/reviews/"),
+  sendLink: (id: string) =>
+    req<{ detail: string; sent_at: string }>(`/api/checkin/reviews/${id}/send/`, { method: "POST" }),
+  updateLinks: (id: string, data: { google_review_url?: string; tripadvisor_url?: string }) =>
+    req<ReviewRequest>(`/api/checkin/reviews/${id}/`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) => req<void>(`/api/checkin/reviews/${id}/`, { method: "DELETE" }),
+  requestForBooking: (bookingId: string) =>
+    req<{ detail: string; sent_at: string }>(`/api/checkin/bookings/${bookingId}/request-review/`, { method: "POST" }),
+  // Public
+  getPublic: (token: string) => req<PublicReviewInfo>(`/api/checkin/review/${token}/`),
+  submitPublic: (token: string, data: { rating: number; comment: string }) =>
+    req<{ detail: string; rating: number }>(`/api/checkin/review/${token}/`, { method: "POST", body: JSON.stringify(data) }),
+};
+
+// ── Webhooks ─────────────────────────────────────────────────────────────────
+export type WebhookConfig = {
+  id: string; url: string;
+  event: "guest_registered" | "booking_created" | "review_submitted" | "booking_request" | "all";
+  is_active: boolean; created_at: string;
+};
+export const webhooksApi = {
+  list: () => req<WebhookConfig[]>("/api/checkin/webhooks/"),
+  create: (data: { url: string; event: string; secret?: string }) =>
+    req<WebhookConfig>("/api/checkin/webhooks/", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<Pick<WebhookConfig, "url" | "event" | "is_active">>) =>
+    req<WebhookConfig>(`/api/checkin/webhooks/${id}/`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) => req<void>(`/api/checkin/webhooks/${id}/`, { method: "DELETE" }),
+};
+
+// ── Hotel Outreach ────────────────────────────────────────────────────────────
+export type OutreachStatus = "new" | "contacted" | "interested" | "negotiating" | "converted" | "lost";
+export type HotelOutreach = {
+  id: string; hotel_name: string; contact_name: string;
+  email: string; phone: string; city: string; website: string;
+  status: OutreachStatus; notes: string;
+  invite_sent_at: string | null; created_at: string; updated_at: string;
+};
+
+export const outreachApi = {
+  list: (params?: { status?: string; search?: string }) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return req<HotelOutreach[]>(`/api/hotels/outreach/${qs ? `?${qs}` : ""}`);
+  },
+  create: (data: Partial<HotelOutreach>) =>
+    req<HotelOutreach>("/api/hotels/outreach/", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<HotelOutreach>) =>
+    req<HotelOutreach>(`/api/hotels/outreach/${id}/`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) => req<void>(`/api/hotels/outreach/${id}/`, { method: "DELETE" }),
+  sendInvite: (id: string) =>
+    req<{ detail: string; invite_sent_at: string }>(`/api/hotels/outreach/${id}/invite/`, { method: "POST" }),
+};
+
+// ── Marketing ─────────────────────────────────────────────────────────────────
+export type MarketingGuest = {
+  id: string; first_name: string; last_name: string;
+  email: string; phone: string; nationality: string;
+  hotel: string; check_in_date: string; check_out_date: string;
+  registered_at: string;
+};
+export type MarketingAnalytics = {
+  total_guests: number; marketing_optins: number; opt_in_rate: number;
+  nationality_breakdown: { nationality: string; count: number }[];
+  monthly_trend: { month: string; count: number }[];
+  reviews: { total: number; avg_rating: number | null };
+};
+
+export const marketingApi = {
+  guests: (params?: { nationality?: string; since?: string }) => {
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    return req<{ count: number; guests: MarketingGuest[] }>(`/api/marketing/guests/${qs ? `?${qs}` : ""}`);
+  },
+  analytics: () => req<MarketingAnalytics>("/api/marketing/analytics/"),
 };
 
 // ── Bookings ──────────────────────────────────────────────────────────────────
