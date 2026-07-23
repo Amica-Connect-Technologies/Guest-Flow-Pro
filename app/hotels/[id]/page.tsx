@@ -352,18 +352,32 @@ export default function HotelDetailPage() {
                   {/* Book Room — primary */}
                   {waHref ? (
                     <a href={waHref} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-2xl text-white font-black text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-                      style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 4px 14px rgba(8,145,178,0.35)" }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4.5 h-4.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
-                      Book a Room
+                      className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                      style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
+                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-out" />
+                      <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        </svg>
+                      </span>
+                      <span className="relative flex-1 text-left min-w-0">
+                        <span className="block font-black text-sm leading-tight">Book a Room</span>
+                        <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via WhatsApp · instant reply</span>
+                      </span>
+                      <IcoChevRight />
                     </a>
                   ) : hotel.email ? (
                     <a href={`mailto:${hotel.email}?subject=Room Booking – ${hotel.name}`}
-                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white font-black text-sm"
-                      style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 4px 14px rgba(8,145,178,0.3)" }}>
-                      Book a Room
+                      className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                      style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.5)" }}>
+                      <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <IcoMail />
+                      </span>
+                      <span className="relative flex-1 text-left min-w-0">
+                        <span className="block font-black text-sm leading-tight">Book a Room</span>
+                        <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via Email</span>
+                      </span>
+                      <IcoChevRight />
                     </a>
                   ) : null}
 
@@ -413,7 +427,7 @@ export default function HotelDetailPage() {
                   <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Digital Services</p>
                     {hasCheckin && (
-                      <Link href={`/checkin/${hotel.id}`}
+                      <Link href={`/request/${hotel.id}`}
                         className="flex items-center gap-3 w-full py-2.5 px-4 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.01]"
                         style={{ background: "#F5F3FF", border: "1.5px solid #DDD6FE", color: "#6D28D9" }}>
                         <span>✅</span>
@@ -480,7 +494,7 @@ export default function HotelDetailPage() {
               </a>
             )}
             {hasCheckin && (
-              <Link href={`/checkin/${hotel.id}`}
+              <Link href={`/request/${hotel.id}`}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl text-xs font-bold active:scale-95 transition-transform"
                 style={{ background: "#F5F3FF", border: "1.5px solid #DDD6FE", color: "#6D28D9" }}>
                 ✅ Check-in
