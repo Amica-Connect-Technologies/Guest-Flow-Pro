@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling, Dumbbell, Car, Shirt,
@@ -106,6 +106,14 @@ const SERVICE_SUGGESTIONS: SvcSug[] = [
 type SectionKey = "overview" | "qr" | "services" | "bookings" | "profile" | "gallery";
 
 export default function HotelDashboard() {
+  return (
+    <Suspense fallback={null}>
+      <HotelDashboardInner />
+    </Suspense>
+  );
+}
+
+function HotelDashboardInner() {
   const router = useRouter();
   const { t } = useLanguage();
   const searchParams = useSearchParams();
