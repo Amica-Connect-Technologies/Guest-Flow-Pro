@@ -116,10 +116,18 @@ GOOGLE_GEOCODING_API_KEY = config("GOOGLE_GEOCODING_API_KEY", default="")
 OPENAI_API_KEY           = config("OPENAI_API_KEY",           default="")
 
 # Stripe
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="sk_test_placeholder")
+STRIPE_SECRET_KEY     = config("STRIPE_SECRET_KEY",     default="sk_test_placeholder")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="whsec_placeholder")
-STRIPE_PRICE_BASIC = config("STRIPE_PRICE_BASIC", default="price_basic_placeholder")
-STRIPE_PRICE_PRO = config("STRIPE_PRICE_PRO", default="price_pro_placeholder")
+
+# Current plan price IDs (set these in .env from Stripe Dashboard → Products)
+STRIPE_PRICE_CONCIERGE         = config("STRIPE_PRICE_CONCIERGE",         default="")
+STRIPE_PRICE_CHECKIN           = config("STRIPE_PRICE_CHECKIN",           default="")
+STRIPE_PRICE_CONCIERGE_CHECKIN = config("STRIPE_PRICE_CONCIERGE_CHECKIN", default="")
+STRIPE_PRICE_FULL              = config("STRIPE_PRICE_FULL",              default="")
+
+# Legacy plan price IDs (kept so old checkout sessions don't break)
+STRIPE_PRICE_BASIC = config("STRIPE_PRICE_BASIC", default="")
+STRIPE_PRICE_PRO   = config("STRIPE_PRICE_PRO",   default="")
 
 # Frontend URL (for Stripe success/cancel redirect and check-in links)
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
