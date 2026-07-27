@@ -466,6 +466,89 @@ export default function HotelDetailPage() {
           {/* LEFT */}
           <div className="space-y-5">
 
+            {/* ── MOBILE CONTACT CARD (hidden on desktop) ── */}
+            <div className="lg:hidden bg-white rounded-3xl overflow-hidden ring-1 ring-slate-900/[0.03]" style={{ boxShadow: "0 8px 32px -8px rgba(8,145,178,0.20)" }}>
+              {/* Header */}
+              <div className="px-5 py-4 relative overflow-hidden"
+                style={{ background: "linear-gradient(135deg, #0C1A2E 0%, #083344 60%, #0E7490 100%)" }}>
+                <div className="absolute -right-6 -top-10 w-32 h-32 rounded-full bg-white/5" />
+                <p className="relative text-cyan-200/70 text-[10px] font-black uppercase tracking-widest mb-0.5">Contact & Book</p>
+                <p className="relative text-white font-serif font-bold text-lg leading-snug">{hotel.name}</p>
+                <p className="relative text-cyan-300/70 text-xs mt-0.5">{hotel.city}{hotel.country ? `, ${hotel.country}` : ""}</p>
+              </div>
+              <div className="p-4 space-y-2.5">
+                {/* Book a Room */}
+                {waHref ? (
+                  <a href={waHref} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white transition-all active:scale-[0.99]"
+                    style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
+                    <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                      </svg>
+                    </span>
+                    <span className="flex-1 text-left">
+                      <span className="block font-black text-sm leading-tight">Book a Room</span>
+                      <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via WhatsApp · instant reply</span>
+                    </span>
+                    <IcoChevRight />
+                  </a>
+                ) : null}
+
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-slate-100" />
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">or contact</span>
+                  <div className="flex-1 h-px bg-slate-100" />
+                </div>
+
+                {hotel.whatsapp_number && (
+                  <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g, "")}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-3 w-full py-3 px-4 rounded-2xl font-semibold text-sm"
+                    style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", color: "#15803D" }}>
+                    <IcoWA /><span className="flex-1">WhatsApp</span>
+                    <span className="text-xs opacity-60">{hotel.whatsapp_number}</span>
+                  </a>
+                )}
+                {hotel.phone && (
+                  <a href={`tel:${hotel.phone}`}
+                    className="flex items-center gap-3 w-full py-3 px-4 rounded-2xl font-semibold text-sm"
+                    style={{ background: "#EFF9FF", border: "1.5px solid #BAE6FD", color: "#0369A1" }}>
+                    <IcoPhone /><span className="flex-1">Call</span>
+                    <span className="text-xs opacity-60 truncate max-w-[130px]">{hotel.phone}</span>
+                  </a>
+                )}
+                {hotel.email && (
+                  <a href={`mailto:${hotel.email}`}
+                    className="flex items-center gap-3 w-full py-3 px-4 rounded-2xl font-semibold text-sm"
+                    style={{ background: "#FAF5FF", border: "1.5px solid #E9D5FF", color: "#6D28D9" }}>
+                    <IcoMail /><span className="flex-1">Email</span>
+                    <span className="text-xs opacity-60 truncate max-w-[130px]">{hotel.email}</span>
+                  </a>
+                )}
+
+                {(hasCheckin || hasConcierge) && (
+                  <div className="border-t border-slate-100 pt-3 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Digital Services</p>
+                    {hasCheckin && (
+                      <Link href={`/request/${hotel.id}`}
+                        className="flex items-center gap-3 w-full py-2.5 px-4 rounded-2xl text-sm font-semibold"
+                        style={{ background: "#F5F3FF", border: "1.5px solid #DDD6FE", color: "#6D28D9" }}>
+                        <span>✅</span><span className="flex-1">Smart Check-in</span><IcoChevRight />
+                      </Link>
+                    )}
+                    {hasConcierge && (
+                      <Link href={`/h/${hotel.id}?lang=${lang}`}
+                        className="flex items-center gap-3 w-full py-2.5 px-4 rounded-2xl text-sm font-semibold"
+                        style={{ background: "#ECFEFF", border: "1.5px solid #A5F3FC", color: "#0E7490" }}>
+                        <span>🔔</span><span className="flex-1">Digital Concierge</span><IcoChevRight />
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Description */}
             {hotel.description && (
               <div className="bg-white rounded-3xl p-6 md:p-7" style={{ boxShadow: CARD_SHADOW }}>
