@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Utensils, BedDouble, Coffee, Wine, Moon, Heart, FlameKindling, Dumbbell, Car, Shirt,
@@ -9,8 +9,8 @@ import {
   ClipboardCheck, Users, Star, KeyRound, Images, Trash2, type LucideIcon,
 } from "lucide-react";
 import {
-  auth, hotelsApi, servicesApi, bookingsApi, galleryApi,
-  type Hotel, type HotelService, type ServiceBooking, type HotelGalleryImage,
+  auth, hotelsApi, servicesApi, bookingsApi, galleryApi, bookingRequestsApi,
+  type Hotel, type HotelService, type ServiceBooking, type HotelGalleryImage, type BookingRequest,
 } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 import Image from "next/image";
@@ -106,6 +106,14 @@ const SERVICE_SUGGESTIONS: SvcSug[] = [
 type SectionKey = "overview" | "qr" | "services" | "bookings" | "profile" | "gallery";
 
 export default function HotelDashboard() {
+  return (
+    <Suspense fallback={null}>
+      <HotelDashboardInner />
+    </Suspense>
+  );
+}
+
+function HotelDashboardInner() {
   const router = useRouter();
   const { t } = useLanguage();
   const searchParams = useSearchParams();
@@ -145,6 +153,9 @@ export default function HotelDashboard() {
   const [bookLoading, setBookLoading] = useState(false);
   const [bookFilter, setBookFilter]   = useState("all");
   const [updatingId, setUpdatingId]   = useState<string | null>(null);
+
+  // ── direct enquiries (room booking requests submitted via "Book a Room") ─────
+  const [enquiries, setEnquiries] = useState<BookingRequest[]>([]);
 
   // ── profile ───────────────────────────────────────────────────────────────────
   type ProfileForm = {
@@ -209,6 +220,7 @@ export default function HotelDashboard() {
     if (!hotel) return;
     if (section === "services" || section === "overview") fetchServices();
     if (section === "bookings" || section === "overview") fetchBookings();
+    if (section === "overview") fetchEnquiries();
     if (section === "gallery") fetchGallery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, hotel]);
@@ -222,6 +234,9 @@ export default function HotelDashboard() {
     setBookLoading(true);
     try { setBookings(await bookingsApi.list()); } catch { /* stay */ }
     setBookLoading(false);
+  }
+  async function fetchEnquiries() {
+    try { setEnquiries(await bookingRequestsApi.list()); } catch { /* stay */ }
   }
   async function fetchGallery() {
     if (!hotel) return;
@@ -720,14 +735,17 @@ export default function HotelDashboard() {
               })()}
 
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {[
+                  { label: "New Enquiries",   value: enquiries.filter(e => e.status === "pending").length, color: "#DB2777", bg: "#FDF2F8", border: "#FBCFE8", Icon: MessageCircle, link: "/dashboard/requests" },
                   { label: "Total Services",  value: services.length,                                      color: "#0E7490", bg: "#ECFEFF", border: "#A5F3FC", Icon: Bell          },
                   { label: "Total Bookings",  value: bookings.length,                                      color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", Icon: ClipboardList  },
                   { label: "Pending Requests", value: bookings.filter(b => b.status === "pending").length,  color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", Icon: Clock          },
                   { label: "Completed",       value: bookings.filter(b => b.status === "completed").length,color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", Icon: ClipboardCheck },
-                ].map(({ label, value, color, bg, border, Icon: Ic }) => (
-                  <div key={label} className="bg-white rounded-2xl p-5 flex items-center gap-4"
+                ].map(({ label, value, color, bg, border, Icon: Ic, link }) => (
+                  <button key={label} onClick={() => link && router.push(link)}
+                    disabled={!link}
+                    className={`bg-white rounded-2xl p-5 flex items-center gap-4 text-left ${link ? "hover:shadow-md transition-shadow cursor-pointer" : ""}`}
                     style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: `1px solid ${border}` }}>
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
                       <Ic className="w-5 h-5" style={{ color }} />
@@ -736,7 +754,7 @@ export default function HotelDashboard() {
                       <p className="text-2xl font-black" style={{ color }}>{value}</p>
                       <p className="text-xs text-slate-500 font-semibold mt-0.5">{label}</p>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -750,6 +768,7 @@ export default function HotelDashboard() {
                       { label: "Add Service",   desc: "Create new service", Icon: Bell,          action: () => { setSection("services"); setTimeout(openAddService, 100); }, color: "#2563EB", bg: "#EFF6FF" },
                       { label: "All Bookings",  desc: "See all orders",     Icon: ClipboardList, action: () => setSection("bookings"), color: "#059669", bg: "#ECFDF5" },
                     ] : []),
+                    { label: "Direct Enquiries", desc: "Room booking requests", Icon: MessageCircle, action: () => router.push("/dashboard/requests"), color: "#DB2777", bg: "#FDF2F8" },
                     ...(HAS_CHECKIN ? [
                       { label: "Guest Check-in", desc: "Manage check-ins",  Icon: ClipboardCheck, action: () => router.push("/dashboard/checkin"), color: "#7C3AED", bg: "#F5F3FF" },
                     ] : []),

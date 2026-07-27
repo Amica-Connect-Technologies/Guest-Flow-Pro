@@ -291,6 +291,7 @@ function RegisterPageInner() {
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
+  const [sameAsPhone, setSameAsPhone] = useState(false);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -852,7 +853,11 @@ function RegisterPageInner() {
                         type="tel"
                         inputMode="numeric"
                         value={form.phone}
-                        onChange={(e) => set("phone", sanitizePhone(e.target.value, getMaxDigits(form.country)))}
+                        onChange={(e) => {
+                          const val = sanitizePhone(e.target.value, getMaxDigits(form.country));
+                          set("phone", val);
+                          if (sameAsPhone) set("whatsapp_number", val);
+                        }}
                         placeholder="000 000 0000"
                         maxLength={getMaxDigits(form.country) + 4}
                         className={`w-full bg-slate-50 border rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
@@ -879,6 +884,21 @@ function RegisterPageInner() {
                         {t.register.step2.whatsappLabel}
                       </span>
                     </label>
+
+                    <label className="flex items-center gap-2 mb-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={sameAsPhone}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSameAsPhone(checked);
+                          if (checked) set("whatsapp_number", form.phone);
+                        }}
+                        className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+                      />
+                      <span className="text-xs font-medium text-slate-500">Same as phone number</span>
+                    </label>
+
                     <div className="relative flex items-center">
                       {getCode(form.country) && (
                         <span className="absolute left-3 text-sm font-bold text-slate-600 select-none pointer-events-none z-10 bg-slate-50 pr-1">
@@ -888,11 +908,14 @@ function RegisterPageInner() {
                       <input
                         type="tel"
                         inputMode="numeric"
+                        readOnly={sameAsPhone}
                         value={form.whatsapp_number}
                         onChange={(e) => set("whatsapp_number", sanitizePhone(e.target.value, getMaxDigits(form.country)))}
                         placeholder="000 000 0000"
                         maxLength={getMaxDigits(form.country) + 4}
-                        className={`w-full bg-slate-50 border rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                        className={`w-full border rounded-xl py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                          sameAsPhone ? "bg-slate-100 cursor-not-allowed" : "bg-slate-50"
+                        } ${
                           errors.whatsapp_number
                             ? "border-red-300 focus:ring-red-100 focus:border-red-400"
                             : "border-slate-200 focus:ring-blue-50 focus:border-blue-400"

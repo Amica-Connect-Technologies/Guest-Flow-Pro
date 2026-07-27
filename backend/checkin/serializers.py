@@ -73,6 +73,7 @@ class BookingSerializer(serializers.ModelSerializer):
 
 class BookingRequestSerializer(serializers.ModelSerializer):
     hotel_name = serializers.CharField(source="hotel.name", read_only=True)
+    checkin_link = serializers.SerializerMethodField()
 
     class Meta:
         model = BookingRequest
@@ -81,9 +82,16 @@ class BookingRequestSerializer(serializers.ModelSerializer):
             "guest_name", "guest_email", "guest_phone",
             "check_in_date", "check_out_date", "num_guests",
             "room_type", "message", "status", "hotel_notes",
+            "booking", "invitation_sent_at", "checkin_link",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "hotel", "hotel_name", "status", "created_at", "updated_at"]
+        read_only_fields = ["id", "hotel", "hotel_name", "booking", "invitation_sent_at", "created_at", "updated_at"]
+
+    def get_checkin_link(self, obj):
+        if not obj.booking_id:
+            return None
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+        return f"{frontend_url}/checkin/{obj.booking.checkin_token}"
 
 
 class PublicBookingRequestSerializer(serializers.ModelSerializer):

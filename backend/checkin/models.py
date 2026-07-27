@@ -116,6 +116,10 @@ class BookingRequest(models.Model):
     message = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     hotel_notes = models.TextField(blank=True)
+    booking = models.OneToOneField(
+        "Booking", on_delete=models.SET_NULL, null=True, blank=True, related_name="source_request"
+    )
+    invitation_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

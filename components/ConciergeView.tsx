@@ -17,7 +17,6 @@ import {
   hotelsApi, toursApi, placesApi, servicesApi, bookingsApi,
   type Hotel, type Tour, type HotelService, type NearbyPlace,
 } from "@/lib/api";
-import RestaurantView from "@/components/RestaurantView";
 import { useLanguage } from "@/lib/LanguageContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -754,7 +753,17 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
         {/* ══ RESTAURANT ══════════════════════════════════════════════════ */}
         {tab === "restaurant" && (
-          <RestaurantView hotel={hotel} />
+          <>
+            <SectionBanner icon={Utensils} iconBg="#FFF7ED" iconColor="#F97316"
+              title={t.concierge.tabs.restaurant}
+              subtitle={`Best dining spots near ${hotel.city}`}
+              count={nearbyFood?.length} />
+            {loadingNearby["restaurant"] ? <NearbyLoading /> :
+             nearbyFood && nearbyFood.length > 0
+               ? <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{nearbyFood.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#F97316" accentBg="#FFF7ED" />)}</div>
+               : <EmptyState Icon={Utensils} title="No nearby restaurants found" subtitle="Ask reception for dining recommendations" />
+            }
+          </>
         )}
 
         {/* ══ PARKING ═════════════════════════════════════════════════════ */}

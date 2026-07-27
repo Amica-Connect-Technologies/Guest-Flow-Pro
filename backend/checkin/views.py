@@ -45,6 +45,47 @@ def _booking_qs(user):
     return qs
 
 
+def _send_checkin_invitation(booking):
+    """Email the guest their secure online check-in link. Returns True on success."""
+    if not booking.guest_email:
+        return False
+
+    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    link = f"{frontend_url}/checkin/{booking.checkin_token}"
+
+    message = (
+        f"Hello {booking.guest_name},\n\n"
+        f"Thank you for booking with {booking.hotel.name}.\n\n"
+        f"Please complete your secure online check-in before arrival:\n{link}\n\n"
+        f"Check-in:  {booking.check_in_date}\n"
+        f"Check-out: {booking.check_out_date}\n\n"
+        f"Thank you."
+    )
+
+    try:
+        send_mail(
+            subject=f"Online Check-in – {booking.hotel.name}",
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[booking.guest_email],
+            fail_silently=False,
+        )
+        booking.link_sent_at = timezone.now()
+        booking.save(update_fields=["link_sent_at"])
+        MessageLog.objects.create(
+            booking=booking, message_type="email",
+            recipient=booking.guest_email, status="sent",
+        )
+        return True
+    except Exception as exc:
+        MessageLog.objects.create(
+            booking=booking, message_type="email",
+            recipient=booking.guest_email, status="failed",
+            error_message=str(exc),
+        )
+        return False
+
+
 # ── Authenticated (hotel / admin) views ───────────────────────────────────────
 
 class BookingListCreateView(APIView):
@@ -146,40 +187,9 @@ class SendCheckinLinkView(APIView):
         if not booking.guest_email:
             return Response({"detail": "No email on this booking."}, status=400)
 
-        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
-        link = f"{frontend_url}/checkin/{booking.checkin_token}"
-
-        message = (
-            f"Hello {booking.guest_name},\n\n"
-            f"Thank you for booking with {booking.hotel.name}.\n\n"
-            f"Please complete your secure online check-in before arrival:\n{link}\n\n"
-            f"Check-in:  {booking.check_in_date}\n"
-            f"Check-out: {booking.check_out_date}\n\n"
-            f"Thank you."
-        )
-
-        try:
-            send_mail(
-                subject=f"Online Check-in – {booking.hotel.name}",
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[booking.guest_email],
-                fail_silently=False,
-            )
-            booking.link_sent_at = timezone.now()
-            booking.save(update_fields=["link_sent_at"])
-            MessageLog.objects.create(
-                booking=booking, message_type="email",
-                recipient=booking.guest_email, status="sent",
-            )
+        if _send_checkin_invitation(booking):
             return Response({"detail": "Email sent.", "sent_at": booking.link_sent_at})
-        except Exception as exc:
-            MessageLog.objects.create(
-                booking=booking, message_type="email",
-                recipient=booking.guest_email, status="failed",
-                error_message=str(exc),
-            )
-            return Response({"detail": f"Failed: {exc}"}, status=500)
+        return Response({"detail": "Failed to send email."}, status=500)
 
 
 class CheckinStatsView(APIView):
@@ -344,7 +354,7 @@ class BookingRequestListView(APIView):
 
     def get(self, request):
         hotel = _hotel_for(request.user)
-        qs = BookingRequest.objects.select_related("hotel").all()
+        qs = BookingRequest.objects.select_related("hotel", "booking").all()
         if hotel:
             qs = qs.filter(hotel=hotel)
 
@@ -362,7 +372,7 @@ class BookingRequestDetailView(APIView):
     def _get(self, pk, user):
         hotel = _hotel_for(user)
         try:
-            obj = BookingRequest.objects.select_related("hotel").get(pk=pk)
+            obj = BookingRequest.objects.select_related("hotel", "booking").get(pk=pk)
         except BookingRequest.DoesNotExist:
             return None, Response({"detail": "Not found."}, status=404)
         if hotel and obj.hotel != hotel:
@@ -377,7 +387,27 @@ class BookingRequestDetailView(APIView):
         serializer = BookingRequestSerializer(obj, data=allowed, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+
+            # Confirming an enquiry creates the real Booking (with its own check-in
+            # token) and emails the guest their invitation — turning the public
+            # "Smart Check-in" enquiry into an actual check-in link, once.
+            if obj.status == BookingRequest.STATUS_CONFIRMED and obj.booking_id is None:
+                booking = Booking.objects.create(
+                    hotel=obj.hotel,
+                    guest_name=obj.guest_name,
+                    guest_email=obj.guest_email,
+                    guest_phone=obj.guest_phone,
+                    check_in_date=obj.check_in_date,
+                    check_out_date=obj.check_out_date,
+                    num_guests=obj.num_guests,
+                    notes=obj.message,
+                )
+                obj.booking = booking
+                if _send_checkin_invitation(booking):
+                    obj.invitation_sent_at = timezone.now()
+                obj.save(update_fields=["booking", "invitation_sent_at"])
+
+            return Response(BookingRequestSerializer(obj, context={"request": request}).data)
         return Response(serializer.errors, status=400)
 
     def delete(self, request, pk):

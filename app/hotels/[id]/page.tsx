@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { hotelsApi, toursApi, type Hotel, type Tour } from "@/lib/api";
+import { Utensils, Car, Moon, Map, MapPin, type LucideIcon } from "lucide-react";
+import { hotelsApi, toursApi, placesApi, type Hotel, type Tour, type NearbyPlace } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
 function currency(country: string) {
@@ -17,11 +18,37 @@ const PLAN_HAS_CHECKIN = (p: string) =>
   ["checkin", "concierge_checkin", "full", "starter", "basic", "pro"].includes(p);
 
 const AMENITY_ICONS: Record<string, string> = {
+  // database keys
+  events: "🎤", day_use: "🌞", restaurant: "🍽️", spa: "💆",
+  tours_travel: "✈️", weddings_events: "💒", location: "📍",
+  about_hotel: "🏨", reservations: "📅", parking: "🅿️",
+  night_life: "🌙", wifi: "📶", gym: "🏋️", pool: "🏊",
+  bar: "🍸", pre_arrival: "⏱",
+  // legacy human-readable keys
   "Free WiFi": "📶", "Parking": "🅿️", "Pool": "🏊", "Spa": "💆",
   "Gym": "🏋️", "Restaurant": "🍽️", "Bar": "🍸", "Room Service": "🛎️",
   "Airport Shuttle": "🚐", "Concierge": "🔔", "Laundry": "👔",
   "Pet Friendly": "🐾", "Air Conditioning": "❄️", "Sea View": "🌊",
   "City View": "🏙️", "Garden": "🌿", "Terrace": "🏡", "Business Center": "💼",
+};
+
+const NEARBY_TABS: { key: "restaurant"|"parking"|"night"|"tours"|"places"; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
+  { key: "restaurant", label: "Restaurant",    Icon: Utensils, color: "#F97316", bg: "#FFF7ED" },
+  { key: "parking",    label: "Parking",       Icon: Car,      color: "#2563EB", bg: "#EFF6FF" },
+  { key: "night",      label: "Night Life",    Icon: Moon,     color: "#7C3AED", bg: "#F5F3FF" },
+  { key: "tours",      label: "Tour / Museum", Icon: Map,      color: "#0891B2", bg: "#ECFEFF" },
+  { key: "places",     label: "Attractions",   Icon: MapPin,   color: "#4338CA", bg: "#EEF2FF" },
+];
+type NearbyTabKey = (typeof NEARBY_TABS)[number]["key"];
+
+const AMENITY_LABELS: Record<string, string> = {
+  events: "Events", day_use: "Day Use", restaurant: "Restaurant",
+  spa: "Spa & Wellness", tours_travel: "Tours & Travel",
+  weddings_events: "Weddings & Events", location: "Location Info",
+  about_hotel: "About Hotel", reservations: "Reservations",
+  parking: "Parking", night_life: "Night Life", wifi: "Free WiFi",
+  gym: "Fitness Center", pool: "Swimming Pool", bar: "Bar & Drinks",
+  pre_arrival: "Pre-Arrival Info",
 };
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
@@ -45,6 +72,26 @@ const IcoChevRight = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
   </svg>
 );
+const IcoPin = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
+    <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.079 3.468-4.751 3.468-8.027A8.25 8.25 0 002.25 12c0 3.276 1.524 5.948 3.469 8.027a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.144.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+  </svg>
+);
+const IcoImages = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+  </svg>
+);
+const IcoGlobe = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18" />
+  </svg>
+);
+const IcoStar = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+    <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.563.563 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+  </svg>
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -57,6 +104,9 @@ export default function HotelDetailPage() {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [nearbyTab, setNearbyTab] = useState<NearbyTabKey>("restaurant");
+  const [nearbyData, setNearbyData] = useState<Partial<Record<NearbyTabKey, NearbyPlace[]>>>({});
+  const [loadingNearby, setLoadingNearby] = useState<Partial<Record<NearbyTabKey, boolean>>>({});
 
   useEffect(() => {
     (async () => {
@@ -70,10 +120,24 @@ export default function HotelDetailPage() {
     })();
   }, [id]);
 
+  useEffect(() => {
+    if (!hotel) return;
+    if (nearbyData[nearbyTab] !== undefined) return;
+    const TYPE_MAP: Record<NearbyTabKey, string> = {
+      restaurant: "restaurant", parking: "parking",
+      night: "nightlife", tours: "museum", places: "places",
+    };
+    setLoadingNearby(l => ({ ...l, [nearbyTab]: true }));
+    placesApi.nearby(hotel.id, TYPE_MAP[nearbyTab])
+      .then(data => setNearbyData(d => ({ ...d, [nearbyTab]: data.places })))
+      .catch(() => setNearbyData(d => ({ ...d, [nearbyTab]: [] })))
+      .finally(() => setLoadingNearby(l => ({ ...l, [nearbyTab]: false })));
+  }, [nearbyTab, hotel]); // eslint-disable-line
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full border-[3px] border-slate-100 border-t-cyan-500 animate-spin" />
+        <div className="w-10 h-10 rounded-full border-[3px] border-slate-100 border-t-cyan-600 animate-spin" />
         <p className="text-xs font-semibold text-slate-400 tracking-wider uppercase">Loading</p>
       </div>
     </div>
@@ -83,7 +147,7 @@ export default function HotelDetailPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4 px-6">
       <span className="text-6xl">🏨</span>
       <p className="text-lg font-black text-slate-700">Hotel not found</p>
-      <button onClick={() => router.push("/hotels")} className="text-sm font-bold text-cyan-600 hover:underline">← Back to Hotels</button>
+      <button onClick={() => router.push("/hotels")} className="text-sm font-bold text-cyan-700 hover:underline">← Back to Hotels</button>
     </div>
   );
 
@@ -96,69 +160,305 @@ export default function HotelDetailPage() {
     ? `https://wa.me/${hotel.whatsapp_number.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello, I'd like to book a room at ${hotel.name}`)}`
     : null;
 
+  const CARD_SHADOW = "0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -16px rgba(15,23,42,0.16)";
+
   // ── render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div style={{ background: "linear-gradient(180deg,#F8FAFC 0%,#F1F5F9 100%)" }} className="min-h-screen">
 
       {/* ── BREADCRUMB ─────────────────────────────────────── */}
-      <div className="bg-white border-b border-slate-100 sticky top-[72px] z-30">
+      <div className="bg-white/90 backdrop-blur border-b border-slate-100 sticky top-[72px] z-30">
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-2.5 flex items-center gap-2 text-sm">
           <button onClick={() => router.push("/hotels")}
-            className="text-cyan-600 font-semibold hover:text-cyan-700 flex items-center gap-1">
+            className="text-cyan-700 font-semibold hover:text-cyan-800 flex items-center gap-1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
             Hotels
           </button>
           <span className="text-slate-300">/</span>
-          <span className="font-semibold text-slate-700 truncate">{hotel.name}</span>
-          {hotel.is_verified && (
-            <span className="ml-1 text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">
-              ✓ Verified
-            </span>
-          )}
+          <span className="font-semibold text-slate-600 truncate">{hotel.name}</span>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-8 py-5 pb-36 lg:pb-10">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 pt-4 md:pt-6 pb-44 lg:pb-14">
 
-        {/* ── GALLERY GRID ───────────────────────────────────── */}
-        {photos.length > 0 ? (
-          <div className="grid gap-2 mb-6 rounded-2xl overflow-hidden"
-            style={{ gridTemplateColumns: photos.length === 1 ? "1fr" : "2fr 1fr", gridTemplateRows: "260px" }}>
+        {/* ── GALLERY ─────────────────────────────────────────── */}
+        {photos.length > 0 ? (<>
 
-            {/* Main photo */}
-            <div className="relative cursor-pointer group" style={{ gridRow: "1", minHeight: 260 }}
-              onClick={() => setLightbox(0)}>
-              <Image unoptimized src={photos[0]} alt={hotel.name} fill className="object-cover" priority />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+          {/* MOBILE: single full-width photo */}
+          <div className="md:hidden relative rounded-2xl overflow-hidden h-[240px] ring-1 ring-slate-900/5">
+            <div className="relative h-full cursor-pointer group" onClick={() => setLightbox(0)}>
+              <Image unoptimized src={photos[0]} alt={hotel.name} fill
+                className="object-cover transition-transform duration-500 group-active:scale-105" priority />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
             </div>
+            {photos.length > 1 && (
+              <button onClick={() => setLightbox(0)}
+                className="absolute bottom-3 right-3 flex items-center gap-1.5 text-xs font-bold text-slate-800 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full shadow-lg">
+                <IcoImages /> {photos.length} photos
+              </button>
+            )}
+            {hotel.is_verified && (
+              <span className="absolute top-3 left-3 flex items-center gap-1 text-[11px] font-black bg-white/95 backdrop-blur text-emerald-700 px-3 py-1.5 rounded-full shadow-lg">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                  <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.49 4.49 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.49 4.49 0 01-1.307 3.497 4.49 4.49 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                </svg>
+                Verified property
+              </span>
+            )}
+          </div>
 
-            {/* Side thumbnails */}
+          {/* DESKTOP: 2fr 1fr grid */}
+          <div className="hidden md:grid relative gap-1.5 rounded-[26px] overflow-hidden h-[440px] ring-1 ring-slate-900/5"
+            style={{ gridTemplateColumns: photos.length === 1 ? "1fr" : "2fr 1fr", gridTemplateRows: "1fr" }}>
+            <div className="relative cursor-pointer group overflow-hidden" onClick={() => setLightbox(0)}>
+              <Image unoptimized src={photos[0]} alt={hotel.name} fill
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" priority />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+            </div>
             {photos.length >= 2 && (
-              <div className="grid gap-2" style={{ gridTemplateRows: photos.length >= 3 ? "1fr 1fr" : "1fr" }}>
+              <div className="grid gap-1.5 h-full" style={{ gridTemplateRows: photos.length >= 3 ? "1fr 1fr" : "1fr" }}>
                 {photos.slice(1, 3).map((src, i) => (
-                  <div key={i} className="relative cursor-pointer group overflow-hidden"
-                    onClick={() => setLightbox(i + 1)}>
-                    <Image unoptimized src={src} alt="" fill className="object-cover" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors" />
-                    {/* "See all" badge on last visible */}
-                    {i === 1 && photos.length > 3 && (
-                      <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
-                        <span className="text-white text-sm font-black">+{photos.length - 3} photos</span>
-                      </div>
-                    )}
+                  <div key={i} className="relative cursor-pointer group overflow-hidden" onClick={() => setLightbox(i + 1)}>
+                    <Image unoptimized src={src} alt="" fill
+                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                   </div>
                 ))}
               </div>
             )}
+            {photos.length > 1 && (
+              <button onClick={() => setLightbox(0)}
+                className="absolute bottom-4 right-4 flex items-center gap-1.5 text-xs font-bold text-slate-800 bg-white/90 backdrop-blur px-3.5 py-2 rounded-full shadow-lg hover:bg-white transition-colors">
+                <IcoImages /> View all {photos.length} photos
+              </button>
+            )}
+            {hotel.is_verified && (
+              <span className="absolute top-4 left-4 flex items-center gap-1 text-[11px] font-black bg-white/95 backdrop-blur text-emerald-700 px-3 py-1.5 rounded-full shadow-lg">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                  <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.49 4.49 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.49 4.49 0 01-1.307 3.497 4.49 4.49 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                </svg>
+                Verified property
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="rounded-2xl overflow-hidden mb-6 h-64 md:h-80 flex items-center justify-center"
+
+        </>) : (
+          <div className="relative rounded-[26px] overflow-hidden h-[200px] md:h-[360px] flex items-center justify-center ring-1 ring-slate-900/5"
             style={{ background: "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
-            <span className="text-8xl opacity-10">🏨</span>
+            <div className="absolute inset-0 opacity-[0.07]"
+              style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }} />
+            <span className="relative text-4xl font-black text-white/25 tracking-widest">{hotel.name.slice(0, 2).toUpperCase()}</span>
           </div>
         )}
+
+        {/* ── IDENTITY STRIP (overlaps hero) ─────────────────── */}
+        <div className="relative -mt-8 md:-mt-12 mx-2 md:mx-4 mb-6 bg-white rounded-3xl px-4 md:px-7 pt-4 pb-5 md:pt-5 md:pb-6"
+          style={{ boxShadow: CARD_SHADOW }}>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+            {hotel.logo_url ? (
+              <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={76} height={76}
+                className="w-[76px] h-[76px] -mt-14 md:-mt-16 rounded-2xl object-cover flex-shrink-0 ring-4 ring-white shadow-lg bg-white" />
+            ) : (
+              <div className="w-[76px] h-[76px] -mt-14 md:-mt-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl flex-shrink-0 ring-4 ring-white shadow-lg"
+                style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
+                {hotel.name.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h1 className="font-serif text-2xl md:text-[28px] font-bold text-slate-900 leading-tight tracking-tight">{hotel.name}</h1>
+              <div className="flex items-center gap-1.5 mt-1.5 text-slate-500">
+                <IcoPin />
+                <span className="text-sm font-semibold">{hotel.city}{hotel.country ? `, ${hotel.country}` : ""}</span>
+              </div>
+              {hotel.address && <p className="text-xs text-slate-400 mt-1 truncate">{hotel.address}</p>}
+            </div>
+            {(hotel.tripadvisor_url || hotel.google_review_url || hotel.website) && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {hotel.website && (
+                  <a href={hotel.website} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-cyan-700 border border-slate-200 hover:border-cyan-200 rounded-full px-3 py-1.5 transition-colors">
+                    <IcoGlobe /> Website
+                  </a>
+                )}
+                {(hotel.tripadvisor_url || hotel.google_review_url) && (
+                  <a href={hotel.tripadvisor_url || hotel.google_review_url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-bold text-amber-700 border border-amber-200 bg-amber-50 hover:bg-amber-100 rounded-full px-3 py-1.5 transition-colors">
+                    <IcoStar /> Reviews
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 mt-5 pt-5">
+            {[
+              {
+                label: "Check-in", val: hotel.check_in_time || "14:00",
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-[16px] h-[16px] md:w-[18px] md:h-[18px]"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>,
+              },
+              {
+                label: "Check-out", val: hotel.check_out_time || "11:00",
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-[16px] h-[16px] md:w-[18px] md:h-[18px]"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>,
+              },
+              {
+                label: "Hours", val: hotel.is_24_7 ? "24/7" : `${hotel.open_time || "09:00"}–${hotel.close_time || "22:00"}`,
+                icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="w-[16px] h-[16px] md:w-[18px] md:h-[18px]"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+              },
+            ].map(({ label, val, icon }) => (
+              <div key={label} className="flex flex-col sm:flex-row items-center sm:items-start gap-1.5 sm:gap-3 px-2 sm:px-4 text-center sm:text-left">
+                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-50 text-cyan-700 ring-1 ring-slate-100">
+                  {icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+                  <p className="text-[12px] md:text-sm font-bold text-slate-800 truncate">{val}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── NEARBY PLACES ───────────────────────────────────────── */}
+        <div className="mb-6">
+          <div className="mb-4">
+            <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2.5">
+              <span className="w-6 h-[3px] rounded-full inline-block" style={{ background: "linear-gradient(90deg,#0891B2,#0E7490)" }} />
+              Explore Nearby
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 ml-8">Google-verified places near {hotel.city}</p>
+          </div>
+
+          {/* Tab bar */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-5" style={{ scrollbarWidth: "none" }}>
+            {NEARBY_TABS.map(tab => {
+              const active = nearbyTab === tab.key;
+              return (
+                <button key={tab.key} onClick={() => setNearbyTab(tab.key)}
+                  className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-black transition-all"
+                  style={{
+                    background: active ? `linear-gradient(135deg, ${tab.color}e8, ${tab.color})` : "white",
+                    color: active ? "white" : "#374151",
+                    boxShadow: active ? `0 4px 14px ${tab.color}40` : "0 1px 4px rgba(0,0,0,0.08)",
+                  }}>
+                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                    <tab.Icon className="w-4 h-4" />
+                  </div>
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Content */}
+          {(() => {
+            const tab = NEARBY_TABS.find(t => t.key === nearbyTab)!;
+            const places = nearbyData[nearbyTab];
+            const isLoading = loadingNearby[nearbyTab];
+
+            if (isLoading) return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse" style={{ boxShadow: CARD_SHADOW }}>
+                    <div className="h-44 bg-slate-100" />
+                    <div className="p-5 space-y-3">
+                      <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+                      <div className="h-3 bg-slate-100 rounded-full w-1/2" />
+                      <div className="flex gap-2 pt-2">
+                        <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                        <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+
+            if (!places || places.length === 0) return (
+              <div className="bg-white rounded-3xl p-12 text-center" style={{ boxShadow: CARD_SHADOW }}>
+                <tab.Icon className="w-12 h-12 mx-auto mb-4" style={{ color: tab.color, opacity: 0.2 }} />
+                <p className="font-black text-slate-700 text-base">No {tab.label.toLowerCase()} found nearby</p>
+                <p className="text-sm text-slate-400 mt-1">Ask reception for local recommendations</p>
+              </div>
+            );
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {places.map(place => (
+                  <div key={place.place_id} className="bg-white rounded-3xl overflow-hidden flex flex-col group transition-all hover:-translate-y-1"
+                    style={{ boxShadow: CARD_SHADOW }}>
+                    {place.photo_url ? (
+                      <div className="relative h-44 flex-shrink-0 overflow-hidden">
+                        <Image unoptimized src={place.photo_url} alt={place.name} fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                        {place.open_now != null && (
+                          <span className={`absolute top-3 left-3 text-[11px] font-black px-2.5 py-1 rounded-xl shadow-md ${place.open_now ? "bg-emerald-500 text-white" : "bg-red-500 text-white"}`}>
+                            {place.open_now ? "Open Now" : "Closed"}
+                          </span>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <p className="font-black text-white text-base leading-snug drop-shadow-md">{place.name}</p>
+                          {place.rating != null && (
+                            <div className="flex items-center gap-1.5 mt-1 w-fit px-2.5 py-1 rounded-xl"
+                              style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)" }}>
+                              <IcoStar />
+                              <span className="font-black text-sm text-white">{place.rating.toFixed(1)}</span>
+                              {place.user_ratings_total > 0 && (
+                                <span className="text-xs text-white/60">
+                                  ({place.user_ratings_total > 999 ? `${(place.user_ratings_total/1000).toFixed(1)}k` : place.user_ratings_total})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-32 flex items-center justify-center flex-shrink-0" style={{ background: tab.bg }}>
+                        <tab.Icon className="w-10 h-10" style={{ color: tab.color, opacity: 0.3 }} />
+                      </div>
+                    )}
+                    <div className="p-4 flex-1 flex flex-col">
+                      {!place.photo_url && (
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <p className="font-black text-slate-900 text-base leading-snug flex-1">{place.name}</p>
+                          {place.rating != null && (
+                            <div className="flex items-center gap-1 flex-shrink-0 px-2 py-1 rounded-xl" style={{ background: tab.bg }}>
+                              <IcoStar />
+                              <span className="font-black text-sm" style={{ color: tab.color }}>{place.rating.toFixed(1)}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {place.address && (
+                        <div className="flex items-center gap-1.5 mb-3">
+                          <IcoPin />
+                          <p className="text-xs text-slate-400 truncate">{place.address}</p>
+                        </div>
+                      )}
+                      <div className="flex-1" />
+                      <div className="flex gap-2 mt-3">
+                        <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black text-white transition-opacity hover:opacity-85"
+                          style={{ background: tab.color }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" /></svg>
+                          Get Directions
+                        </a>
+                        <a href={place.maps_link} target="_blank" rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                          <IcoPin />
+                          View on Maps
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
 
         {/* ── TWO-COLUMN LAYOUT ───────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
@@ -166,92 +466,33 @@ export default function HotelDetailPage() {
           {/* LEFT */}
           <div className="space-y-5">
 
-            {/* Hotel identity */}
-            <div className="bg-white rounded-2xl p-5 md:p-6" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-              <div className="flex items-start gap-4">
-                {hotel.logo_url ? (
-                  <Image unoptimized src={hotel.logo_url} alt={hotel.name} width={64} height={64}
-                    className="w-16 h-16 rounded-2xl object-cover flex-shrink-0 border border-slate-100" />
-                ) : (
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-xl flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
-                    {hotel.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0 pt-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-2xl font-black text-slate-900 leading-tight">{hotel.name}</h1>
-                    {hotel.is_verified && (
-                      <span className="text-[10px] font-black bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded-full flex-shrink-0">
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <svg viewBox="0 0 24 24" fill="#0891B2" className="w-3.5 h-3.5 flex-shrink-0">
-                      <path fillRule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-2.079 3.468-4.751 3.468-8.027A8.25 8.25 0 002.25 12c0 3.276 1.524 5.948 3.469 8.027a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.144.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-sm font-semibold text-slate-500">{hotel.city}{hotel.country ? `, ${hotel.country}` : ""}</span>
-                  </div>
-                  {hotel.address && <p className="text-xs text-slate-400 mt-0.5 truncate">{hotel.address}</p>}
-                </div>
-              </div>
-
-              {/* Quick stats */}
-              <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-100">
-                {[
-                  {
-                    label: "Check-in", val: hotel.check_in_time || "14:00",
-                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="#0891B2" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" /></svg>,
-                    bg: "#EFF9FF", color: "#0891B2",
-                  },
-                  {
-                    label: "Check-out", val: hotel.check_out_time || "11:00",
-                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>,
-                    bg: "#FFFBEB", color: "#D97706",
-                  },
-                  {
-                    label: "Hours", val: hotel.is_24_7 ? "24 / 7" : `${hotel.open_time || "09:00"}–${hotel.close_time || "22:00"}`,
-                    icon: <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth={2} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-                    bg: "#F5F3FF", color: "#7C3AED",
-                  },
-                ].map(({ label, val, icon, bg, color }) => (
-                  <div key={label} className="rounded-xl p-3 flex flex-col items-center gap-2 text-center"
-                    style={{ background: bg }}>
-                    {icon}
-                    <div>
-                      <p className="text-sm font-black" style={{ color }}>{val}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{label}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Description */}
             {hotel.description && (
-              <div className="bg-white rounded-2xl p-5 md:p-6" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <span className="w-5 h-0.5 rounded-full inline-block" style={{ background: "#0891B2" }} />
+              <div className="bg-white rounded-3xl p-6 md:p-7" style={{ boxShadow: CARD_SHADOW }}>
+                <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-widest mb-3 flex items-center gap-2.5">
+                  <span className="w-6 h-[3px] rounded-full inline-block" style={{ background: "linear-gradient(90deg,#0891B2,#0E7490)" }} />
                   About this property
                 </h2>
-                <p className="text-sm text-slate-600 leading-relaxed">{hotel.description}</p>
+                <p className="text-[15px] text-slate-600 leading-relaxed">{hotel.description}</p>
               </div>
             )}
 
             {/* Amenities */}
             {(hotel.amenities?.length ?? 0) > 0 && (
-              <div className="bg-white rounded-2xl p-5 md:p-6" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <span className="w-5 h-0.5 rounded-full inline-block" style={{ background: "#0891B2" }} />
+              <div className="bg-white rounded-3xl p-6 md:p-7" style={{ boxShadow: CARD_SHADOW }}>
+                <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2.5">
+                  <span className="w-6 h-[3px] rounded-full inline-block" style={{ background: "linear-gradient(90deg,#0891B2,#0E7490)" }} />
                   Facilities & Amenities
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {hotel.amenities!.map(a => (
-                    <div key={a} className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 border border-slate-100"
-                      style={{ background: "#FAFCFF" }}>
-                      <span className="text-lg flex-shrink-0">{AMENITY_ICONS[a] ?? "✓"}</span>
-                      <span className="text-xs font-semibold text-slate-700 leading-tight">{a}</span>
+                    <div key={a} className="flex items-center gap-3 rounded-2xl px-3.5 py-3 border border-slate-100 hover:border-cyan-100 hover:bg-cyan-50/30 transition-colors">
+                      <span className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0 bg-slate-50 ring-1 ring-slate-100">
+                        {AMENITY_ICONS[a] ?? "✓"}
+                      </span>
+                      <span className="text-[13px] font-semibold text-slate-700 leading-tight">
+                        {AMENITY_LABELS[a] ?? a.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -260,32 +501,30 @@ export default function HotelDetailPage() {
 
             {/* WiFi callout */}
             {hotel.wifi_info && (
-              <div className="flex items-center gap-4 bg-white rounded-2xl px-5 py-4 border-l-4"
-                style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.06)", borderLeftColor: "#0891B2" }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "#EFF9FF" }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#0891B2" strokeWidth={2} className="w-5 h-5">
+              <div className="flex items-center gap-4 bg-white rounded-3xl px-6 py-4" style={{ boxShadow: CARD_SHADOW }}>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg,#083344,#0E7490)" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" />
                   </svg>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Free WiFi</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Complimentary WiFi</p>
                   <p className="text-sm font-bold text-slate-800 mt-0.5 truncate">Password: {hotel.wifi_info}</p>
                 </div>
-                <span className="text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0"
-                  style={{ background: "#DCFCE7", color: "#15803D" }}>Included</span>
+                <span className="text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">Included</span>
               </div>
             )}
 
             {/* Nearby Tours */}
             {tours.length > 0 && (
-              <div className="bg-white rounded-2xl p-5 md:p-6" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <span className="w-5 h-0.5 rounded-full inline-block" style={{ background: "#F59E0B" }} />
+              <div className="bg-white rounded-3xl p-6 md:p-7" style={{ boxShadow: CARD_SHADOW }}>
+                <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-widest mb-1 flex items-center gap-2.5">
+                  <span className="w-6 h-[3px] rounded-full inline-block" style={{ background: "linear-gradient(90deg,#F59E0B,#D97706)" }} />
                   Experiences near {hotel.city}
                 </h2>
                 <p className="text-xs text-slate-400 mb-4">Hand-picked tours and activities</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
                   {tours.map(t => <TourCard key={t.id} tour={t} curr={curr} />)}
                 </div>
               </div>
@@ -297,32 +536,48 @@ export default function HotelDetailPage() {
             <div className="sticky top-28 space-y-4">
 
               {/* Booking card */}
-              <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 4px 24px rgba(8,145,178,0.14)", border: "1px solid #E0F2FE" }}>
+              <div className="bg-white rounded-3xl overflow-hidden ring-1 ring-slate-900/[0.03]" style={{ boxShadow: "0 8px 32px -8px rgba(8,145,178,0.20)" }}>
 
                 {/* Header */}
-                <div className="px-5 py-4"
+                <div className="px-5 py-5 relative overflow-hidden"
                   style={{ background: "linear-gradient(135deg, #0C1A2E 0%, #083344 60%, #0E7490 100%)" }}>
-                  <p className="text-white/60 text-[10px] font-black uppercase tracking-widest mb-1">Contact & Book</p>
-                  <p className="text-white font-black text-lg leading-snug">{hotel.name}</p>
-                  <p className="text-cyan-300/70 text-xs mt-0.5">{hotel.city}, {hotel.country || "Italy"}</p>
+                  <div className="absolute -right-6 -top-10 w-32 h-32 rounded-full bg-white/5" />
+                  <div className="absolute -right-2 top-6 w-16 h-16 rounded-full bg-white/5" />
+                  <p className="relative text-cyan-200/70 text-[10px] font-black uppercase tracking-widest mb-1">Contact & Book</p>
+                  <p className="relative text-white font-serif font-bold text-lg leading-snug">{hotel.name}</p>
+                  <p className="relative text-cyan-300/70 text-xs mt-0.5">{hotel.city}, {hotel.country || "Italy"}</p>
                 </div>
 
                 <div className="p-4 space-y-2.5">
                   {/* Book Room — primary */}
                   {waHref ? (
                     <a href={waHref} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl text-white font-black text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-                      style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 4px 14px rgba(8,145,178,0.35)" }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4.5 h-4.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
-                      Book a Room
+                      className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                      style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
+                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-out" />
+                      <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        </svg>
+                      </span>
+                      <span className="relative flex-1 text-left min-w-0">
+                        <span className="block font-black text-sm leading-tight">Book a Room</span>
+                        <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via WhatsApp · instant reply</span>
+                      </span>
+                      <IcoChevRight />
                     </a>
                   ) : hotel.email ? (
                     <a href={`mailto:${hotel.email}?subject=Room Booking – ${hotel.name}`}
-                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-black text-sm"
-                      style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 4px 14px rgba(8,145,178,0.3)" }}>
-                      Book a Room
+                      className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                      style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.5)" }}>
+                      <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <IcoMail />
+                      </span>
+                      <span className="relative flex-1 text-left min-w-0">
+                        <span className="block font-black text-sm leading-tight">Book a Room</span>
+                        <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via Email</span>
+                      </span>
+                      <IcoChevRight />
                     </a>
                   ) : null}
 
@@ -336,7 +591,7 @@ export default function HotelDetailPage() {
                   {hotel.whatsapp_number && (
                     <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g, "")}`}
                       target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-3 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.98]"
+                      className="flex items-center gap-3 w-full py-3 px-4 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.98]"
                       style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", color: "#15803D" }}>
                       <IcoWA />
                       <span className="flex-1">WhatsApp</span>
@@ -347,7 +602,7 @@ export default function HotelDetailPage() {
                   {/* Phone */}
                   {hotel.phone && (
                     <a href={`tel:${hotel.phone}`}
-                      className="flex items-center gap-3 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.98]"
+                      className="flex items-center gap-3 w-full py-3 px-4 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.98]"
                       style={{ background: "#EFF9FF", border: "1.5px solid #BAE6FD", color: "#0369A1" }}>
                       <IcoPhone />
                       <span className="flex-1">Call</span>
@@ -358,7 +613,7 @@ export default function HotelDetailPage() {
                   {/* Email */}
                   {hotel.email && (
                     <a href={`mailto:${hotel.email}`}
-                      className="flex items-center gap-3 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.98]"
+                      className="flex items-center gap-3 w-full py-3 px-4 rounded-2xl font-semibold text-sm transition-all hover:scale-[1.01] active:scale-[0.98]"
                       style={{ background: "#FAF5FF", border: "1.5px solid #E9D5FF", color: "#6D28D9" }}>
                       <IcoMail />
                       <span className="flex-1">Email</span>
@@ -372,8 +627,8 @@ export default function HotelDetailPage() {
                   <div className="px-4 pb-4 space-y-2 border-t border-slate-100 pt-3">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Digital Services</p>
                     {hasCheckin && (
-                      <Link href={`/checkin/${hotel.id}`}
-                        className="flex items-center gap-3 w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all hover:scale-[1.01]"
+                      <Link href={`/request/${hotel.id}`}
+                        className="flex items-center gap-3 w-full py-2.5 px-4 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.01]"
                         style={{ background: "#F5F3FF", border: "1.5px solid #DDD6FE", color: "#6D28D9" }}>
                         <span>✅</span>
                         <span className="flex-1">Smart Check-in</span>
@@ -382,7 +637,7 @@ export default function HotelDetailPage() {
                     )}
                     {hasConcierge && (
                       <Link href={`/h/${hotel.id}?lang=${lang}`}
-                        className="flex items-center gap-3 w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-all hover:scale-[1.01]"
+                        className="flex items-center gap-3 w-full py-2.5 px-4 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.01]"
                         style={{ background: "#ECFEFF", border: "1.5px solid #A5F3FC", color: "#0E7490" }}>
                         <span>🔔</span>
                         <span className="flex-1">Digital Concierge</span>
@@ -395,6 +650,8 @@ export default function HotelDetailPage() {
             </div>
           </div>
         </div>
+
+
       </div>
 
       {/* ── MOBILE BOTTOM BAR ─────────────────────────────────── */}
@@ -409,13 +666,13 @@ export default function HotelDetailPage() {
           {/* Primary CTA */}
           {waHref ? (
             <a href={waHref} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-black text-sm active:scale-[0.98] transition-transform"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white font-black text-sm active:scale-[0.98] transition-transform"
               style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 4px 14px rgba(8,145,178,0.3)" }}>
               🛏️ Book a Room
             </a>
           ) : hotel.email ? (
             <a href={`mailto:${hotel.email}`}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-black text-sm"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white font-black text-sm"
               style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
               🛏️ Book a Room
             </a>
@@ -426,28 +683,28 @@ export default function HotelDetailPage() {
             {hotel.whatsapp_number && (
               <a href={`https://wa.me/${hotel.whatsapp_number.replace(/\D/g, "")}`}
                 target="_blank" rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl text-xs font-bold active:scale-95 transition-transform"
                 style={{ background: "#F0FDF4", border: "1.5px solid #BBF7D0", color: "#15803D" }}>
                 <IcoWA /> WhatsApp
               </a>
             )}
             {hotel.phone && (
               <a href={`tel:${hotel.phone}`}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl text-xs font-bold active:scale-95 transition-transform"
                 style={{ background: "#EFF9FF", border: "1.5px solid #BAE6FD", color: "#0369A1" }}>
                 <IcoPhone /> Call
               </a>
             )}
             {hasCheckin && (
-              <Link href={`/checkin/${hotel.id}`}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-transform"
+              <Link href={`/request/${hotel.id}`}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl text-xs font-bold active:scale-95 transition-transform"
                 style={{ background: "#F5F3FF", border: "1.5px solid #DDD6FE", color: "#6D28D9" }}>
                 ✅ Check-in
               </Link>
             )}
             {hasConcierge && (
               <Link href={`/h/${hotel.id}?lang=${lang}`}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl text-xs font-bold active:scale-95 transition-transform"
                 style={{ background: "#ECFEFF", border: "1.5px solid #A5F3FC", color: "#0E7490" }}>
                 🔔 Concierge
               </Link>
@@ -492,17 +749,17 @@ export default function HotelDetailPage() {
 // ── Tour card ─────────────────────────────────────────────────────────────────
 function TourCard({ tour, curr }: { tour: Tour; curr: string }) {
   return (
-    <div className="rounded-xl overflow-hidden border border-slate-100 hover:shadow-md transition-shadow bg-white">
+    <div className="rounded-2xl overflow-hidden border border-slate-100 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 bg-white">
       {tour.image_url ? (
         <div className="relative h-28 overflow-hidden">
           <Image unoptimized src={tour.image_url} alt={tour.title} fill className="object-cover" />
         </div>
       ) : (
-        <div className="h-28 flex items-center justify-center" style={{ background: "#EFF9FF" }}>
+        <div className="h-28 flex items-center justify-center bg-slate-50">
           <span className="text-3xl opacity-30">🗺️</span>
         </div>
       )}
-      <div className="p-3">
+      <div className="p-3.5">
         <p className="text-xs font-bold text-slate-800 leading-snug line-clamp-2 min-h-[2.5rem]">{tour.title}</p>
         <div className="flex items-center justify-between mt-2.5">
           <span className="text-sm font-black" style={{ color: tour.price != null ? "#0891B2" : "#059669" }}>

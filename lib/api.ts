@@ -462,7 +462,9 @@ export type BookingRequest = {
   check_in_date: string; check_out_date: string; num_guests: number;
   room_type: string; message: string;
   status: "pending" | "confirmed" | "declined";
-  hotel_notes: string; created_at: string; updated_at: string;
+  hotel_notes: string; booking: string | null; invitation_sent_at: string | null;
+  checkin_link: string | null;
+  created_at: string; updated_at: string;
 };
 
 export const bookingRequestsApi = {

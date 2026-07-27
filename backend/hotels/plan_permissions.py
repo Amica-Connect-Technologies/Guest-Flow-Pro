@@ -12,12 +12,24 @@ Usage in any view:
 from rest_framework.response import Response
 
 UPGRADE_URLS = {
+    # Current 4-tier plans
+    "concierge":         "/dashboard/billing?upgrade=concierge_checkin",
+    "checkin":           "/dashboard/billing?upgrade=concierge_checkin",
+    "concierge_checkin": "/dashboard/billing?upgrade=full",
+    "full":              None,
+    # Legacy plans kept for backward compat
     "starter":    "/dashboard/billing?upgrade=pro",
     "pro":        "/dashboard/billing?upgrade=enterprise",
     "enterprise": None,
 }
 
 PLAN_LABELS = {
+    # Current 4-tier plans
+    "concierge":         "Digital Concierge",
+    "checkin":           "Digital Check-In",
+    "concierge_checkin": "Concierge + Check-In",
+    "full":              "Full Suite",
+    # Legacy plans kept for backward compat
     "starter":    "Starter",
     "pro":        "Professional",
     "enterprise": "Enterprise",
@@ -25,18 +37,18 @@ PLAN_LABELS = {
 
 # Which plan first unlocks each feature
 FEATURE_MINIMUM_PLAN = {
-    "checkin":           "starter",
-    "crm":               "starter",
-    "booking_requests":  "starter",
-    "reviews":           "starter",
-    "concierge":         "starter",
-    "custom_services":   "pro",
-    "marketing":         "pro",
-    "guest_export":      "pro",
-    "webhooks":          "pro",
-    "api_keys":          "enterprise",
-    "white_label_color": "pro",
-    "white_label_msg":   "pro",
+    "checkin":           "checkin",
+    "crm":               "full",
+    "booking_requests":  "checkin",
+    "reviews":           "full",
+    "concierge":         "concierge",
+    "custom_services":   "concierge",
+    "marketing":         "full",
+    "guest_export":      "full",
+    "webhooks":          "full",
+    "api_keys":          "full",
+    "white_label_color": "concierge_checkin",
+    "white_label_msg":   "full",
 }
 
 FEATURE_NAMES = {
@@ -61,10 +73,10 @@ def require_feature(hotel, feature: str) -> Response | None:
     if hotel.can(feature):
         return None
 
-    required_plan = FEATURE_MINIMUM_PLAN.get(feature, "enterprise")
+    required_plan = FEATURE_MINIMUM_PLAN.get(feature, "full")
     feature_name  = FEATURE_NAMES.get(feature, feature)
     current_plan  = PLAN_LABELS.get(hotel.plan, hotel.plan)
-    upgrade_url   = UPGRADE_URLS.get(hotel.plan, "/dashboard/billing")
+    upgrade_url   = f"/dashboard/billing?upgrade={required_plan}"
 
     return Response(
         {

@@ -154,6 +154,11 @@ export default function AdminHotels() {
     if (!form.name.trim() || !form.city.trim()) {
       showToast("Name and city are required", true); return;
     }
+    if (!editing && incompleteTabs.length > 0) {
+      setActiveTab(incompleteTabs[0].id);
+      showToast(`Please complete "${incompleteTabs[0].label}" before adding this hotel`, true);
+      return;
+    }
     setSaving(true);
     try {
       const fd = new FormData();
@@ -225,6 +230,17 @@ export default function AdminHotels() {
     { id: "gallery", label: `Gallery (${totalSlots}/5)` },
     { id: "plan", label: "Plan & Status" },
   ];
+
+  // Which fields must be filled per step before a new hotel can be added.
+  // (Editing an existing hotel is never blocked — legacy records may predate these rules.)
+  const TAB_COMPLETE: Record<string, boolean> = {
+    basic: !!form.name.trim() && !!form.city.trim() && !!form.description.trim(),
+    contact: !!form.phone.trim() && !!form.email.trim() && !!form.whatsapp_number.trim(),
+    details: form.amenities.length > 0,
+    gallery: totalSlots > 0,
+    plan: true, // a plan is always selected by default
+  };
+  const incompleteTabs = TABS.filter(t => !TAB_COMPLETE[t.id]);
 
   if (loading) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -499,13 +515,26 @@ export default function AdminHotels() {
 
             {/* Tabs */}
             <div className="flex border-b border-slate-100 flex-shrink-0 overflow-x-auto">
-              {TABS.map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2.5 text-xs font-black whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.id ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
-                  {tab.label}
-                </button>
-              ))}
+              {TABS.map(tab => {
+                const complete = TAB_COMPLETE[tab.id];
+                return (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-black whitespace-nowrap transition-colors border-b-2 -mb-px ${activeTab === tab.id ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}>
+                    {!editing && (
+                      complete
+                        ? <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] flex-shrink-0">✓</span>
+                        : <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                    )}
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
+            {!editing && incompleteTabs.length > 0 && (
+              <div className="px-5 py-2 bg-amber-50 border-b border-amber-100 text-[11px] font-bold text-amber-700 flex-shrink-0">
+                Complete all 5 steps to add this hotel — {incompleteTabs.length} step{incompleteTabs.length > 1 ? "s" : ""} remaining
+              </div>
+            )}
 
             {/* Tab content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
@@ -727,10 +756,10 @@ export default function AdminHotels() {
                 className="flex-1 border border-slate-200 text-slate-600 font-black py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors text-sm">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-black py-3 rounded-xl transition-colors text-sm"
+              <button onClick={handleSave} disabled={saving || (!editing && incompleteTabs.length > 0)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-3 rounded-xl transition-colors text-sm"
                 style={{ boxShadow: "0 4px 14px rgba(37,99,235,0.30)" }}>
-                {saving ? "Saving…" : editing ? "Save Changes" : "Add Hotel"}
+                {saving ? "Saving…" : editing ? "Save Changes" : incompleteTabs.length > 0 ? `${5 - incompleteTabs.length}/5 steps done` : "Add Hotel"}
               </button>
             </div>
           </div>
