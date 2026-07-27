@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Utensils, Car, Moon, Map, MapPin, type LucideIcon } from "lucide-react";
+import { UtensilsCrossed, Car, Moon, Landmark, Compass, type LucideIcon } from "lucide-react";
 import { hotelsApi, toursApi, placesApi, type Hotel, type Tour, type NearbyPlace } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -33,11 +33,11 @@ const AMENITY_ICONS: Record<string, string> = {
 };
 
 const NEARBY_TABS: { key: "restaurant"|"parking"|"night"|"tours"|"places"; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
-  { key: "restaurant", label: "Restaurant",    Icon: Utensils, color: "#F97316", bg: "#FFF7ED" },
-  { key: "parking",    label: "Parking",       Icon: Car,      color: "#2563EB", bg: "#EFF6FF" },
-  { key: "night",      label: "Night Life",    Icon: Moon,     color: "#7C3AED", bg: "#F5F3FF" },
-  { key: "tours",      label: "Tour / Museum", Icon: Map,      color: "#0891B2", bg: "#ECFEFF" },
-  { key: "places",     label: "Attractions",   Icon: MapPin,   color: "#4338CA", bg: "#EEF2FF" },
+  { key: "restaurant", label: "Restaurants",  Icon: UtensilsCrossed, color: "#F97316", bg: "#FFF7ED" },
+  { key: "parking",    label: "Transfers",    Icon: Car,             color: "#0EA5E9", bg: "#F0F9FF" },
+  { key: "night",      label: "Nightlife",    Icon: Moon,            color: "#7C3AED", bg: "#F5F3FF" },
+  { key: "tours",      label: "Experiences",  Icon: Landmark,        color: "#059669", bg: "#ECFDF5" },
+  { key: "places",     label: "Attractions",  Icon: Compass,         color: "#DC2626", bg: "#FEF2F2" },
 ];
 type NearbyTabKey = (typeof NEARBY_TABS)[number]["key"];
 

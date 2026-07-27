@@ -1,15 +1,19 @@
 import csv
 import io
+import logging
 from datetime import date, timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import DatabaseError
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
 
 from accounts.models import HotelUser
 from hotels.plan_permissions import require_feature, require_guest_capacity
@@ -709,7 +713,20 @@ class PublicGuestSubmitView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        instance = serializer.save(booking=booking, guest_number=guest_number)
+        try:
+            instance = serializer.save(booking=booking, guest_number=guest_number)
+        except DatabaseError as exc:
+            logger.error("Guest registration DB error for booking %s: %s", booking.id, exc)
+            return Response(
+                {"detail": "Registration could not be saved — database error. Please run migrations on the server."},
+                status=500,
+            )
+        except Exception as exc:
+            logger.exception("Guest registration failed for booking %s", booking.id)
+            return Response(
+                {"detail": "Registration failed due to a server error. Please try again."},
+                status=500,
+            )
 
         # Fire webhook
         webhook_dispatch(booking.hotel, "guest_registered", {

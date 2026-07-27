@@ -89,7 +89,9 @@ async function req<T>(path: string, { headers: extra, ...opts }: RequestInit = {
       json?.detail ??
       json?.non_field_errors?.[0] ??
       Object.values(json ?? {})[0] ??
-      "Request failed";
+      (res.status >= 500
+        ? `Server error (${res.status}). Please contact support if this persists.`
+        : `Request failed (${res.status})`);
     throw new Error(String(msg));
   }
   return json;

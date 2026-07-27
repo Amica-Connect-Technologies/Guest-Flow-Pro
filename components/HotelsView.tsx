@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   MapPin, Search, Clock, Wifi, ChevronRight,
-  Building2, X, SlidersHorizontal, Phone,
+  Building2, X, SlidersHorizontal, Phone, ConciergeBell, Smartphone,
 } from "lucide-react";
 import { hotelsApi, type Hotel } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -69,7 +69,12 @@ export default function HotelsView() {
     return list;
   }, [hotels, search, sortBy]);
 
-  const featured   = useMemo(() => hotels.slice(0, 6), [hotels]);
+  const noMatch    = !!search && results.length === 0;
+  const featured   = useMemo(() => {
+    if (search && results.length > 0) return results.slice(0, 6);
+    if (search && results.length === 0) return hotels.slice(0, 6); // fallback
+    return hotels.slice(0, 6);
+  }, [hotels, results, search]);
   const hasFilters = !!search || sortBy !== "default";
 
   return (
@@ -107,34 +112,37 @@ export default function HotelsView() {
                 </span>
               </div>
 
-              <h1 className="font-black text-white leading-[1.05] tracking-tight mb-4"
-                style={{ fontSize: "clamp(2.4rem, 5vw, 3.8rem)" }}>
-                {t.hotels.pageTitle.split(" ").map((word, i) =>
-                  i === 1 ? (
-                    <span key={i} style={{ color: GOLD, display: "inline" }}> {word}</span>
-                  ) : (
-                    <span key={i}>{i === 0 ? word : ` ${word}`}</span>
-                  )
-                )}
+              <h1 className="font-black text-white tracking-tight mb-5"
+                style={{ fontSize: "clamp(2.2rem, 4.5vw, 3.6rem)", lineHeight: 1.08 }}>
+                {(() => {
+                  const words = t.hotels.pageTitle.split(" ");
+                  return (
+                    <>
+                      <span style={{ display: "block" }}>{words.slice(0, 2).join(" ")}</span>
+                      <span style={{ display: "block", color: GOLD }}>{words.slice(2).join(" ")}</span>
+                    </>
+                  );
+                })()}
               </h1>
 
-              <p className="text-base mb-8" style={{ color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
-                {loading
-                  ? t.hotels.loadingProperties
-                  : `${hotels.length} ${hotels.length !== 1 ? t.hotels.propertiesAvailable : t.hotels.propertyAvailable} · Italian Concierge Service`}
+              <p className="text-sm mb-8" style={{ color: "rgba(255,255,255,0.5)", lineHeight: 1.7, maxWidth: 360 }}>
+                {t.hotels.pageSubtitle}
               </p>
 
-              {/* Trust row */}
-              <div className="flex flex-wrap gap-3">
+              {/* Benefits list */}
+              <div className="flex flex-col gap-3">
                 {[
-                  { icon: "✓", label: "Verified Properties" },
-                  { icon: "✓", label: "Italian Concierge" },
-                  { icon: "✓", label: "Instant Access" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3.5 py-2 rounded-xl"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    <span className="text-xs font-black" style={{ color: GOLD }}>{item.icon}</span>
-                    <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.65)" }}>{item.label}</span>
+                  "Digital Check-in",
+                  "Local Recommendations",
+                  "Airport Transfers",
+                  "Hotel Services",
+                ].map((label, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: `0 2px 8px ${GOLD}44` }}>
+                      <span style={{ color: "#1a1000", fontSize: 10, fontWeight: 900, lineHeight: 1 }}>✓</span>
+                    </div>
+                    <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.9)" }}>{label}</span>
                   </div>
                 ))}
               </div>
@@ -228,7 +236,7 @@ export default function HotelsView() {
           {/* ══════════════════════════════════════════
               FEATURED
           ══════════════════════════════════════════ */}
-          {!search && featured.length > 0 && (
+          {featured.length > 0 && (
             <section className="pt-10 md:pt-12 pb-2">
 
               {/* Section header */}
@@ -237,11 +245,16 @@ export default function HotelsView() {
                   <div className="w-1 h-10 rounded-full" style={{ background: `linear-gradient(180deg, ${GOLD}, ${GOLD2})` }} />
                   <div>
                     <p className="text-[10px] font-black tracking-[0.25em] uppercase mb-1" style={{ color: GOLD }}>
-                      {t.hotels.featuredTag}
+                      {noMatch ? "SUGGESTED FOR YOU" : search ? "SEARCH RESULTS" : t.hotels.featuredTag}
                     </p>
                     <h2 className="text-2xl md:text-3xl font-black" style={{ color: NAVY }}>
-                      {t.hotels.topProperties}
+                      {noMatch ? "You Might Also Like" : search ? `Results for "${search}"` : t.hotels.topProperties}
                     </h2>
+                    {noMatch && (
+                      <p className="text-xs mt-1" style={{ color: "#9a8a78" }}>
+                        No match for <span className="font-bold" style={{ color: NAVY }}>&ldquo;{search}&rdquo;</span> — showing top properties instead
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span className="text-xs font-black px-4 py-2.5 rounded-full"
@@ -263,7 +276,7 @@ export default function HotelsView() {
           )}
 
           {/* Divider */}
-          {!search && featured.length > 0 && (
+          {featured.length > 0 && (
             <div className="mx-6 md:mx-14 my-10 flex items-center gap-4">
               <div className="flex-1 h-px" style={{ background: "rgba(11,20,38,0.08)" }} />
               <div className="flex items-center gap-2 px-4 py-2 rounded-full"
@@ -330,29 +343,16 @@ export default function HotelsView() {
           {/* ══════════════════════════════════════════
               HOTEL CARDS LIST
           ══════════════════════════════════════════ */}
-          <div className="px-6 md:px-14 pb-20">
-            {results.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-28 text-center">
-                <div className="w-24 h-24 rounded-3xl flex items-center justify-center mb-6"
-                  style={{ background: "white", boxShadow: "0 8px 30px rgba(0,0,0,0.09)" }}>
-                  <Building2 className="w-11 h-11" style={{ color: "#c4b9a8" }} />
-                </div>
-                <p className="text-xl font-black mb-2" style={{ color: NAVY }}>{t.hotels.noHotelsFound}</p>
-                <p className="text-sm mb-6" style={{ color: "#9a8a78" }}>{t.hotels.tryDifferentSearch}</p>
-                <button type="button" onClick={() => { setSearch(""); setSortBy("default"); }}
-                  className="text-sm font-black px-8 py-3.5 rounded-2xl text-white"
-                  style={{ background: `linear-gradient(135deg, ${NAVY}, #1a2f5c)`, boxShadow: `0 6px 20px ${NAVY}44` }}>
-                  {t.hotels.resetSearch}
-                </button>
-              </div>
-            ) : (
+          {!noMatch && (
+            <div className="px-6 md:px-14 pb-20">
               <div className="flex flex-col gap-5">
                 {results.map(h => <HotelCard key={h.id} h={h} t={t} />)}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
+
     </div>
   );
 }
@@ -362,9 +362,11 @@ export default function HotelsView() {
 ══════════════════════════════════════════ */
 function FeaturedCard({ h, idx, t }: { h: Hotel; idx: number; t: ReturnType<typeof useLanguage>["t"] }) {
   const pal = paletteFor(h.id);
+  const hasConcierge = ["concierge", "concierge_checkin", "full"].includes(h.plan);
+  const hasCheckin = ["checkin", "concierge_checkin", "full"].includes(h.plan);
   return (
     <Link href={`/hotels/${h.id}`}
-      className="flex-shrink-0 w-60 md:w-full rounded-3xl overflow-hidden block"
+      className="flex-shrink-0 w-64 md:w-full rounded-3xl overflow-hidden block"
       style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.18)", transition: "transform 0.28s ease, box-shadow 0.28s ease" }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.transform = "translateY(-8px) scale(1.01)";
@@ -375,65 +377,102 @@ function FeaturedCard({ h, idx, t }: { h: Hotel; idx: number; t: ReturnType<type
         (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 32px rgba(0,0,0,0.18)";
       }}>
 
-      {/* Gradient top */}
+      {/* Gradient / photo top */}
       <div className="relative flex flex-col justify-between p-5"
-        style={{ height: 196, background: `linear-gradient(150deg, ${pal[0]}, ${pal[1]}, ${pal[2]})` }}>
+        style={{ height: 200, background: `linear-gradient(150deg, ${pal[0]}, ${pal[1]}, ${pal[2]})` }}>
+
+        {/* Gallery photo */}
         {h.gallery_images?.[0]?.image_url && (
           <Image unoptimized src={h.gallery_images[0].image_url} alt={h.name}
             fill className="object-cover" style={{ zIndex: 0 }} />
         )}
+
+        {/* No gallery → show logo large & centered */}
+        {!h.gallery_images?.[0]?.image_url && h.logo_url && (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
+            <div className="rounded-2xl p-4 flex items-center justify-center"
+              style={{ background: "rgba(255,255,255,0.14)", backdropFilter: "blur(6px)",
+                border: "1px solid rgba(255,255,255,0.22)" }}>
+              <Image unoptimized src={h.logo_url} alt={h.name} width={80} height={80}
+                className="object-contain rounded-xl"
+                style={{ width: 80, height: 80 }} />
+            </div>
+          </div>
+        )}
+
+        {/* No gallery, no logo → building icon */}
+        {!h.gallery_images?.[0]?.image_url && !h.logo_url && (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
+            <Building2 className="w-16 h-16" style={{ color: "rgba(255,255,255,0.15)" }} />
+          </div>
+        )}
+
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1,
           background: h.gallery_images?.[0]?.image_url
-            ? "linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.62) 100%)"
-            : "radial-gradient(ellipse at 80% 10%, rgba(255,255,255,0.16) 0%, transparent 55%)",
+            ? "linear-gradient(180deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.70) 100%)"
+            : "linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 100%)",
         }} />
 
-        {/* Top row */}
+        {/* Top row: rank badge only (no redundant logo thumbnail) */}
         <div className="flex items-center justify-between relative z-10">
           <span className="text-[9px] font-black tracking-widest uppercase px-2.5 py-1.5 rounded-full"
             style={{ background: "rgba(201,168,76,0.18)", color: GOLD, border: "1px solid rgba(201,168,76,0.35)" }}>
             #{idx + 1} {t.hotels.property}
           </span>
-          {h.logo_url ? (
-            <Image unoptimized src={h.logo_url} alt={h.name} width={38} height={38}
+          {/* Show small logo badge only when gallery photo is present (not redundant) */}
+          {h.gallery_images?.[0]?.image_url && h.logo_url && (
+            <Image unoptimized src={h.logo_url} alt={h.name} width={32} height={32}
               className="rounded-xl object-cover"
-              style={{ width: 38, height: 38, border: "2px solid rgba(255,255,255,0.3)" }} />
-          ) : (
-            <div className="rounded-xl flex items-center justify-center text-sm font-black"
-              style={{ width: 38, height: 38, background: "rgba(255,255,255,0.18)", border: "2px solid rgba(255,255,255,0.28)", color: "white" }}>
-              {initials(h.name)}
-            </div>
+              style={{ width: 32, height: 32, border: "2px solid rgba(255,255,255,0.3)" }} />
           )}
         </div>
 
-        {/* Bottom */}
+        {/* Bottom: name + city + stars */}
         <div className="relative z-10">
-          <h3 className="text-white font-black text-base leading-snug line-clamp-2 mb-2">{h.name}</h3>
-          <div className="flex items-center gap-1.5">
+          <h3 className="text-white font-black text-base leading-snug line-clamp-2 mb-1.5">{h.name}</h3>
+          <div className="flex items-center gap-1.5 mb-1.5">
             <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: GOLD }} />
             <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.65)" }}>{h.city}</span>
+          </div>
+          <div className="flex gap-0.5">
+            {[1,2,3,4,5].map(s => (
+              <span key={s} style={{ color: GOLD, fontSize: 11 }}>★</span>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* White bottom strip */}
-      <div className="bg-white flex items-center justify-between px-4 py-3.5"
-        style={{ borderTop: `2px solid ${GOLD}20` }}>
-        <div className="flex-1 min-w-0">
-          {h.amenities?.length > 0 ? (
-            <p className="text-xs font-semibold truncate" style={{ color: "#8a7a6a" }}>
-              {h.amenities.slice(0, 2).join(" · ")}
-            </p>
-          ) : (
-            <p className="text-xs font-semibold" style={{ color: "#8a7a6a" }}>{t.hotels.digitalConcierge}</p>
+      {/* White bottom: badges + CTA */}
+      <div className="bg-white px-4 pt-3.5 pb-4" style={{ borderTop: `2px solid ${GOLD}20` }}>
+        {/* Service badges */}
+        <div className="flex flex-col gap-1.5 mb-3">
+          {hasConcierge && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#7C3AED" }} />
+              <span className="text-[11px] font-semibold" style={{ color: "#5b21b6" }}>Digital Concierge Available</span>
+            </div>
           )}
-          <p className="text-xs font-black mt-0.5" style={{ color: NAVY }}>
-            {h.is_24_7 ? t.hotels.open247 : t.hotels.viewDetailsArrow}
-          </p>
+          {hasCheckin && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#0891B2" }} />
+              <span className="text-[11px] font-semibold" style={{ color: "#0e7490" }}>Digital Check-in Available</span>
+            </div>
+          )}
+          {!hasConcierge && !hasCheckin && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: GOLD }} />
+              <span className="text-[11px] font-semibold" style={{ color: "#7a5c1e" }}>{t.hotels.digitalConcierge}</span>
+            </div>
+          )}
         </div>
-        <div className="w-8 h-8 rounded-full flex items-center justify-center ml-3 flex-shrink-0"
-          style={{ background: `linear-gradient(135deg, ${NAVY}, #1e3a6e)` }}>
-          <ChevronRight className="w-3.5 h-3.5 text-white" />
+
+        {/* CTA row */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-black" style={{ color: NAVY }}>Book Your Stay Here</span>
+          <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black text-white"
+            style={{ background: `linear-gradient(135deg, ${NAVY}, #1e3a6e)` }}>
+            Open <ChevronRight className="w-3 h-3" />
+          </div>
         </div>
       </div>
     </Link>
@@ -456,6 +495,8 @@ const WA_ICON = (
 function HotelCard({ h, t }: { h: Hotel; t: ReturnType<typeof useLanguage>["t"] }) {
   const pal = paletteFor(h.id);
   const hasInfo = (!h.is_24_7 && (h.open_time || h.close_time)) || h.wifi_info || h.phone;
+  const hasConcierge = ["concierge", "concierge_checkin", "full"].includes(h.plan);
+  const hasCheckin   = ["checkin",   "concierge_checkin", "full"].includes(h.plan);
 
   return (
     <div className="rounded-3xl overflow-hidden"
@@ -587,51 +628,45 @@ function HotelCard({ h, t }: { h: Hotel; t: ReturnType<typeof useLanguage>["t"] 
           {/* Separator */}
           <div style={{ height: 1, background: "rgba(11,20,38,0.06)" }} />
 
-          {/* CTA buttons */}
-          <div className="flex gap-3">
+          {/* CTA buttons — plan-based */}
+          <div className="flex flex-wrap gap-2">
+
+            {/* WhatsApp — always first if available */}
             {h.whatsapp_number && (
               <a href={`https://wa.me/${h.whatsapp_number.replace(/\D/g, "")}`}
                 target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold flex-shrink-0"
-                style={{
-                  background: "#f0fdf4", color: "#16a34a",
-                  border: "1.5px solid #bbf7d0",
-                  transition: "background 0.2s, transform 0.2s",
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.background = "#dcfce7";
-                  (e.currentTarget as HTMLElement).style.transform = "scale(1.03)";
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLElement).style.background = "#f0fdf4";
-                  (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-                }}
+                className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold flex-shrink-0"
+                style={{ background: "#f0fdf4", color: "#16a34a", border: "1.5px solid #bbf7d0" }}
                 onClick={e => e.stopPropagation()}>
-                {WA_ICON}
-                {t.hotels.whatsapp}
+                {WA_ICON} WhatsApp
               </a>
             )}
 
+            {/* View Concierge — if plan includes concierge */}
+            {hasConcierge && (
+              <Link href={`/h/${h.id}`}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black text-white flex-1 min-w-[120px]"
+                style={{ background: "linear-gradient(135deg, #7C3AED, #5B21B6)" }}>
+                <ConciergeBell className="w-3.5 h-3.5" /> View Concierge
+              </Link>
+            )}
+
+            {/* Digital Check-in — if plan includes checkin */}
+            {hasCheckin && (
+              <Link href={`/hotels/${h.id}`}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black text-white flex-1 min-w-[120px]"
+                style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
+                <Smartphone className="w-3.5 h-3.5" /> Digital Check-in
+              </Link>
+            )}
+
+            {/* View Detail — always last */}
             <Link href={`/hotels/${h.id}`}
-              className="flex-1 inline-flex items-center justify-center gap-2.5 py-3 rounded-2xl text-sm font-black text-white"
-              style={{
-                background: `linear-gradient(135deg, #0B1F45 0%, #1a3a70 50%, #0f2d5c 100%)`,
-                boxShadow: "0 4px 18px rgba(11,20,38,0.28)",
-                transition: "opacity 0.2s, transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.opacity = "0.92";
-                (e.currentTarget as HTMLElement).style.transform = "scale(1.02)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "0 10px 32px rgba(11,20,38,0.4)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.opacity = "1";
-                (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-                (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 18px rgba(11,20,38,0.28)";
-              }}>
-              {t.hotels.viewConcierge}
-              <ChevronRight className="w-4 h-4" />
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-black flex-1 min-w-[100px]"
+              style={{ background: NAVY, color: GOLD }}>
+              View Detail <ChevronRight className="w-3 h-3" />
             </Link>
+
           </div>
         </div>
       </div>

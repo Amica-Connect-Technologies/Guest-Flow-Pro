@@ -243,7 +243,7 @@ export default function ForHotelsViewIT() {
             </div>
 
             <p className="text-slate-400 text-sm">
-              Scelto da hotel in Italia, nel Regno Unito e in Pakistan · Attivo in meno di 48 ore
+              Scelto da hotel in Italia, nel Regno Unito e in Spagna · Attivo in meno di 48 ore
             </p>
           </div>
 

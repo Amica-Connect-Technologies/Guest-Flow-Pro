@@ -313,7 +313,7 @@ export default function ForHotelsView() {
             </div>
 
             <p className="text-slate-400 text-sm">
-              Trusted by hotels in Italy, the UK, and Pakistan · Setup in under 48 hours
+              Trusted by hotels in Italy, the UK, and Spain · Setup in under 48 hours
             </p>
           </div>
 
