@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { UtensilsCrossed, Car, Moon, Landmark, Compass, type LucideIcon } from "lucide-react";
-import { hotelsApi, toursApi, placesApi, type Hotel, type Tour, type NearbyPlace } from "@/lib/api";
+import { hotelsApi, toursApi, placesApi, bookingRequestsApi, type Hotel, type Tour, type NearbyPlace } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
 function currency(country: string) {
@@ -108,6 +108,17 @@ export default function HotelDetailPage() {
   const [nearbyData, setNearbyData] = useState<Partial<Record<NearbyTabKey, NearbyPlace[]>>>({});
   const [loadingNearby, setLoadingNearby] = useState<Partial<Record<NearbyTabKey, boolean>>>({});
 
+  // Booking request form
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingDone, setBookingDone] = useState(false);
+  const [bookingErr, setBookingErr] = useState("");
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingForm, setBookingForm] = useState({
+    guest_name: "", guest_email: "", guest_phone: "",
+    check_in_date: "", check_out_date: "",
+    num_guests: 1, room_type: "", message: "",
+  });
+
   useEffect(() => {
     (async () => {
       try {
@@ -159,6 +170,30 @@ export default function HotelDetailPage() {
   const waHref = hotel.whatsapp_number
     ? `https://wa.me/${hotel.whatsapp_number.replace(/\D/g, "")}?text=${encodeURIComponent(`Hello, I'd like to book a room at ${hotel.name}`)}`
     : null;
+
+  async function handleBookingSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!hotel) return;
+    setBookingErr("");
+    setBookingLoading(true);
+    try {
+      await bookingRequestsApi.submitPublic(hotel.id, {
+        guest_name: bookingForm.guest_name,
+        guest_email: bookingForm.guest_email || undefined,
+        guest_phone: bookingForm.guest_phone || undefined,
+        check_in_date: bookingForm.check_in_date,
+        check_out_date: bookingForm.check_out_date,
+        num_guests: bookingForm.num_guests,
+        room_type: bookingForm.room_type || undefined,
+        message: bookingForm.message || undefined,
+      });
+      setBookingDone(true);
+    } catch (err: unknown) {
+      setBookingErr(err instanceof Error ? err.message : "Failed to submit request.");
+    } finally {
+      setBookingLoading(false);
+    }
+  }
 
   const CARD_SHADOW = "0 1px 2px rgba(15,23,42,0.04), 0 12px 32px -16px rgba(15,23,42,0.16)";
 
@@ -478,22 +513,20 @@ export default function HotelDetailPage() {
               </div>
               <div className="p-4 space-y-2.5">
                 {/* Book a Room */}
-                {waHref ? (
-                  <a href={waHref} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white transition-all active:scale-[0.99]"
-                    style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
-                    <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                      </svg>
-                    </span>
-                    <span className="flex-1 text-left">
-                      <span className="block font-black text-sm leading-tight">Book a Room</span>
-                      <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via WhatsApp · instant reply</span>
-                    </span>
-                    <IcoChevRight />
-                  </a>
-                ) : null}
+                <button onClick={() => { setBookingOpen(true); setBookingDone(false); setBookingErr(""); }}
+                  className="flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white transition-all active:scale-[0.99]"
+                  style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
+                  <span className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                  </span>
+                  <span className="flex-1 text-left">
+                    <span className="block font-black text-sm leading-tight">Book a Room</span>
+                    <span className="block text-[11px] text-white/70 font-semibold mt-0.5">Advance reservation · instant confirm</span>
+                  </span>
+                  <IcoChevRight />
+                </button>
 
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-px bg-slate-100" />
@@ -632,37 +665,22 @@ export default function HotelDetailPage() {
                 </div>
 
                 <div className="p-4 space-y-2.5">
-                  {/* Book Room — primary */}
-                  {waHref ? (
-                    <a href={waHref} target="_blank" rel="noopener noreferrer"
-                      className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
-                      style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
-                      <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-out" />
-                      <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                        </svg>
-                      </span>
-                      <span className="relative flex-1 text-left min-w-0">
-                        <span className="block font-black text-sm leading-tight">Book a Room</span>
-                        <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via WhatsApp · instant reply</span>
-                      </span>
-                      <IcoChevRight />
-                    </a>
-                  ) : hotel.email ? (
-                    <a href={`mailto:${hotel.email}?subject=Room Booking – ${hotel.name}`}
-                      className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
-                      style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.5)" }}>
-                      <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
-                        <IcoMail />
-                      </span>
-                      <span className="relative flex-1 text-left min-w-0">
-                        <span className="block font-black text-sm leading-tight">Book a Room</span>
-                        <span className="block text-[11px] text-white/70 font-semibold mt-0.5">via Email</span>
-                      </span>
-                      <IcoChevRight />
-                    </a>
-                  ) : null}
+                  {/* Book Room — primary CTA (opens form modal) */}
+                  <button onClick={() => { setBookingOpen(true); setBookingDone(false); setBookingErr(""); }}
+                    className="group relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl text-white overflow-hidden transition-all hover:-translate-y-0.5 active:scale-[0.99]"
+                    style={{ background: "linear-gradient(135deg, #0891B2 0%, #0E7490 100%)", boxShadow: "0 10px 24px -8px rgba(8,145,178,0.55)" }}>
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-120%] group-hover:translate-x-[120%] transition-transform duration-700 ease-out" />
+                    <span className="relative w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.25} className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                      </svg>
+                    </span>
+                    <span className="relative flex-1 text-left min-w-0">
+                      <span className="block font-black text-sm leading-tight">Book a Room</span>
+                      <span className="block text-[11px] text-white/70 font-semibold mt-0.5">Advance reservation · instant confirm</span>
+                    </span>
+                    <IcoChevRight />
+                  </button>
 
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-px bg-slate-100" />
@@ -747,19 +765,11 @@ export default function HotelDetailPage() {
         }}>
         <div className="px-4 pt-3 pb-3 space-y-2.5">
           {/* Primary CTA */}
-          {waHref ? (
-            <a href={waHref} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white font-black text-sm active:scale-[0.98] transition-transform"
-              style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 4px 14px rgba(8,145,178,0.3)" }}>
-              🛏️ Book a Room
-            </a>
-          ) : hotel.email ? (
-            <a href={`mailto:${hotel.email}`}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white font-black text-sm"
-              style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
-              🛏️ Book a Room
-            </a>
-          ) : null}
+          <button onClick={() => { setBookingOpen(true); setBookingDone(false); setBookingErr(""); }}
+            className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-white font-black text-sm active:scale-[0.98] transition-transform"
+            style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 4px 14px rgba(8,145,178,0.3)" }}>
+            🛏️ Book a Room
+          </button>
 
           {/* Secondary row */}
           <div className="flex gap-2">
@@ -795,6 +805,165 @@ export default function HotelDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ── BOOKING REQUEST MODAL ────────────────────────────── */}
+      {bookingOpen && (
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: "rgba(2,11,18,0.72)", backdropFilter: "blur(6px)" }}
+          onClick={() => setBookingOpen(false)}>
+          <div className="w-full sm:max-w-lg bg-white rounded-t-[28px] sm:rounded-[28px] overflow-hidden"
+            style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.35)", maxHeight: "92dvh", overflowY: "auto" }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Modal header */}
+            <div className="relative px-5 pt-5 pb-4"
+              style={{ background: "linear-gradient(135deg, #0C1A2E 0%, #083344 60%, #0E7490 100%)" }}>
+              <div className="absolute -right-4 -top-8 w-28 h-28 rounded-full bg-white/5" />
+              <button onClick={() => setBookingOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <p className="text-cyan-200/70 text-[10px] font-black uppercase tracking-widest mb-1">Room Reservation</p>
+              <p className="text-white font-serif font-bold text-lg leading-snug">{hotel.name}</p>
+              <p className="text-cyan-300/70 text-xs mt-0.5">{hotel.city}{hotel.country ? `, ${hotel.country}` : ""}</p>
+            </div>
+
+            {bookingDone ? (
+              /* Success state */
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-black text-slate-900 mb-2">Request Submitted!</h3>
+                <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                  Your booking request has been sent to <span className="font-semibold text-slate-700">{hotel.name}</span>. They will confirm your reservation shortly.
+                </p>
+                <button onClick={() => setBookingOpen(false)}
+                  className="w-full py-3.5 rounded-2xl font-black text-sm text-white"
+                  style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
+                  Close
+                </button>
+              </div>
+            ) : (
+              /* Form */
+              <form onSubmit={handleBookingSubmit} className="p-5 space-y-4">
+                {/* Guest details */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Your Details</p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Full Name <span className="text-red-400">*</span></label>
+                      <input required value={bookingForm.guest_name}
+                        onChange={e => setBookingForm(f => ({ ...f, guest_name: e.target.value }))}
+                        placeholder="John Smith"
+                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Email</label>
+                        <input type="email" value={bookingForm.guest_email}
+                          onChange={e => setBookingForm(f => ({ ...f, guest_email: e.target.value }))}
+                          placeholder="john@email.com"
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Phone</label>
+                        <input type="tel" value={bookingForm.guest_phone}
+                          onChange={e => setBookingForm(f => ({ ...f, guest_phone: e.target.value }))}
+                          placeholder="+39 000 000"
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stay details */}
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Stay Details</p>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Check-in <span className="text-red-400">*</span></label>
+                        <input required type="date" value={bookingForm.check_in_date}
+                          min={new Date().toISOString().split("T")[0]}
+                          onChange={e => setBookingForm(f => ({ ...f, check_in_date: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Check-out <span className="text-red-400">*</span></label>
+                        <input required type="date" value={bookingForm.check_out_date}
+                          min={bookingForm.check_in_date || new Date().toISOString().split("T")[0]}
+                          onChange={e => setBookingForm(f => ({ ...f, check_out_date: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Guests <span className="text-red-400">*</span></label>
+                        <select value={bookingForm.num_guests}
+                          onChange={e => setBookingForm(f => ({ ...f, num_guests: Number(e.target.value) }))}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all">
+                          {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} {n === 1 ? "guest" : "guests"}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Room Type</label>
+                        <select value={bookingForm.room_type}
+                          onChange={e => setBookingForm(f => ({ ...f, room_type: e.target.value }))}
+                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all">
+                          <option value="">Any</option>
+                          <option value="Standard">Standard</option>
+                          <option value="Deluxe">Deluxe</option>
+                          <option value="Suite">Suite</option>
+                          <option value="Family">Family</option>
+                          <option value="Junior Suite">Junior Suite</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Special Requests</label>
+                      <textarea value={bookingForm.message} rows={3}
+                        onChange={e => setBookingForm(f => ({ ...f, message: e.target.value }))}
+                        placeholder="Early check-in, sea view, dietary requirements…"
+                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all resize-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {bookingErr && (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+                    <p className="text-sm text-red-700 font-medium">{bookingErr}</p>
+                  </div>
+                )}
+
+                <button type="submit" disabled={bookingLoading}
+                  className="w-full flex items-center justify-center gap-2.5 font-black text-sm py-4 rounded-2xl text-white transition-all disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 6px 20px rgba(14,116,144,0.35)" }}>
+                  {bookingLoading ? (
+                    <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Sending…</>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                      </svg>
+                      Send Booking Request
+                    </>
+                  )}
+                </button>
+
+                <p className="text-center text-[11px] text-slate-400">
+                  The hotel will confirm your reservation by email or phone.
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── LIGHTBOX ─────────────────────────────────────────── */}
       {lightbox !== null && (
