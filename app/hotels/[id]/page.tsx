@@ -808,106 +808,123 @@ export default function HotelDetailPage() {
 
       {/* ── BOOKING REQUEST MODAL ────────────────────────────── */}
       {bookingOpen && (
-        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-4"
-          style={{ background: "rgba(2,11,18,0.72)", backdropFilter: "blur(6px)" }}
+        <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center"
+          style={{ background: "rgba(2,11,18,0.75)", backdropFilter: "blur(8px)" }}
           onClick={() => setBookingOpen(false)}>
-          <div className="w-full sm:max-w-lg bg-white rounded-t-[28px] sm:rounded-[28px] overflow-hidden"
-            style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.35)", maxHeight: "92dvh", overflowY: "auto" }}
+
+          <div className="relative w-full sm:max-w-[520px] sm:mx-4 bg-white sm:rounded-[32px] rounded-t-[32px] flex flex-col"
+            style={{ maxHeight: "94dvh", boxShadow: "0 -8px 40px rgba(0,0,0,0.28), 0 24px 64px rgba(0,0,0,0.35)" }}
             onClick={e => e.stopPropagation()}>
 
-            {/* Modal header */}
-            <div className="relative px-5 pt-5 pb-4"
-              style={{ background: "linear-gradient(135deg, #0C1A2E 0%, #083344 60%, #0E7490 100%)" }}>
-              <div className="absolute -right-4 -top-8 w-28 h-28 rounded-full bg-white/5" />
+            {/* Drag handle (mobile only) */}
+            <div className="sm:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div className="w-10 h-1 rounded-full bg-slate-200" />
+            </div>
+
+            {/* Header */}
+            <div className="relative flex-shrink-0 px-6 pt-4 pb-5 sm:pt-6 sm:rounded-t-[32px] overflow-hidden"
+              style={{ background: "linear-gradient(135deg, #0C1A2E 0%, #083344 55%, #0E7490 100%)" }}>
+              <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/[0.04]" />
+              <div className="absolute right-8 bottom-0 w-20 h-20 rounded-full bg-white/[0.04]" />
               <button onClick={() => setBookingOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <p className="text-cyan-200/70 text-[10px] font-black uppercase tracking-widest mb-1">Room Reservation</p>
-              <p className="text-white font-serif font-bold text-lg leading-snug">{hotel.name}</p>
-              <p className="text-cyan-300/70 text-xs mt-0.5">{hotel.city}{hotel.country ? `, ${hotel.country}` : ""}</p>
+              <p className="text-cyan-300/70 text-[10px] font-black uppercase tracking-widest mb-1.5">Room Reservation</p>
+              <h2 className="text-white font-bold text-xl leading-snug mb-0.5">{hotel.name}</h2>
+              <p className="text-cyan-300/60 text-sm">{hotel.city}{hotel.country ? `, ${hotel.country}` : ""}</p>
             </div>
 
-            {bookingDone ? (
-              /* Success state */
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {bookingDone ? (
+                /* ── Success ── */
+                <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                  <div className="w-20 h-20 rounded-full mb-5 flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 8px 28px rgba(14,116,144,0.4)" }}>
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">Request Sent!</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed max-w-xs">
+                    Your booking request has been sent to{" "}
+                    <span className="font-semibold text-slate-700">{hotel.name}</span>.
+                    They will confirm your reservation by email or phone shortly.
+                  </p>
+                  <button onClick={() => setBookingOpen(false)}
+                    className="mt-8 w-full max-w-xs py-4 rounded-2xl font-black text-base text-white"
+                    style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)", boxShadow: "0 6px 20px rgba(14,116,144,0.35)" }}>
+                    Done
+                  </button>
                 </div>
-                <h3 className="text-lg font-black text-slate-900 mb-2">Request Submitted!</h3>
-                <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                  Your booking request has been sent to <span className="font-semibold text-slate-700">{hotel.name}</span>. They will confirm your reservation shortly.
-                </p>
-                <button onClick={() => setBookingOpen(false)}
-                  className="w-full py-3.5 rounded-2xl font-black text-sm text-white"
-                  style={{ background: "linear-gradient(135deg, #0891B2, #0E7490)" }}>
-                  Close
-                </button>
-              </div>
-            ) : (
-              /* Form */
-              <form onSubmit={handleBookingSubmit} className="p-5 space-y-4">
-                {/* Guest details */}
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Your Details</p>
+              ) : (
+                /* ── Form ── */
+                <form onSubmit={handleBookingSubmit} className="px-6 py-5 space-y-6">
+
+                  {/* ── Your Details ── */}
                   <div className="space-y-3">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Your Details</p>
                     <div>
-                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Full Name <span className="text-red-400">*</span></label>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                        Full Name <span className="text-red-400">*</span>
+                      </label>
                       <input required value={bookingForm.guest_name}
                         onChange={e => setBookingForm(f => ({ ...f, guest_name: e.target.value }))}
-                        placeholder="John Smith"
-                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                        placeholder="e.g. John Smith"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all" />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Email</label>
                         <input type="email" value={bookingForm.guest_email}
                           onChange={e => setBookingForm(f => ({ ...f, guest_email: e.target.value }))}
-                          placeholder="john@email.com"
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                          placeholder="email@you.com"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all" />
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Phone</label>
                         <input type="tel" value={bookingForm.guest_phone}
                           onChange={e => setBookingForm(f => ({ ...f, guest_phone: e.target.value }))}
                           placeholder="+39 000 000"
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all" />
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Stay details */}
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Stay Details</p>
+                  {/* ── Stay Details ── */}
                   <div className="space-y-3">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Stay Details</p>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Check-in <span className="text-red-400">*</span></label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                          Check-in <span className="text-red-400">*</span>
+                        </label>
                         <input required type="date" value={bookingForm.check_in_date}
                           min={new Date().toISOString().split("T")[0]}
                           onChange={e => setBookingForm(f => ({ ...f, check_in_date: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all" />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Check-out <span className="text-red-400">*</span></label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                          Check-out <span className="text-red-400">*</span>
+                        </label>
                         <input required type="date" value={bookingForm.check_out_date}
                           min={bookingForm.check_in_date || new Date().toISOString().split("T")[0]}
                           onChange={e => setBookingForm(f => ({ ...f, check_out_date: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all" />
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-slate-600 mb-1.5">Guests <span className="text-red-400">*</span></label>
+                        <label className="block text-xs font-bold text-slate-600 mb-1.5">
+                          Guests <span className="text-red-400">*</span>
+                        </label>
                         <select value={bookingForm.num_guests}
                           onChange={e => setBookingForm(f => ({ ...f, num_guests: Number(e.target.value) }))}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all">
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all">
                           {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={n}>{n} {n === 1 ? "guest" : "guests"}</option>)}
                         </select>
                       </div>
@@ -915,13 +932,13 @@ export default function HotelDetailPage() {
                         <label className="block text-xs font-bold text-slate-600 mb-1.5">Room Type</label>
                         <select value={bookingForm.room_type}
                           onChange={e => setBookingForm(f => ({ ...f, room_type: e.target.value }))}
-                          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all">
-                          <option value="">Any</option>
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all">
+                          <option value="">Any room</option>
                           <option value="Standard">Standard</option>
                           <option value="Deluxe">Deluxe</option>
                           <option value="Suite">Suite</option>
-                          <option value="Family">Family</option>
                           <option value="Junior Suite">Junior Suite</option>
+                          <option value="Family">Family</option>
                         </select>
                       </div>
                     </div>
@@ -929,38 +946,43 @@ export default function HotelDetailPage() {
                       <label className="block text-xs font-bold text-slate-600 mb-1.5">Special Requests</label>
                       <textarea value={bookingForm.message} rows={3}
                         onChange={e => setBookingForm(f => ({ ...f, message: e.target.value }))}
-                        placeholder="Early check-in, sea view, dietary requirements…"
-                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-100 focus:border-transparent transition-all resize-none" />
+                        placeholder="Early check-in, sea view, dietary requirements, celebration…"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-[15px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 focus:bg-white transition-all resize-none" />
                     </div>
                   </div>
-                </div>
 
-                {bookingErr && (
-                  <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
-                    <p className="text-sm text-red-700 font-medium">{bookingErr}</p>
-                  </div>
-                )}
-
-                <button type="submit" disabled={bookingLoading}
-                  className="w-full flex items-center justify-center gap-2.5 font-black text-sm py-4 rounded-2xl text-white transition-all disabled:opacity-60"
-                  style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 6px 20px rgba(14,116,144,0.35)" }}>
-                  {bookingLoading ? (
-                    <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Sending…</>
-                  ) : (
-                    <>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                  {bookingErr && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3.5 flex items-start gap-3">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth={2} className="w-5 h-5 flex-shrink-0 mt-0.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                       </svg>
-                      Send Booking Request
-                    </>
+                      <p className="text-sm text-red-700 font-medium">{bookingErr}</p>
+                    </div>
                   )}
-                </button>
 
-                <p className="text-center text-[11px] text-slate-400">
-                  The hotel will confirm your reservation by email or phone.
-                </p>
-              </form>
-            )}
+                  {/* Submit */}
+                  <div className="pb-2">
+                    <button type="submit" disabled={bookingLoading}
+                      className="w-full flex items-center justify-center gap-2.5 font-black text-base py-4 rounded-2xl text-white transition-all active:scale-[0.98] disabled:opacity-60"
+                      style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 8px 24px rgba(14,116,144,0.4)" }}>
+                      {bookingLoading ? (
+                        <><div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Sending…</>
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                          </svg>
+                          Send Booking Request
+                        </>
+                      )}
+                    </button>
+                    <p className="text-center text-[11px] text-slate-400 mt-3 leading-relaxed">
+                      The hotel will confirm your reservation by email or phone.
+                    </p>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       )}
