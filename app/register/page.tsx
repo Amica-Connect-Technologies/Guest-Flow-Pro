@@ -204,7 +204,7 @@ const empty: Form = {
   owner_name: "", email: "", phone: "", password: "", confirm_password: "",
   business_name: "", city: "", country: "", whatsapp_number: "", website: "",
   plan: "concierge",
-  payment_method: "stripe",
+  payment_method: "bank_transfer",
 };
 
 function getCode(country: string) {
@@ -1055,34 +1055,13 @@ function RegisterPageInner() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {([
-                    {
-                      method: "stripe" as const,
-                      label: t.register.step3.cardName,
-                      desc: "Instant payment via Stripe — secure & fast",
-                      icon: (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                        </svg>
-                      ),
-                    },
-                    {
-                      method: "bank_transfer" as const,
-                      label: t.register.step3.bankTransferName,
-                      desc: t.register.step3.bankTransferDesc,
-                      icon: (
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
-                        </svg>
-                      ),
-                    },
-                  ]).map(({ method, label, desc, icon }) => {
-                    const selected = form.payment_method === method;
+                  {/* Bank Transfer — active */}
+                  {(() => {
+                    const selected = form.payment_method === "bank_transfer";
                     return (
                       <button
-                        key={method}
                         type="button"
-                        onClick={() => set("payment_method", method)}
+                        onClick={() => set("payment_method", "bank_transfer")}
                         className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${
                           selected ? "bg-blue-50" : "hover:bg-slate-50"
                         }`}
@@ -1090,11 +1069,13 @@ function RegisterPageInner() {
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                           selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
                         }`}>
-                          {icon}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                          </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{label}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
+                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{t.register.step3.bankTransferName}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.bankTransferDesc}</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           selected ? "border-blue-500 bg-blue-500" : "border-slate-300"
@@ -1107,7 +1088,24 @@ function RegisterPageInner() {
                         </div>
                       </button>
                     );
-                  })}
+                  })()}
+
+                  {/* Credit / Debit Card — coming soon, not selectable */}
+                  <div className="w-full flex items-center gap-4 px-5 py-4 opacity-50 cursor-not-allowed">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-slate-500">{t.register.step3.cardName}</p>
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{t.register.step3.cardComingSoon}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.cardDesc}</p>
+                    </div>
+                    <div className="w-5 h-5 rounded-full border-2 border-slate-200 flex-shrink-0" />
+                  </div>
                 </div>
               </div>
 
@@ -1315,26 +1313,22 @@ function RegisterPageInner() {
                 </div>
               </div>
 
+              {/* Note: proof required */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p className="text-xs text-amber-700">
+                  Please transfer the payment using the bank details above, then upload your transaction screenshot or enter your transaction ID. Your account will be activated once payment is confirmed.
+                </p>
+              </div>
+
               {/* Actions */}
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    const params = new URLSearchParams({
-                      method: "bank_transfer",
-                      business_name: form.business_name,
-                      plan: form.plan,
-                    });
-                    window.location.href = `/register/success?${params}`;
-                  }}
-                  className="flex-none text-xs text-slate-400 hover:text-slate-600 underline self-center transition-colors px-2"
-                >
-                  {t.register.step4.skipForNow}
-                </button>
-                <button
-                  type="button"
                   onClick={handleSubmitProof}
-                  disabled={submittingProof || (!transactionId.trim() && !proofFile)}
+                  disabled={submittingProof}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all flex items-center justify-center gap-2"
                 >
                   {submittingProof ? (

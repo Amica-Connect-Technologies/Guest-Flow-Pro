@@ -98,6 +98,14 @@ class RegisterView(APIView):
 
         # ── Stripe checkout ───────────────────────────────────────────────────
         price_id = STRIPE_PRICES.get(d["plan"])
+        if not price_id:
+            reg.delete()
+            user.delete()
+            return Response(
+                {"detail": "Stripe card payment is not yet available. Please select Bank Transfer to complete your registration."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         frontend_url = settings.FRONTEND_URL.rstrip("/")
 
         try:
