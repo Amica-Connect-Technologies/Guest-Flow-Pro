@@ -229,7 +229,7 @@ function RequestCard({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function BookingRequestsPage() {
-  const { lang } = useLanguage();
+  const { lang, setLang } = useLanguage();
   const t = T[lang as keyof typeof T] ?? T.en;
 
   const FILTERS = [
@@ -295,12 +295,29 @@ export default function BookingRequestsPage() {
       )}
 
       {/* Desktop page header bar */}
-      <div className="hidden md:flex items-center gap-2.5 px-8 py-4 bg-white border-b border-slate-200 sticky top-0 z-20"
+      <div className="hidden md:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200 sticky top-0 z-20"
         style={{ boxShadow: "0 1px 0 rgba(0,0,0,0.06)" }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-slate-400">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 10.5h8m-8 3.75h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h1 className="text-base font-bold text-slate-800">{t.title}</h1>
+        <div className="flex items-center gap-2.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-slate-400">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10.5h8m-8 3.75h5.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h1 className="text-base font-bold text-slate-800">{t.title}</h1>
+        </div>
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+          {(["en", "it", "es"] as const).map((code) => {
+            const LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+            return (
+              <button key={code} onClick={() => setLang(code)}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all"
+                style={lang === code
+                  ? { background: "white", color: "#0E7490", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                  : { color: "#94a3b8" }
+                }>
+                {LABELS[code]}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-8">

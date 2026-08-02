@@ -62,7 +62,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();
-  const { lang }     = useLanguage();
+  const { lang, setLang } = useLanguage();
   const nt           = NAV_T[lang as keyof typeof NAV_T] ?? NAV_T.en;
 
   const [hotel,     setHotel]     = useState<Hotel | null>(null);
@@ -332,6 +332,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
         {/* Sign out */}
         <div className="px-3 pb-4 border-t border-white/10 pt-3 flex-shrink-0">
           <p className="px-3 pb-2 text-white/35 text-[11px] font-medium truncate">{userEmail}</p>
+
           <button
             onClick={() => { auth.logout(); router.push("/login"); }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/50 transition-all"
@@ -346,6 +347,37 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
       {/* Main area — offset right of sidebar on desktop */}
       <div className="md:pl-64">
+        {/* Mobile top bar (dashboard has no mobile sidebar) */}
+        <div className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+          style={{ background: "linear-gradient(180deg, #020B12 0%, #0c3344 100%)", borderColor: "rgba(6,182,212,0.12)" }}>
+          <div className="flex items-center gap-2 min-w-0">
+            {hotel?.logo_url ? (
+              <Image unoptimized src={hotel.logo_url} alt={hotel.name ?? ""} width={28} height={28}
+                className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+            ) : (
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-black text-xs flex-shrink-0"
+                style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
+                {hotel?.name?.slice(0, 2).toUpperCase() ?? "HT"}
+              </div>
+            )}
+            <span className="text-white font-bold text-sm truncate">{hotel?.name ?? "Dashboard"}</span>
+          </div>
+          <div className="flex gap-1 flex-shrink-0 ml-3">
+            {(["en", "it", "es"] as const).map((code) => {
+              const flags = { en: "🇬🇧", it: "🇮🇹", es: "🇪🇸" } as const;
+              return (
+                <button key={code} onClick={() => setLang(code)}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all"
+                  style={lang === code
+                    ? { background: "rgba(6,182,212,0.25)", border: "1px solid rgba(6,182,212,0.4)" }
+                    : { opacity: 0.45, border: "1px solid transparent" }
+                  }>
+                  {flags[code]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {children}
       </div>
     </>

@@ -10,7 +10,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 const REMEMBER_KEY = "gfp_remembered_email";
 
 export default function LoginPage() {
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,6 +51,39 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center px-4">
+      {/* Top bar: back button + language selector */}
+      <div className="absolute top-0 inset-x-0 z-20 flex items-center justify-between px-4 py-4">
+        {/* Back to home */}
+        <Link href="/"
+          className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+          style={{ color: "rgba(255,255,255,0.55)", background: "rgba(255,255,255,0.07)" }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "white"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)"; (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.07)"; }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <span className="hidden sm:inline">Home</span>
+        </Link>
+
+        {/* Language picker */}
+        <div className="flex gap-1">
+          {(["en", "it", "es"] as const).map((code) => {
+            const LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+            return (
+              <button key={code} onClick={() => setLang(code)}
+                className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all"
+                style={lang === code
+                  ? { background: "rgba(59,130,246,0.35)", color: "#93C5FD", border: "1px solid rgba(59,130,246,0.5)" }
+                  : { color: "rgba(255,255,255,0.4)", border: "1px solid transparent" }
+                }>
+                {LABELS[code]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Grid overlay */}
       <div
         className="absolute inset-0 opacity-[0.04]"

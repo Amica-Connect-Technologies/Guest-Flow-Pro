@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  MapPin, Search, Clock, Wifi, ChevronRight,
+  MapPin, Search, Clock, Wifi, ChevronRight, ChevronDown,
   Building2, X, SlidersHorizontal, Phone, ConciergeBell, Smartphone,
 } from "lucide-react";
 import { hotelsApi, type Hotel } from "@/lib/api";
@@ -42,9 +42,19 @@ export default function HotelsView() {
   const { t } = useLanguage();
   const [hotels,   setHotels]   = useState<Hotel[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState("");
-  const [sortBy,   setSortBy]   = useState<SortValue>("default");
-  const [sortOpen, setSortOpen] = useState(false);
+  const [search,        setSearch]        = useState("");
+  const [sortBy,        setSortBy]        = useState<SortValue>("default");
+  const [sortOpen,      setSortOpen]      = useState(false);
+  // Search bar state
+  const [checkIn,       setCheckIn]       = useState("");
+  const [checkOut,      setCheckOut]      = useState("");
+  const [adults,        setAdults]        = useState(2);
+  const [childrenCount, setChildrenCount] = useState(0);
+  const [rooms,         setRooms]         = useState(1);
+  const [guestOpen,     setGuestOpen]     = useState(false);
+  const [destOpen,      setDestOpen]      = useState(false);
+  const guestBtnRef = useRef<HTMLButtonElement | null>(null);
+  const [guestRect, setGuestRect] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const sortLabels: Record<SortValue, string> = {
     default: t.hotels.defaultOrder,
@@ -77,6 +87,28 @@ export default function HotelsView() {
   }, [hotels, results, search]);
   const hasFilters = !!search || sortBy !== "default";
 
+  // Autocomplete suggestions: unique cities first, then hotel names
+  const suggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) {
+      // Show top cities when empty
+      const cities = [...new Set(hotels.map(h => h.city))].slice(0, 5);
+      return [
+        ...cities.map(c => ({ type: "city" as const, label: c, sub: `${hotels.filter(h => h.city === c).length} hotels` })),
+      ];
+    }
+    const matchCities = [...new Set(
+      hotels.filter(h => h.city.toLowerCase().includes(q)).map(h => h.city)
+    )].slice(0, 3);
+    const matchHotels = hotels
+      .filter(h => h.name.toLowerCase().includes(q) && !matchCities.includes(h.city))
+      .slice(0, 4);
+    return [
+      ...matchCities.map(c => ({ type: "city" as const, label: c, sub: `${hotels.filter(h => h.city === c).length} hotels` })),
+      ...matchHotels.map(h => ({ type: "hotel" as const, label: h.name, sub: h.city })),
+    ].slice(0, 6);
+  }, [hotels, search]);
+
   return (
     <div className="min-h-screen" style={{ background: "#F0EDE8" }}>
 
@@ -97,105 +129,380 @@ export default function HotelsView() {
         {/* Gold top bar */}
         <div style={{ height: 3, background: `linear-gradient(90deg, transparent 0%, ${GOLD} 40%, ${GOLD2} 60%, transparent 100%)` }} />
 
-        <div className="max-w-7xl mx-auto px-6 md:px-14 pt-12 md:pt-20 pb-14 md:pb-20" style={{ position: "relative", zIndex: 1 }}>
-          <div className="flex flex-col md:flex-row md:items-center md:gap-16">
+        <div className="max-w-5xl mx-auto px-5 md:px-10 pt-12 md:pt-18 pb-14 md:pb-16" style={{ position: "relative", zIndex: 1 }}>
 
-            {/* ── Left: copy ── */}
-            <div className="flex-1 mb-10 md:mb-0">
+          {/* Brand pill — centered */}
+          <div className="flex justify-center mb-5">
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full"
+              style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)" }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: GOLD }} />
+              <span className="text-[11px] font-black tracking-[0.22em] uppercase" style={{ color: GOLD }}>
+                {t.hotels.brandLine}
+              </span>
+            </div>
+          </div>
 
-              {/* Brand pill */}
-              <div className="inline-flex items-center gap-2.5 mb-6 px-4 py-2 rounded-full"
-                style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)" }}>
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: GOLD }} />
-                <span className="text-[11px] font-black tracking-[0.22em] uppercase" style={{ color: GOLD }}>
-                  {t.hotels.brandLine}
-                </span>
-              </div>
+          {/* Headline — centered */}
+          <h1 className="font-black text-white tracking-tight text-center mb-4"
+            style={{ fontSize: "clamp(2rem, 4.5vw, 3.2rem)", lineHeight: 1.08 }}>
+            {(() => {
+              const words = t.hotels.pageTitle.split(" ");
+              return (
+                <>
+                  <span style={{ display: "block" }}>{words.slice(0, 2).join(" ")}</span>
+                  <span style={{ display: "block", color: GOLD }}>{words.slice(2).join(" ")}</span>
+                </>
+              );
+            })()}
+          </h1>
+          <p className="text-sm text-center mb-10"
+            style={{ color: "rgba(255,255,255,0.5)", lineHeight: 1.7, maxWidth: 400, margin: "0 auto 2.5rem" }}>
+            {t.hotels.pageSubtitle}
+          </p>
 
-              <h1 className="font-black text-white tracking-tight mb-5"
-                style={{ fontSize: "clamp(2.2rem, 4.5vw, 3.6rem)", lineHeight: 1.08 }}>
-                {(() => {
-                  const words = t.hotels.pageTitle.split(" ");
-                  return (
-                    <>
-                      <span style={{ display: "block" }}>{words.slice(0, 2).join(" ")}</span>
-                      <span style={{ display: "block", color: GOLD }}>{words.slice(2).join(" ")}</span>
-                    </>
-                  );
-                })()}
-              </h1>
+          {/* ══ BOOKING.COM STYLE SEARCH BAR ══ */}
+          <div className="mb-8" style={{ position: "relative", zIndex: (guestOpen || destOpen) ? 100 : 10 }}>
+            <div className="rounded-2xl bg-white overflow-visible"
+              style={{ border: `2.5px solid ${GOLD}`, boxShadow: `0 12px 48px rgba(0,0,0,0.45), 0 0 0 1px ${GOLD}33` }}>
 
-              <p className="text-sm mb-8" style={{ color: "rgba(255,255,255,0.5)", lineHeight: 1.7, maxWidth: 360 }}>
-                {t.hotels.pageSubtitle}
-              </p>
-
-              {/* Benefits list */}
-              <div className="flex flex-col gap-3">
-                {[
-                  "Digital Check-in",
-                  "Local Recommendations",
-                  "Airport Transfers",
-                  "Hotel Services",
-                ].map((label, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: `0 2px 8px ${GOLD}44` }}>
-                      <span style={{ color: "#1a1000", fontSize: 10, fontWeight: 900, lineHeight: 1 }}>✓</span>
+              {/* ── MOBILE layout: stacked ── */}
+              <div className="md:hidden">
+                {/* Row 1: Destination */}
+                <div className="relative">
+                  <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100">
+                    <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: GOLD }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Destination</p>
+                      <input type="text" placeholder={t.hotels.searchPlaceholder}
+                        value={search}
+                        onChange={e => { setSearch(e.target.value); setDestOpen(true); }}
+                        onFocus={() => setDestOpen(true)}
+                        onBlur={() => setTimeout(() => setDestOpen(false), 150)}
+                        className="w-full text-sm font-semibold text-slate-900 bg-transparent border-0 outline-none placeholder:text-slate-300" />
                     </div>
-                    <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.9)" }}>{label}</span>
+                    {search && (
+                      <button type="button" onClick={() => { setSearch(""); setDestOpen(false); }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "#f1f5f9" }}>
+                        <X className="w-3 h-3 text-slate-500" />
+                      </button>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* ── Right: search card ── */}
-            <div className="md:w-[420px] md:flex-shrink-0">
-              <div className="rounded-3xl p-6 md:p-7"
-                style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
-
-                <p className="text-xs font-black tracking-widest uppercase mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  Find your hotel
-                </p>
-
-                {/* Search input */}
-                <div className="relative mb-4">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "rgba(255,255,255,0.4)" }} />
-                  <input
-                    type="text"
-                    placeholder={t.hotels.searchPlaceholder}
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    className="w-full pl-11 pr-10 py-3.5 text-sm font-semibold rounded-2xl border-0 focus:outline-none"
-                    style={{ background: "rgba(255,255,255,0.1)", color: "white",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)" }}
-                  />
-                  {search ? (
-                    <button type="button" onClick={() => setSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(255,255,255,0.15)" }}>
-                      <X className="w-3 h-3 text-white" />
-                    </button>
-                  ) : null}
-                </div>
-
-                {/* Stats row inside card */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: loading ? "—" : String(hotels.length), label: "Hotels" },
-                    { value: loading ? "—" : String(new Set(hotels.map(h => h.city)).size), label: "Cities" },
-                    { value: "24/7", label: "Support" },
-                  ].map((s, i) => (
-                    <div key={i} className="rounded-2xl p-3 text-center"
-                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                      <p className="text-lg font-black" style={{ color: GOLD }}>{s.value}</p>
-                      <p className="text-[10px] font-semibold mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>{s.label}</p>
+                  {/* Autocomplete dropdown — mobile */}
+                  {destOpen && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 rounded-2xl overflow-hidden z-50"
+                      style={{ background: "white", boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)" }}>
+                      <div className="px-4 pt-3 pb-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                          {search ? "Suggestions" : "Popular Destinations"}
+                        </p>
+                      </div>
+                      {suggestions.map((s, i) => (
+                        <button key={i} type="button"
+                          onMouseDown={() => { setSearch(s.label); setDestOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors active:bg-slate-50">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: s.type === "city" ? `${GOLD}18` : "#f1f5f9" }}>
+                            {s.type === "city"
+                              ? <MapPin className="w-4 h-4" style={{ color: GOLD }} />
+                              : <Building2 className="w-4 h-4 text-slate-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{s.label}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{s.sub}</p>
+                          </div>
+                          {s.type === "city" && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
+                              style={{ background: `${GOLD}18`, color: GOLD }}>City</span>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
+
+                {/* Row 2: Check-in | Check-out side by side */}
+                <div className="grid grid-cols-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5 px-4 py-3.5 border-r border-slate-100">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke={GOLD} viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Check-in</p>
+                      <input type="date" value={checkIn}
+                        onChange={e => { setCheckIn(e.target.value); if (checkOut && e.target.value > checkOut) setCheckOut(""); }}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="w-full text-xs font-semibold text-slate-900 bg-transparent border-0 outline-none" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 px-4 py-3.5">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke={GOLD} viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Check-out</p>
+                      <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)}
+                        min={checkIn || new Date().toISOString().split("T")[0]}
+                        className="w-full text-xs font-semibold text-slate-900 bg-transparent border-0 outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 3: Guests & Rooms */}
+                <div className="relative border-b border-slate-100">
+                  <button type="button"
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+                    onClick={() => setGuestOpen(v => !v)}>
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke={GOLD} viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Guests & Rooms</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {adults} adult{adults !== 1 ? "s" : ""} · {childrenCount} child{childrenCount !== 1 ? "ren" : ""} · {rooms} room{rooms !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${guestOpen ? "rotate-180" : ""}`}
+                      style={{ color: "#94a3b8" }} />
+                  </button>
+                  {/* Guest dropdown — mobile: fixed bottom sheet style */}
+                  {guestOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setGuestOpen(false)} />
+                      <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
+                        style={{ background: "white", boxShadow: "0 -8px 40px rgba(0,0,0,0.18)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+                        <div className="flex justify-center pt-3 pb-2">
+                          <div className="w-10 h-1 rounded-full bg-slate-200" />
+                        </div>
+                        <p className="text-sm font-black text-slate-800 text-center pb-3 border-b border-slate-100">Guests & Rooms</p>
+                        {([
+                          { label: "Adults", sub: "", val: adults, set: setAdults, min: 1, max: 16 },
+                          { label: "Children", sub: "Ages 0–17", val: childrenCount, set: setChildrenCount, min: 0, max: 10 },
+                          { label: "Rooms", sub: "", val: rooms, set: setRooms, min: 1, max: 30 },
+                        ] as const).map(({ label, sub, val, set, min, max }, i) => (
+                          <div key={label} className={`flex items-center justify-between px-6 py-4 ${i < 2 ? "border-b border-slate-50" : ""}`}>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{label}</p>
+                              {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <button type="button"
+                                onClick={e => { e.stopPropagation(); (set as (v: number) => void)(Math.max(min, val - 1)); }}
+                                className="w-9 h-9 rounded-full border-2 flex items-center justify-center text-lg font-bold"
+                                style={{ borderColor: val <= min ? "#e2e8f0" : GOLD, color: val <= min ? "#94a3b8" : GOLD }}>−</button>
+                              <span className="w-6 text-center text-base font-black text-slate-900">{val}</span>
+                              <button type="button"
+                                onClick={e => { e.stopPropagation(); (set as (v: number) => void)(Math.min(max, val + 1)); }}
+                                className="w-9 h-9 rounded-full border-2 flex items-center justify-center text-lg font-bold"
+                                style={{ borderColor: val >= max ? "#e2e8f0" : GOLD, color: val >= max ? "#94a3b8" : GOLD }}>+</button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="px-6 pb-5 pt-2">
+                          <button type="button" onClick={() => setGuestOpen(false)}
+                            className="w-full py-3.5 rounded-2xl font-black text-sm text-white"
+                            style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #1a3a5c 100%)` }}>Done</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Row 4: Search button full-width */}
+                <button type="button"
+                  className="w-full flex items-center justify-center gap-2.5 py-4 font-black text-white text-sm rounded-b-xl active:scale-[0.99] transition-transform"
+                  style={{ background: `linear-gradient(135deg, ${GOLD} 0%, #a8822a 100%)` }}>
+                  <Search className="w-5 h-5" />
+                  <span>Search Hotels</span>
+                </button>
               </div>
+
+              {/* ── DESKTOP layout: single horizontal row ── */}
+              <div className="hidden md:flex">
+
+                {/* Destination */}
+                <div className="relative flex-1">
+                  <div className="flex items-center gap-3 px-5 py-4 border-r border-slate-100">
+                    <MapPin className="w-5 h-5 flex-shrink-0" style={{ color: GOLD }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Destination</p>
+                      <input type="text" placeholder={t.hotels.searchPlaceholder}
+                        value={search}
+                        onChange={e => { setSearch(e.target.value); setDestOpen(true); }}
+                        onFocus={() => setDestOpen(true)}
+                        onBlur={() => setTimeout(() => setDestOpen(false), 150)}
+                        className="w-full text-sm font-semibold text-slate-900 bg-transparent border-0 outline-none placeholder:text-slate-300" />
+                    </div>
+                    {search && (
+                      <button type="button" onClick={() => { setSearch(""); setDestOpen(false); }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: "#f1f5f9" }}>
+                        <X className="w-3 h-3 text-slate-500" />
+                      </button>
+                    )}
+                  </div>
+                  {/* Autocomplete dropdown — desktop */}
+                  {destOpen && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 mt-1.5 rounded-2xl overflow-hidden z-50"
+                      style={{ background: "white", boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)", minWidth: 320 }}>
+                      <div className="px-4 pt-3 pb-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                          {search ? "Suggestions" : "Popular Destinations"}
+                        </p>
+                      </div>
+                      {suggestions.map((s, i) => (
+                        <button key={i} type="button"
+                          onMouseDown={() => { setSearch(s.label); setDestOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style={{ background: s.type === "city" ? `${GOLD}18` : "#f1f5f9" }}>
+                            {s.type === "city"
+                              ? <MapPin className="w-4 h-4" style={{ color: GOLD }} />
+                              : <Building2 className="w-4 h-4 text-slate-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{s.label}</p>
+                            <p className="text-xs text-slate-400 mt-0.5">{s.sub}</p>
+                          </div>
+                          {s.type === "city" && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
+                              style={{ background: `${GOLD}18`, color: GOLD }}>City</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Check-in */}
+                <div className="flex items-center gap-3 px-5 py-4 border-r border-slate-100 w-44 flex-shrink-0">
+                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke={GOLD} viewBox="0 0 24 24" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Check-in</p>
+                    <input type="date" value={checkIn}
+                      onChange={e => { setCheckIn(e.target.value); if (checkOut && e.target.value > checkOut) setCheckOut(""); }}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="w-full text-sm font-semibold text-slate-900 bg-transparent border-0 outline-none" />
+                  </div>
+                </div>
+
+                {/* Check-out */}
+                <div className="flex items-center gap-3 px-5 py-4 border-r border-slate-100 w-44 flex-shrink-0">
+                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke={GOLD} viewBox="0 0 24 24" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Check-out</p>
+                    <input type="date" value={checkOut} onChange={e => setCheckOut(e.target.value)}
+                      min={checkIn || new Date().toISOString().split("T")[0]}
+                      className="w-full text-sm font-semibold text-slate-900 bg-transparent border-0 outline-none" />
+                  </div>
+                </div>
+
+                {/* Guests & Rooms */}
+                <div className="relative border-r border-slate-100 w-52 flex-shrink-0">
+                  <button
+                    ref={guestBtnRef}
+                    type="button"
+                    className="w-full flex items-center gap-3 px-5 py-4 text-left"
+                    onClick={() => {
+                      if (guestBtnRef.current) {
+                        const r = guestBtnRef.current.getBoundingClientRect();
+                        setGuestRect({ top: r.bottom + 8, left: r.left, width: r.width });
+                      }
+                      setGuestOpen(v => !v);
+                    }}>
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke={GOLD} viewBox="0 0 24 24" strokeWidth={1.8}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Guests & Rooms</p>
+                      <p className="text-sm font-semibold text-slate-900 truncate">
+                        {adults} adult{adults !== 1 ? "s" : ""} · {childrenCount} child{childrenCount !== 1 ? "ren" : ""} · {rooms} room{rooms !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${guestOpen ? "rotate-180" : ""}`}
+                      style={{ color: "#94a3b8" }} />
+                  </button>
+
+                  {/* Guest dropdown — desktop: fixed so never clipped */}
+                  {guestOpen && guestRect && (
+                    <>
+                      <div className="fixed inset-0 z-[9998]" onClick={() => setGuestOpen(false)} />
+                      <div className="fixed z-[9999] w-72 rounded-2xl overflow-hidden"
+                        style={{ top: guestRect.top, left: guestRect.left, background: "white", boxShadow: "0 20px 60px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)" }}>
+                        {([
+                          { label: "Adults", sub: "", val: adults, set: setAdults, min: 1, max: 16 },
+                          { label: "Children", sub: "Ages 0–17", val: childrenCount, set: setChildrenCount, min: 0, max: 10 },
+                          { label: "Rooms", sub: "", val: rooms, set: setRooms, min: 1, max: 30 },
+                        ] as const).map(({ label, sub, val, set, min, max }, i) => (
+                          <div key={label} className={`flex items-center justify-between px-5 py-4 ${i < 2 ? "border-b border-slate-50" : ""}`}>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{label}</p>
+                              {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <button type="button"
+                                onClick={e => { e.stopPropagation(); (set as (v: number) => void)(Math.max(min, val - 1)); }}
+                                className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-base font-bold transition-colors"
+                                style={{ borderColor: val <= min ? "#e2e8f0" : GOLD, color: val <= min ? "#94a3b8" : GOLD }}>−</button>
+                              <span className="w-6 text-center text-sm font-black text-slate-900">{val}</span>
+                              <button type="button"
+                                onClick={e => { e.stopPropagation(); (set as (v: number) => void)(Math.min(max, val + 1)); }}
+                                className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-base font-bold transition-colors"
+                                style={{ borderColor: val >= max ? "#e2e8f0" : GOLD, color: val >= max ? "#94a3b8" : GOLD }}>+</button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="px-5 pb-4 pt-1">
+                          <button type="button" onClick={() => setGuestOpen(false)}
+                            className="w-full py-3 rounded-xl font-bold text-sm text-white"
+                            style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #1a3a5c 100%)` }}>Done</button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Search button */}
+                <button type="button"
+                  className="flex items-center justify-center gap-2.5 px-7 py-4 font-black text-white text-sm rounded-r-xl active:scale-[0.98] transition-transform"
+                  style={{ background: `linear-gradient(135deg, ${NAVY} 0%, #1a3a5c 100%)`, minWidth: 120 }}>
+                  <Search className="w-5 h-5" />
+                  <span>Search</span>
+                </button>
+              </div>
+
             </div>
+          </div>
+
+          {/* Benefits row */}
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-2.5 mb-8">
+            {["Digital Check-in", "Local Recommendations", "Airport Transfers", "Hotel Services"].map((label, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${GOLD}, ${GOLD2})`, boxShadow: `0 2px 6px ${GOLD}44` }}>
+                  <span style={{ color: "#1a1000", fontSize: 8, fontWeight: 900 }}>✓</span>
+                </div>
+                <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.75)" }}>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Stats row */}
+          <div className="flex justify-center gap-10">
+            {[
+              { value: loading ? "—" : String(hotels.length), label: "Hotels" },
+              { value: loading ? "—" : String(new Set(hotels.map(h => h.city)).size), label: "Cities" },
+              { value: "24/7", label: "Support" },
+            ].map((s, i) => (
+              <div key={i} className="text-center">
+                <p className="text-2xl font-black" style={{ color: GOLD }}>{s.value}</p>
+                <p className="text-[11px] font-semibold mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>{s.label}</p>
+              </div>
+            ))}
           </div>
         </div>
 

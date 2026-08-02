@@ -43,7 +43,7 @@ def _hotel_for(user):
 
 def _booking_qs(user):
     hotel = _hotel_for(user)
-    qs = Booking.objects.prefetch_related("registrations", "messages").select_related("hotel").all()
+    qs = Booking.objects.prefetch_related("registrations", "messages").select_related("hotel").order_by("-created_at")
     if hotel:
         qs = qs.filter(hotel=hotel)
     return qs

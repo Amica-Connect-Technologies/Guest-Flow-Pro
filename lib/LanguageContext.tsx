@@ -63,7 +63,7 @@ function getBrowserLang(): Lang | null {
 }
 
 function detectInitialLang(): Lang {
-  return getUrlLang() || getStoredLang() || getBrowserLang() || "it";
+  return getUrlLang() || getStoredLang() || getBrowserLang() || "en";
 }
 
 function hasExplicitSource(): boolean {
@@ -78,8 +78,8 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  lang: "it",
-  t: translations.it as Translations,
+  lang: "en",
+  t: translations.en as Translations,
   setLang: () => {},
   setHotelLang: () => {},
 });
@@ -87,9 +87,9 @@ const LanguageContext = createContext<LanguageContextType>({
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Start with "it" on both server and client — avoids hydration mismatch.
+  // Start with "en" on both server and client — avoids hydration mismatch.
   // After hydration, useEffect corrects to the user's actual language preference.
-  const [lang, setLangState] = useState<Lang>("it");
+  const [lang, setLangState] = useState<Lang>("en");
   const [explicit, setExplicit] = useState<boolean>(false);
 
   // Detect stored/browser language once on mount
