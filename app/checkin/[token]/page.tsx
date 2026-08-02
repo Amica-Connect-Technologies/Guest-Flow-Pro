@@ -48,8 +48,8 @@ type ExtraErrors   = Partial<Record<keyof ExtraGuestForm, string>>;
 export default function GuestCheckinPage() {
   const params = useParams<{ token: string }>();
   const router = useRouter();
-  const { t }  = useLanguage();
-  const c      = t.checkin.guestForm;
+  const { t, setHotelLang } = useLanguage();
+  const c = t.checkin.guestForm;
 
   const [booking, setBooking]   = useState<PublicBookingInfo | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -82,11 +82,13 @@ export default function GuestCheckinPage() {
     checkinApi.verifyToken(params.token)
       .then(b => {
         setBooking(b);
+        if (b.hotel_language) setHotelLang(b.hotel_language as import("@/lib/i18n").Lang);
         const extra = Math.max(0, b.num_guests - 1);
         setExtras(Array.from({ length: extra }, () => EMPTY_EXTRA()));
         setExtraImgPreviews(Array(extra).fill(""));
       })
       .catch(() => setNotFound(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.token]);
 
   // ── Canvas ────────────────────────────────────────────────────────────────
@@ -382,13 +384,13 @@ export default function GuestCheckinPage() {
                 </div>
               </div>
               <div>
-                <Label>Gender</Label>
+                <Label>{c.fields.gender}</Label>
                 <select className={inp()} value={primary.gender} onChange={e => setP("gender", e.target.value)}>
-                  <option value="">Select gender…</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
+                  <option value="">{c.fields.selectGender}</option>
+                  <option value="male">{c.fields.genderMale}</option>
+                  <option value="female">{c.fields.genderFemale}</option>
+                  <option value="other">{c.fields.genderOther}</option>
+                  <option value="prefer_not_to_say">{c.fields.genderPreferNot}</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -414,34 +416,34 @@ export default function GuestCheckinPage() {
 
             {/* Address */}
             <div className="bg-white rounded-2xl p-5 space-y-4" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
-              <SectionHeader icon="📍" title="Residence Address" />
+              <SectionHeader icon="📍" title={c.sections.address} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>House / Apt No.</Label>
+                  <Label>{c.fields.addressHouse}</Label>
                   <input className={inp()} value={primary.address_house}
                     onChange={e => setP("address_house", e.target.value)} placeholder="e.g. 12A" />
                 </div>
                 <div>
-                  <Label>Street / Road</Label>
+                  <Label>{c.fields.addressStreet}</Label>
                   <input className={inp()} value={primary.address_street}
                     onChange={e => setP("address_street", e.target.value)} placeholder="Baker Street" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>City <Required /></Label>
+                  <Label>{c.fields.addressCity} <Required /></Label>
                   <input className={inp(pErrors.address_city)} value={primary.address_city}
                     onChange={e => setP("address_city", e.target.value)} placeholder="London" />
                   <Err msg={pErrors.address_city} />
                 </div>
                 <div>
-                  <Label>Postal / ZIP Code</Label>
+                  <Label>{c.fields.addressPostal}</Label>
                   <input className={inp()} value={primary.address_postal}
                     onChange={e => setP("address_postal", e.target.value)} placeholder="NW1 6XE" />
                 </div>
               </div>
               <div>
-                <Label>Country <Required /></Label>
+                <Label>{c.fields.addressCountry} <Required /></Label>
                 <input className={inp(pErrors.address_country)} value={primary.address_country}
                   onChange={e => setP("address_country", e.target.value)} placeholder="United Kingdom" />
                 <Err msg={pErrors.address_country} />
@@ -492,7 +494,7 @@ export default function GuestCheckinPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={imgPreview} alt="doc" className="h-28 object-contain rounded-xl" />
                       <p className="text-xs text-emerald-600 font-bold">{primary.document_image?.name}</p>
-                      <p className="text-xs text-slate-400">Tap to change</p>
+                      <p className="text-xs text-slate-400">{c.fields.uploadTapChange}</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -502,8 +504,8 @@ export default function GuestCheckinPage() {
                             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
-                      <p className="text-sm font-bold text-slate-700">Tap to upload document photo</p>
-                      <p className="text-xs text-slate-400">Passport, ID card, driving licence · Max 10MB</p>
+                      <p className="text-sm font-bold text-slate-700">{c.fields.uploadTapUpload}</p>
+                      <p className="text-xs text-slate-400">{c.fields.uploadHint}</p>
                     </div>
                   )}
                 </div>
@@ -567,7 +569,7 @@ export default function GuestCheckinPage() {
                   </div>
                 </div>
                 <span className="text-sm text-slate-500 leading-snug">
-                  I agree to receive future offers and promotions from this property. <span className="text-xs text-slate-400">(Optional)</span>
+                  {c.fields.marketingOptIn} <span className="text-xs text-slate-400">{c.fields.marketingOptInOptional}</span>
                 </span>
               </label>
             </div>
@@ -585,8 +587,8 @@ export default function GuestCheckinPage() {
                 {step + 1}
               </div>
               <div>
-                <p className="text-sm font-black text-slate-900">Guest {step + 1} Details</p>
-                <p className="text-xs text-slate-400 mt-0.5">Name and document information only</p>
+                <p className="text-sm font-black text-slate-900">{c.extraGuest.title.replace("{n}", String(step + 1))}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{c.extraGuest.subtitle}</p>
               </div>
             </div>
 
@@ -594,13 +596,13 @@ export default function GuestCheckinPage() {
               {/* Name */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>First Name <Required /></Label>
+                  <Label>{c.fields.firstName} <Required /></Label>
                   <input className={inp(eErrors.first_name)} value={extra.first_name}
                     onChange={e => setE(extraIdx, "first_name", e.target.value)} placeholder="First name" />
                   <Err msg={eErrors.first_name} />
                 </div>
                 <div>
-                  <Label>Last Name <Required /></Label>
+                  <Label>{c.fields.lastName} <Required /></Label>
                   <input className={inp(eErrors.last_name)} value={extra.last_name}
                     onChange={e => setE(extraIdx, "last_name", e.target.value)} placeholder="Last name" />
                   <Err msg={eErrors.last_name} />
@@ -609,26 +611,26 @@ export default function GuestCheckinPage() {
 
               {/* Document Type */}
               <div>
-                <Label>Document Type</Label>
+                <Label>{c.fields.documentType}</Label>
                 <select className={inp()} value={extra.document_type}
                   onChange={e => setE(extraIdx, "document_type", e.target.value as DocType)}>
-                  <option value="passport">Passport</option>
-                  <option value="id_card">ID Card</option>
-                  <option value="driving_license">Driving Licence</option>
-                  <option value="residence_permit">Residence Permit</option>
+                  <option value="passport">{c.docTypes.passport}</option>
+                  <option value="id_card">{c.docTypes.id_card}</option>
+                  <option value="driving_license">{c.docTypes.driving_license}</option>
+                  <option value="residence_permit">{c.docTypes.residence_permit}</option>
                 </select>
               </div>
 
               {/* Issue + Expiry */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Issue Date <Required /></Label>
+                  <Label>{c.fields.documentIssueDate} <Required /></Label>
                   <input type="date" className={inp(eErrors.document_issue_date)} value={extra.document_issue_date}
                     onChange={e => setE(extraIdx, "document_issue_date", e.target.value)} />
                   <Err msg={eErrors.document_issue_date} />
                 </div>
                 <div>
-                  <Label>Expiry Date <Required /></Label>
+                  <Label>{c.fields.documentExpiryDate} <Required /></Label>
                   <input type="date" className={inp(eErrors.document_expiry_date)} value={extra.document_expiry_date}
                     onChange={e => setE(extraIdx, "document_expiry_date", e.target.value)} />
                   <Err msg={eErrors.document_expiry_date} />
@@ -637,7 +639,7 @@ export default function GuestCheckinPage() {
 
               {/* Document upload */}
               <div>
-                <Label>Document Photo</Label>
+                <Label>{c.fields.documentImage}</Label>
                 <label className="block cursor-pointer">
                   <div className={`border-2 border-dashed rounded-2xl p-5 text-center transition-colors ${extra.document_image ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30"}`}>
                     {extraImgPreviews[extraIdx] ? (
@@ -648,7 +650,7 @@ export default function GuestCheckinPage() {
                         <p className="text-xs text-emerald-600 font-bold truncate max-w-full px-2">
                           {extra.document_image?.name}
                         </p>
-                        <p className="text-[10px] text-slate-400">Tap to change</p>
+                        <p className="text-[10px] text-slate-400">{c.fields.uploadTapChange}</p>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-3">
@@ -660,8 +662,8 @@ export default function GuestCheckinPage() {
                           </svg>
                         </div>
                         <div className="text-left">
-                          <p className="text-sm font-bold text-slate-700">Upload document photo</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Passport · ID · Licence · Permit</p>
+                          <p className="text-sm font-bold text-slate-700">{c.fields.uploadTapUpload}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{c.fields.uploadHint}</p>
                         </div>
                       </div>
                     )}

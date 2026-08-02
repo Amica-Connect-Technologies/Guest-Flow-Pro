@@ -151,6 +151,7 @@ class PublicBookingSerializer(serializers.ModelSerializer):
     hotel_logo_url = serializers.SerializerMethodField()
     hotel_brand_color = serializers.CharField(source="hotel.brand_color", read_only=True)
     hotel_welcome_message = serializers.CharField(source="hotel.welcome_message", read_only=True)
+    hotel_language = serializers.CharField(source="hotel.language_default", read_only=True)
     is_completed = serializers.SerializerMethodField()
 
     class Meta:
@@ -158,7 +159,7 @@ class PublicBookingSerializer(serializers.ModelSerializer):
         fields = [
             "guest_name", "check_in_date", "check_out_date",
             "num_guests", "hotel_name", "hotel_logo_url",
-            "hotel_brand_color", "hotel_welcome_message", "is_completed",
+            "hotel_brand_color", "hotel_welcome_message", "hotel_language", "is_completed",
         ]
 
     def get_is_completed(self, obj):

@@ -378,6 +378,7 @@ export type PublicBookingInfo = {
   hotel_logo_url: string;
   hotel_brand_color: string;
   hotel_welcome_message: string;
+  hotel_language: string;
   is_completed: boolean;
 };
 
