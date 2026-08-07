@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { outreachApi, type HotelOutreach, type OutreachStatus } from "@/lib/api";
 
 const STATUS_META: Record<OutreachStatus, { label: string; color: string; bg: string }> = {
@@ -17,6 +17,17 @@ const STATUSES = Object.keys(STATUS_META) as OutreachStatus[];
 function fmt(d?: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function timeAgo(d?: string | null) {
+  if (!d) return null;
+  const diff = Date.now() - new Date(d).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
 
 type FormState = {
@@ -39,6 +50,10 @@ export default function OutreachPage() {
   const [editing, setEditing] = useState<HotelOutreach | null>(null);
   const [toast, setToast] = useState({ msg: "", ok: true });
   const [inviting, setInviting] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [bulkInviting, setBulkInviting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function showToast(msg: string, ok = true) {
     setToast({ msg, ok });
@@ -128,6 +143,42 @@ export default function OutreachPage() {
     }
   }
 
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const res = await outreachApi.importCSV(file);
+      showToast(`Imported ${res.created} leads, ${res.skipped} skipped`);
+      load();
+    } catch (err: unknown) {
+      showToast((err instanceof Error ? err.message : null) ?? "Import failed", false);
+    }
+    setImporting(false);
+    e.target.value = "";
+  }
+
+  async function handleBulkInvite() {
+    const ids = selected.size > 0 ? [...selected] : undefined;
+    const count = ids ? ids.length : leads.filter(l => l.email && !l.invite_sent_at).length;
+    if (!count) { showToast("No uninvited leads with email", false); return; }
+    if (!confirm(`Send trial invitation to ${count} hotel${count !== 1 ? "s" : ""}?`)) return;
+    setBulkInviting(true);
+    try {
+      const res = await outreachApi.bulkInvite(ids);
+      showToast(`Sent ${res.sent} invitation${res.sent !== 1 ? "s" : ""}${res.failed ? `, ${res.failed} failed` : ""}`);
+      load();
+      setSelected(new Set());
+    } catch (err: unknown) {
+      showToast((err instanceof Error ? err.message : null) ?? "Bulk invite failed", false);
+    }
+    setBulkInviting(false);
+  }
+
+  function toggleSelect(id: string) {
+    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  }
+
   const counts = STATUSES.reduce((acc, s) => {
     acc[s] = leads.filter(l => l.status === s).length;
     return acc;
@@ -143,16 +194,41 @@ export default function OutreachPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>
             <h1 className="text-3xl font-black text-white">Hotel Outreach</h1>
-            <p className="text-slate-400 text-sm mt-1">Track potential hotel partners in your sales pipeline</p>
+            <p className="text-slate-400 text-sm mt-1">Track potential hotel partners · send 14-day trial invitations</p>
           </div>
-          <button
-            onClick={openCreate}
-            className="px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 transition-colors">
-            + Add Lead
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* CSV Import */}
+            <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleImport} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold border border-white/10 text-slate-300 hover:bg-white/5 disabled:opacity-40 transition-colors flex items-center gap-1.5">
+              {importing ? "Importing…" : (
+                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>Import CSV</>
+              )}
+            </button>
+            {/* Bulk invite */}
+            <button
+              onClick={handleBulkInvite}
+              disabled={bulkInviting}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-bold border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-40 transition-colors flex items-center gap-1.5">
+              {bulkInviting ? "Sending…" : (
+                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="w-3.5 h-3.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>{selected.size > 0 ? `Send to ${selected.size} selected` : "Send All Invites"}</>
+              )}
+            </button>
+            <button
+              onClick={openCreate}
+              className="px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-500 transition-colors">
+              + Add Lead
+            </button>
+          </div>
+        </div>
+        {/* CSV format hint */}
+        <div className="mb-5 text-[11px] text-slate-600 bg-white/3 rounded-xl px-4 py-2.5 border border-white/5">
+          CSV columns (any order): <span className="text-slate-400 font-mono">hotel_name, email, contact_name, phone, city, website</span> — duplicates by email are skipped automatically.
         </div>
 
         {/* Pipeline summary */}
@@ -203,8 +279,14 @@ export default function OutreachPage() {
               const m = STATUS_META[lead.status];
               return (
                 <div key={lead.id}
-                  className="rounded-2xl p-4 flex items-start gap-4 group"
-                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  className="rounded-2xl p-4 flex items-start gap-3 group"
+                  style={{ background: selected.has(lead.id) ? "rgba(59,130,246,0.07)" : "rgba(255,255,255,0.03)", border: `1px solid ${selected.has(lead.id) ? "rgba(59,130,246,0.25)" : "rgba(255,255,255,0.07)"}` }}>
+
+                  {/* Checkbox */}
+                  <button onClick={() => toggleSelect(lead.id)}
+                    className={`mt-0.5 w-4 h-4 rounded flex-shrink-0 border flex items-center justify-center transition-colors ${selected.has(lead.id) ? "bg-blue-600 border-blue-600" : "border-white/20 hover:border-white/40"}`}>
+                    {selected.has(lead.id) && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+                  </button>
 
                   {/* Status badge + quick change */}
                   <div className="flex-shrink-0 pt-0.5">
@@ -241,9 +323,19 @@ export default function OutreachPage() {
                     {lead.notes && (
                       <p className="text-xs text-slate-500 mt-1 line-clamp-2">{lead.notes}</p>
                     )}
-                    <div className="flex gap-3 mt-1.5 text-[11px] text-slate-600">
-                      <span>Added {fmt(lead.created_at)}</span>
-                      {lead.invite_sent_at && <span className="text-emerald-600">Invite sent {fmt(lead.invite_sent_at)}</span>}
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-[11px]">
+                      <span className="text-slate-600">Added {fmt(lead.created_at)}</span>
+                      {lead.invite_sent_at && (
+                        <span className="text-cyan-600">✉ Sent {fmt(lead.invite_sent_at)}</span>
+                      )}
+                      {lead.email_opened_at ? (
+                        <span className="text-emerald-500 font-semibold">
+                          👁 Opened {timeAgo(lead.email_opened_at)}
+                          {lead.email_open_count > 1 && ` (${lead.email_open_count}×)`}
+                        </span>
+                      ) : lead.invite_sent_at ? (
+                        <span className="text-slate-600">Not opened yet</span>
+                      ) : null}
                     </div>
                   </div>
 

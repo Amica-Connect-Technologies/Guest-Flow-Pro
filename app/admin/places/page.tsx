@@ -55,6 +55,8 @@ export default function AdminPlaces() {
   }
 
   async function handleSave() {
+    if (!form.name.trim()) { showToast("Place name is required", true); return; }
+    if (!form.city.trim()) { showToast("City is required", true); return; }
     setSaving(true);
     try {
       if (editing) { await placesApi.update(editing.id, form); showToast(t.adminPlaces.placeUpdated); }

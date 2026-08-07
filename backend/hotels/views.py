@@ -1,7 +1,12 @@
+import csv
+import io
 import json as _json
+from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
+from django.http import HttpResponse
 from django.utils import timezone
+from datetime import timedelta
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -10,6 +15,13 @@ from accounts.models import HotelUser
 from .models import APIKey, Hotel, HotelGalleryImage, HotelOutreach
 from .serializers import HotelGalleryImageSerializer, HotelSerializer
 from .plan_permissions import require_feature
+
+# 1×1 transparent GIF — used as email tracking pixel
+_TRACKING_GIF = (
+    b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00"
+    b"\xff\xff\xff\x00\x00\x00\x21\xf9\x04\x00\x00\x00\x00\x00"
+    b"\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
+)
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -240,8 +252,9 @@ class APIKeyDetailView(APIView):
 
 def _outreach_data(o: HotelOutreach) -> dict:
     return {
-        "id":             str(o.id),
-        "hotel_name":     o.hotel_name,
+        "id":               str(o.id),
+        "trial_token":      str(o.trial_token),
+        "hotel_name":       o.hotel_name,
         "contact_name":   o.contact_name,
         "email":          o.email,
         "phone":          o.phone,
@@ -249,9 +262,11 @@ def _outreach_data(o: HotelOutreach) -> dict:
         "website":        o.website,
         "status":         o.status,
         "notes":          o.notes,
-        "invite_sent_at": o.invite_sent_at.isoformat() if o.invite_sent_at else None,
-        "created_at":     o.created_at.isoformat(),
-        "updated_at":     o.updated_at.isoformat(),
+        "invite_sent_at":   o.invite_sent_at.isoformat() if o.invite_sent_at else None,
+        "email_opened_at":  o.email_opened_at.isoformat() if o.email_opened_at else None,
+        "email_open_count": o.email_open_count,
+        "created_at":       o.created_at.isoformat(),
+        "updated_at":       o.updated_at.isoformat(),
     }
 
 
@@ -332,12 +347,262 @@ class OutreachSendInviteView(APIView):
         if not o.email:
             return Response({"detail": "No email address on this lead."}, status=400)
 
-        signup_url = getattr(settings, "FRONTEND_URL", "https://guestflowpro.com") + "/register"
-        subject = f"You're invited to join GuestFlow Pro — {o.hotel_name}"
-        body = (
-            f"Hi{' ' + o.contact_name if o.contact_name else ''},\n\n"
-            "We'd love to have your hotel on GuestFlow Pro — the digital guest experience platform "
-            "that handles check-in, reviews, booking requests, and marketing, all in one place.\n\n"
+        frontend_url = getattr(settings, "FRONTEND_URL", "https://guestflowpro.com").rstrip("/")
+        trial_url    = f"{frontend_url}/trial/{o.trial_token}"
+        pixel_url    = f"{getattr(settings, 'BACKEND_URL', frontend_url).rstrip('/')}/api/hotels/outreach/track/{o.trial_token}/"
+        greeting     = o.contact_name if o.contact_name else "there"
+        subject = f"Your 14-Day Free Trial — GuestFlow Pro 🏨"
+        plain   = (
+            f"Hi {greeting},\n\n"
+            f"We'd like to offer {o.hotel_name} a free 14-day trial of GuestFlow Pro.\n\n"
+            f"Activate your trial here: {trial_url}\n\n"
+            "GuestFlow Pro helps hotels deliver a modern digital guest experience — "
+            "smart check-in, digital concierge, guest communication and more.\n\n"
+            "Best regards,\nThe GuestFlow Pro Team"
+        )
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F0F4F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4F8;padding:40px 16px;">
+<tr><td align="center">
+<table width="100%" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+  <!-- Header -->
+  <tr><td style="background:linear-gradient(135deg,#020B12 0%,#083344 55%,#0E7490 100%);padding:36px 40px 32px;text-align:center;">
+    <p style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(103,232,249,0.8);">GuestFlow Pro</p>
+    <h1 style="margin:0;font-size:26px;font-weight:900;color:#ffffff;line-height:1.2;">Your Free 14-Day Trial</h1>
+    <p style="margin:10px 0 0;font-size:14px;color:rgba(186,230,253,0.75);">No credit card required</p>
+  </td></tr>
+  <!-- Body -->
+  <tr><td style="padding:36px 40px;">
+    <p style="margin:0 0 16px;font-size:16px;color:#0F172A;">Hi <strong>{greeting}</strong>,</p>
+    <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
+      We'd love to give <strong style="color:#0F172A;">{o.hotel_name}</strong> a full 14-day free trial of GuestFlow Pro —
+      the digital guest experience platform built for modern hotels.
+    </p>
+    <!-- Features -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      {''.join(f'<tr><td style="padding:6px 0;"><span style="color:#0E7490;font-weight:700;">✓</span> <span style="font-size:14px;color:#334155;">{feat}</span></td></tr>' for feat in [
+        "Smart digital check-in — guests register online",
+        "Digital concierge — room service, tours & more",
+        "Branded QR code for your hotel",
+        "Guest database & communication tools",
+        "Review management & analytics",
+      ])}
+    </table>
+    <!-- CTA -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      <tr><td align="center">
+        <a href="{trial_url}" style="display:inline-block;background:linear-gradient(135deg,#0891B2,#0E7490);color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:16px 40px;border-radius:14px;box-shadow:0 8px 24px rgba(8,145,178,0.35);">
+          ✓ &nbsp; Activate Free Trial →
+        </a>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 8px;font-size:13px;color:#94A3B8;text-align:center;">Or copy this link:</p>
+    <p style="margin:0 0 24px;font-size:12px;color:#64748B;text-align:center;word-break:break-all;">{trial_url}</p>
+    <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px;">
+    <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+      Your trial is free for 14 days — no payment needed to get started.<br>
+      Questions? Reply to this email and we'll help you get set up.
+    </p>
+  </td></tr>
+  <!-- Footer -->
+  <tr><td style="background:#F8FAFC;padding:20px 40px;text-align:center;border-top:1px solid #E2E8F0;">
+    <p style="margin:0;font-size:11px;color:#CBD5E1;">Powered by <strong style="color:#0E7490;">GuestFlow Pro</strong> · guestflowpro.com</p>
+  </td></tr>
+</table>
+</td></tr></table>
+<!-- Tracking pixel -->
+<img src="{pixel_url}" width="1" height="1" style="display:none;" alt="">
+</body></html>"""
+
+        try:
+            send_mail(subject, plain, getattr(settings, "DEFAULT_FROM_EMAIL", "info@guestflowpro.com"), [o.email], html_message=html, fail_silently=False)
+        except Exception as exc:
+            return Response({"detail": f"Email failed: {exc}"}, status=500)
+
+        o.invite_sent_at = timezone.now()
+        if o.status == "new":
+            o.status = "contacted"
+        o.save(update_fields=["invite_sent_at", "status", "updated_at"])
+        return Response({"detail": "Invite sent.", "invite_sent_at": o.invite_sent_at.isoformat()})
+
+
+# ── CSV Import ────────────────────────────────────────────────────────────────
+
+class OutreachImportView(APIView):
+    """Admin: bulk-import leads from a CSV file."""
+    permission_classes = [permissions.IsAdminUser]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        file = request.FILES.get("file")
+        if not file:
+            return Response({"detail": "No file uploaded."}, status=400)
+        try:
+            decoded = file.read().decode("utf-8-sig")  # handle Excel BOM
+            reader  = csv.DictReader(io.StringIO(decoded))
+        except Exception:
+            return Response({"detail": "Could not parse file. Upload a UTF-8 CSV."}, status=400)
+
+        created = skipped = 0
+        for row in reader:
+            name  = (row.get("hotel_name") or row.get("Hotel Name") or row.get("name") or row.get("Name") or "").strip()
+            email = (row.get("email") or row.get("Email") or "").strip().lower()
+            if not name:
+                skipped += 1
+                continue
+            if email and HotelOutreach.objects.filter(email__iexact=email).exists():
+                skipped += 1
+                continue
+            HotelOutreach.objects.create(
+                hotel_name=name,
+                contact_name=(row.get("contact_name") or row.get("Contact Name") or row.get("contact") or "").strip(),
+                email=email,
+                phone=(row.get("phone") or row.get("Phone") or "").strip(),
+                city=(row.get("city") or row.get("City") or "").strip(),
+                website=(row.get("website") or row.get("Website") or "").strip(),
+            )
+            created += 1
+        return Response({"created": created, "skipped": skipped})
+
+
+# ── Email open tracking pixel ─────────────────────────────────────────────────
+
+class OutreachTrackOpenView(APIView):
+    """Public: records email open and returns a 1×1 transparent GIF."""
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request, token):
+        try:
+            o = HotelOutreach.objects.get(trial_token=token)
+            if not o.email_opened_at:
+                o.email_opened_at = timezone.now()
+            o.email_open_count += 1
+            o.save(update_fields=["email_opened_at", "email_open_count"])
+        except HotelOutreach.DoesNotExist:
+            pass
+        return HttpResponse(_TRACKING_GIF, content_type="image/gif")
+
+
+# ── Trial activation ──────────────────────────────────────────────────────────
+
+class OutreachTrialActivateView(APIView):
+    """
+    GET  → return hotel info for the trial page (hotel_name, contact_name, email)
+    POST → create User + Hotel with 14-day trial, activate account immediately
+    """
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request, token):
+        try:
+            o = HotelOutreach.objects.get(trial_token=token)
+        except HotelOutreach.DoesNotExist:
+            return Response({"detail": "Invalid trial link."}, status=404)
+        return Response({
+            "hotel_name":   o.hotel_name,
+            "contact_name": o.contact_name,
+            "email":        o.email,
+            "city":         o.city,
+        })
+
+    def post(self, request, token):
+        try:
+            o = HotelOutreach.objects.get(trial_token=token)
+        except HotelOutreach.DoesNotExist:
+            return Response({"detail": "Invalid trial link."}, status=404)
+
+        password = (request.data.get("password") or "").strip()
+        if len(password) < 8:
+            return Response({"detail": "Password must be at least 8 characters."}, status=400)
+
+        email = o.email
+        if not email:
+            return Response({"detail": "No email on this invitation."}, status=400)
+        if User.objects.filter(email__iexact=email).exists():
+            return Response({"detail": "An account with this email already exists. Please log in."}, status=400)
+
+        base = email.split("@")[0]
+        username, n = base, 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base}{n}"; n += 1
+
+        user = User.objects.create_user(username=username, email=email, password=password, is_active=True)
+
+        hotel = Hotel.objects.create(
+            name=o.hotel_name,
+            city=o.city or "—",
+            plan=Hotel.PLAN_CONCIERGE_CHECKIN,
+            plan_expires_at=timezone.now() + timedelta(days=14),
+            language_default="en",
+        )
+        HotelUser.objects.create(user=user, hotel=hotel, role="manager")
+
+        # Mark lead as converted
+        o.status = "converted"
+        o.save(update_fields=["status", "updated_at"])
+
+        return Response({"detail": "Trial activated!", "hotel_id": str(hotel.id)})
+
+
+# ── Bulk invite ───────────────────────────────────────────────────────────────
+
+class OutreachBulkInviteView(APIView):
+    """Admin: send invite to all leads that have an email but haven't been invited yet."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        ids = request.data.get("ids")  # optional list of UUIDs; if absent → all uninvited
+        if ids:
+            qs = HotelOutreach.objects.filter(id__in=ids, email__gt="")
+        else:
+            qs = HotelOutreach.objects.filter(email__gt="", invite_sent_at__isnull=True)
+
+        sent = failed = 0
+        for o in qs:
+            # reuse single-invite logic inline
+            view = OutreachSendInviteView()
+            # build a minimal mock to reuse the email helper
+            frontend_url = getattr(settings, "FRONTEND_URL", "https://guestflowpro.com").rstrip("/")
+            trial_url    = f"{frontend_url}/trial/{o.trial_token}"
+            pixel_url    = f"{getattr(settings, 'BACKEND_URL', frontend_url).rstrip('/')}/api/hotels/outreach/track/{o.trial_token}/"
+            greeting     = o.contact_name if o.contact_name else "there"
+            subject = "Your 14-Day Free Trial — GuestFlow Pro 🏨"
+            plain   = f"Hi {greeting},\n\nActivate your free trial: {trial_url}"
+            html    = f"""<!DOCTYPE html><html><body style="font-family:sans-serif;background:#F0F4F8;padding:40px 16px;">
+<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;">
+<div style="background:linear-gradient(135deg,#020B12,#0E7490);padding:32px 36px;text-align:center;">
+<h1 style="margin:0;color:#fff;font-size:24px;font-weight:900;">Your Free 14-Day Trial</h1>
+<p style="margin:8px 0 0;color:rgba(186,230,253,0.8);font-size:13px;">No credit card required</p>
+</div>
+<div style="padding:32px 36px;">
+<p style="font-size:15px;color:#0F172A;">Hi <strong>{greeting}</strong>,</p>
+<p style="font-size:14px;color:#475569;line-height:1.6;">We're offering <strong>{o.hotel_name}</strong> a free 14-day trial of GuestFlow Pro.</p>
+<div style="text-align:center;margin:28px 0;">
+<a href="{trial_url}" style="background:linear-gradient(135deg,#0891B2,#0E7490);color:#fff;font-size:15px;font-weight:800;text-decoration:none;padding:15px 36px;border-radius:12px;display:inline-block;">✓ &nbsp;Activate Free Trial →</a>
+</div>
+<p style="font-size:12px;color:#94A3B8;text-align:center;word-break:break-all;">{trial_url}</p>
+</div>
+<div style="background:#F8FAFC;padding:16px;text-align:center;border-top:1px solid #E2E8F0;">
+<p style="margin:0;font-size:11px;color:#CBD5E1;">Powered by <strong style="color:#0E7490;">GuestFlow Pro</strong></p>
+</div></div>
+<img src="{pixel_url}" width="1" height="1" style="display:none;" alt="">
+</body></html>"""
+            try:
+                send_mail(subject, plain, getattr(settings, "DEFAULT_FROM_EMAIL", "info@guestflowpro.com"), [o.email], html_message=html, fail_silently=False)
+                o.invite_sent_at = timezone.now()
+                if o.status == "new":
+                    o.status = "contacted"
+                o.save(update_fields=["invite_sent_at", "status", "updated_at"])
+                sent += 1
+            except Exception:
+                failed += 1
+
+        return Response({"sent": sent, "failed": failed})
+
+
+# ── Public: Inbound demo request (from /for-hotels page) ─────────────────────            "that handles check-in, reviews, booking requests, and marketing, all in one place.\n\n"
             f"Get started here: {signup_url}\n\n"
             "If you have any questions, just reply to this email.\n\n"
             "Best regards,\nThe GuestFlow Pro Team"

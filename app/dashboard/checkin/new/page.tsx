@@ -42,6 +42,8 @@ export default function NewBookingPage() {
   function validate() {
     const errs: typeof errors = {};
     if (!form.guest_name.trim()) errs.guest_name = "Required";
+    if (!form.guest_email.trim()) errs.guest_email = "Required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guest_email)) errs.guest_email = "Enter a valid email";
     if (!form.check_in_date) errs.check_in_date = "Required";
     if (!form.check_out_date) errs.check_out_date = "Required";
     if (form.check_in_date && form.check_out_date && form.check_out_date <= form.check_in_date) {
@@ -247,9 +249,10 @@ export default function NewBookingPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1.5">{c.guestEmail}</label>
-              <input type="email" className={inp()} value={form.guest_email}
+              <label className="block text-xs font-bold text-slate-600 mb-1.5">{c.guestEmail} <span className="text-red-400">*</span></label>
+              <input type="email" className={inp(!!errors.guest_email)} value={form.guest_email}
                 onChange={e => setField("guest_email", e.target.value)} placeholder="guest@email.com" />
+              {errors.guest_email && <p className="text-xs text-red-500 mt-1 font-medium">{errors.guest_email}</p>}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5">{c.guestPhone}</label>
@@ -274,12 +277,14 @@ export default function NewBookingPage() {
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5">{c.checkIn} <span className="text-red-400">*</span></label>
               <input type="date" className={inp(!!errors.check_in_date)} value={form.check_in_date}
+                min={new Date().toISOString().slice(0, 10)}
                 onChange={e => setField("check_in_date", e.target.value)} />
               {errors.check_in_date && <p className="text-xs text-red-500 mt-1 font-medium">{errors.check_in_date}</p>}
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1.5">{c.checkOut} <span className="text-red-400">*</span></label>
               <input type="date" className={inp(!!errors.check_out_date)} value={form.check_out_date}
+                min={form.check_in_date || new Date().toISOString().slice(0, 10)}
                 onChange={e => setField("check_out_date", e.target.value)} />
               {errors.check_out_date && <p className="text-xs text-red-500 mt-1 font-medium">{errors.check_out_date}</p>}
             </div>

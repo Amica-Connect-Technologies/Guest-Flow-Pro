@@ -534,10 +534,14 @@ export const webhooksApi = {
 // ── Hotel Outreach ────────────────────────────────────────────────────────────
 export type OutreachStatus = "new" | "contacted" | "interested" | "negotiating" | "converted" | "lost";
 export type HotelOutreach = {
-  id: string; hotel_name: string; contact_name: string;
+  id: string; trial_token: string;
+  hotel_name: string; contact_name: string;
   email: string; phone: string; city: string; website: string;
   status: OutreachStatus; notes: string;
-  invite_sent_at: string | null; created_at: string; updated_at: string;
+  invite_sent_at: string | null;
+  email_opened_at: string | null;
+  email_open_count: number;
+  created_at: string; updated_at: string;
 };
 
 export const outreachApi = {
@@ -552,6 +556,16 @@ export const outreachApi = {
   delete: (id: string) => req<void>(`/api/hotels/outreach/${id}/`, { method: "DELETE" }),
   sendInvite: (id: string) =>
     req<{ detail: string; invite_sent_at: string }>(`/api/hotels/outreach/${id}/invite/`, { method: "POST" }),
+  importCSV: (file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    return req<{ created: number; skipped: number }>("/api/hotels/outreach/import/", { method: "POST", body: fd });
+  },
+  bulkInvite: (ids?: string[]) =>
+    req<{ sent: number; failed: number }>("/api/hotels/outreach/bulk-invite/", { method: "POST", body: JSON.stringify(ids ? { ids } : {}) }),
+  getTrialInfo: (token: string) =>
+    req<{ hotel_name: string; contact_name: string; email: string; city: string }>(`/api/hotels/outreach/trial/${token}/`),
+  activateTrial: (token: string, password: string) =>
+    req<{ detail: string }>(`/api/hotels/outreach/trial/${token}/`, { method: "POST", body: JSON.stringify({ password }) }),
 };
 
 // ── Marketing ─────────────────────────────────────────────────────────────────

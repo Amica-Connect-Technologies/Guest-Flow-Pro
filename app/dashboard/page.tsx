@@ -287,7 +287,8 @@ function HotelDashboardInner() {
     setEditingId(svc.id); setSvcError(""); setShowSvcForm(true);
   }
   async function saveService() {
-    if (!svcForm.name.trim() || !svcForm.price) { setSvcError(t.dashboard.services.nameRequired); return; }
+    if (!svcForm.name.trim()) { setSvcError(t.dashboard.services.nameRequired); return; }
+    if (!svcForm.price || isNaN(Number(svcForm.price)) || Number(svcForm.price) <= 0) { setSvcError("Price must be a positive number"); return; }
     setSvcSaving(true); setSvcError("");
     const fd = new FormData();
     fd.append("name",         svcForm.name.trim());
