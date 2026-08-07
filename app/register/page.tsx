@@ -197,7 +197,7 @@ interface Form {
   whatsapp_number: string;
   website: string;
   plan: "concierge" | "checkin" | "concierge_checkin" | "full";
-  payment_method: "bank_transfer" | "invoice";
+  payment_method: "bank_transfer" | "invoice" | "stripe";
 }
 
 const empty: Form = {
@@ -1055,10 +1055,9 @@ function RegisterPageInner() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {/* Bank Transfer */}
-                  {(["bank_transfer", "invoice"] as const).map((method) => {
+                  {/* Bank Transfer / Invoice / Stripe */}
+                  {(["bank_transfer", "invoice", "stripe"] as const).map((method) => {
                     const selected = form.payment_method === method;
-                    const isBank = method === "bank_transfer";
                     return (
                       <button
                         key={method}
@@ -1071,24 +1070,35 @@ function RegisterPageInner() {
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                           selected ? "bg-blue-600" : "bg-slate-100"
                         }`}>
-                          {isBank ? (
+                          {method === "bank_transfer" ? (
                             <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "white" : "currentColor"} strokeWidth={1.8} className={`w-5 h-5 ${!selected && "text-slate-500"}`}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
                             </svg>
-                          ) : (
+                          ) : method === "invoice" ? (
                             <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "white" : "currentColor"} strokeWidth={1.8} className={`w-5 h-5 ${!selected && "text-slate-500"}`}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "white" : "currentColor"} strokeWidth={1.8} className={`w-5 h-5 ${!selected && "text-slate-500"}`}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
                             </svg>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>
-                            {isBank ? t.register.step3.bankTransferName : t.register.step3.invoiceName}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>
+                              {method === "bank_transfer" ? t.register.step3.bankTransferName
+                                : method === "invoice" ? t.register.step3.invoiceName
+                                : t.register.step3.cardName}
+                            </p>
+                            {method === "stripe" && (
+                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{t.register.step3.cardComingSoon}</span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            {isBank
-                              ? t.register.step3.bankTransferDesc
-                              : t.register.step3.invoiceDesc}
+                            {method === "bank_transfer" ? t.register.step3.bankTransferDesc
+                              : method === "invoice" ? t.register.step3.invoiceDesc
+                              : t.register.step3.cardDesc}
                           </p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -1103,23 +1113,6 @@ function RegisterPageInner() {
                       </button>
                     );
                   })}
-
-                  {/* Stripe — Coming Soon */}
-                  <div className="flex items-center gap-4 px-5 py-4 opacity-50 cursor-not-allowed select-none">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5 text-slate-400">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-slate-500">{t.register.step3.cardName}</p>
-                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">{t.register.step3.cardComingSoon}</span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.cardDesc}</p>
-                    </div>
-                    <div className="w-5 h-5 rounded-full border-2 border-slate-200 flex-shrink-0" />
-                  </div>
                 </div>
               </div>
 
@@ -1139,7 +1132,7 @@ function RegisterPageInner() {
                     {plans.find((p) => p.id === form.plan)?.price}{t.register.step3.perMonth}
                   </p>
                   <p className="text-[11px] text-slate-400 capitalize">
-                    {plans.find((p) => p.id === form.plan)?.name} {t.register.step3.planLabelSuffix} · {form.payment_method === "bank_transfer" ? t.register.step3.bankTransferName : t.register.step3.invoiceName}
+                    {plans.find((p) => p.id === form.plan)?.name} {t.register.step3.planLabelSuffix} · {form.payment_method === "bank_transfer" ? t.register.step3.bankTransferName : form.payment_method === "invoice" ? t.register.step3.invoiceName : t.register.step3.cardName}
                   </p>
                 </div>
               </div>

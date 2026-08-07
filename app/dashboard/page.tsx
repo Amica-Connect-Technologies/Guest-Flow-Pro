@@ -583,18 +583,20 @@ function HotelDashboardInner() {
                 <p className="text-cyan-300/80 text-xs font-bold uppercase tracking-widest mb-1">Hotel Dashboard</p>
                 <h2 className="text-2xl font-black text-white">{hotel.name}</h2>
                 <p className="text-cyan-200/70 text-sm mt-1">{hotel.city} · Manage your hotel from one place</p>
-                {PLAN_BADGE[plan] && (
-                  <span className="inline-flex items-center mt-2 text-[11px] font-bold px-3 py-1 rounded-full"
-                    style={{ background: "rgba(6,182,212,0.18)", color: "#67E8F9", border: "1px solid rgba(6,182,212,0.25)" }}>
-                    {PLAN_BADGE[plan]}
-                  </span>
-                )}
-                <a href={guestUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 mt-4 text-xs font-bold px-4 py-2 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.85)" }}>
-                  <QrCode className="w-3.5 h-3.5" />
-                  View Guest Page
-                </a>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {PLAN_BADGE[plan] && (
+                    <span className="inline-flex items-center flex-shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full whitespace-nowrap"
+                      style={{ background: "rgba(6,182,212,0.18)", color: "#67E8F9", border: "1px solid rgba(6,182,212,0.25)" }}>
+                      {PLAN_BADGE[plan]}
+                    </span>
+                  )}
+                  <a href={guestUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 flex-shrink-0 text-xs font-bold px-4 py-1.5 rounded-full whitespace-nowrap"
+                    style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.85)" }}>
+                    <QrCode className="w-3.5 h-3.5" />
+                    View Guest Page
+                  </a>
+                </div>
               </div>
 
               {/* Plan timeline card — always shown */}

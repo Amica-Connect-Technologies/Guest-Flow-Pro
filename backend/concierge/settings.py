@@ -118,6 +118,14 @@ OPENAI_API_KEY           = config("OPENAI_API_KEY",           default="")
 # Stripe
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="sk_test_placeholder")
 STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="whsec_placeholder")
+
+# Current 4-tier plan prices (recurring subscription Price IDs from the Stripe Dashboard)
+STRIPE_PRICE_CONCIERGE = config("STRIPE_PRICE_CONCIERGE", default="")
+STRIPE_PRICE_CHECKIN = config("STRIPE_PRICE_CHECKIN", default="")
+STRIPE_PRICE_CONCIERGE_CHECKIN = config("STRIPE_PRICE_CONCIERGE_CHECKIN", default="")
+STRIPE_PRICE_FULL = config("STRIPE_PRICE_FULL", default="")
+
+# Legacy plan prices — kept so old Stripe sessions/subscriptions don't break
 STRIPE_PRICE_BASIC = config("STRIPE_PRICE_BASIC", default="price_basic_placeholder")
 STRIPE_PRICE_PRO = config("STRIPE_PRICE_PRO", default="price_pro_placeholder")
 

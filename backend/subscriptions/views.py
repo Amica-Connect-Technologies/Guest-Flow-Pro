@@ -176,7 +176,7 @@ class VerifyPaymentView(APIView):
         if session.payment_status not in ("paid", "no_payment_required"):
             return Response({"detail": "Payment not completed."}, status=status.HTTP_400_BAD_REQUEST)
 
-        reg_id = session.metadata.get("registration_id") or session.client_reference_id
+        reg_id = getattr(session.metadata, "registration_id", None) or session.client_reference_id
         try:
             reg = Registration.objects.get(id=reg_id)
         except Registration.DoesNotExist:
@@ -207,13 +207,14 @@ class StripeWebhookView(APIView):
 
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
-            if session.get("payment_status") == "paid":
-                reg_id = session.get("metadata", {}).get("registration_id") or session.get("client_reference_id")
+            if getattr(session, "payment_status", None) == "paid":
+                metadata = getattr(session, "metadata", None)
+                reg_id = getattr(metadata, "registration_id", None) or getattr(session, "client_reference_id", None)
                 if reg_id:
                     Registration.objects.filter(id=reg_id, status="pending_payment").update(
                         status="pending_review",
-                        stripe_customer_id=session.get("customer", ""),
-                        stripe_subscription_id=session.get("subscription", ""),
+                        stripe_customer_id=getattr(session, "customer", "") or "",
+                        stripe_subscription_id=getattr(session, "subscription", "") or "",
                     )
 
         return Response({"received": True})
