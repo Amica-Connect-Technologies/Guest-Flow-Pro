@@ -6,6 +6,37 @@ import { usePathname, useRouter } from "next/navigation";
 import { auth, registrationsApi } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
+function Flag({ code, size = 16 }: { code: "en" | "it" | "es"; size?: number }) {
+  const w = size, h = Math.round(size * 0.72);
+  const common = { width: w, height: h, viewBox: "0 0 60 36", className: "rounded-[2px] flex-shrink-0", style: { boxShadow: "0 0 0 1px rgba(255,255,255,0.18)" } };
+  if (code === "en") {
+    return (
+      <svg {...common}>
+        <rect width="60" height="36" fill="#00247D" />
+        <path d="M0,0 L60,36 M60,0 L0,36" stroke="#fff" strokeWidth="7" />
+        <path d="M0,0 L60,36 M60,0 L0,36" stroke="#CF142B" strokeWidth="2.4" />
+        <path d="M30,0 V36 M0,18 H60" stroke="#fff" strokeWidth="11" />
+        <path d="M30,0 V36 M0,18 H60" stroke="#CF142B" strokeWidth="6.5" />
+      </svg>
+    );
+  }
+  if (code === "it") {
+    return (
+      <svg {...common}>
+        <rect width="20" height="36" fill="#009246" />
+        <rect x="20" width="20" height="36" fill="#fff" />
+        <rect x="40" width="20" height="36" fill="#CE2B37" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <rect width="60" height="36" fill="#C60B1E" />
+      <rect y="9" width="60" height="18" fill="#FFC400" />
+    </svg>
+  );
+}
+
 export default function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -142,15 +173,16 @@ export default function AdminNav() {
           {/* Language picker */}
           <div className="flex gap-1 mb-2">
             {(["en", "it", "es"] as const).map((code) => {
-              const LANG_LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+              const LABEL = { en: "EN", it: "IT", es: "ES" } as const;
               return (
                 <button key={code} onClick={() => setLang(code)}
-                  className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all"
+                  className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5"
                   style={lang === code
                     ? { background: "rgba(37,99,235,0.3)", color: "#93C5FD", border: "1px solid rgba(37,99,235,0.4)" }
-                    : { color: "rgba(255,255,255,0.3)", border: "1px solid transparent" }
+                    : { color: "rgba(255,255,255,0.4)", border: "1px solid transparent" }
                   }>
-                  {LANG_LABELS[code]}
+                  <Flag code={code} />
+                  {LABEL[code]}
                 </button>
               );
             })}
@@ -211,8 +243,8 @@ export default function AdminNav() {
               setLang(next);
             }}
             className="relative flex-1 flex flex-col items-center justify-center gap-0.5 h-[58px] active:scale-90">
-            <div className="flex items-center justify-center w-10 h-7 rounded-xl text-slate-400 text-lg">
-              {({ en: "🇬🇧", it: "🇮🇹", es: "🇪🇸" } as Record<string, string>)[lang] ?? "🇬🇧"}
+            <div className="flex items-center justify-center w-10 h-7 rounded-xl text-slate-400">
+              <Flag code={(lang as "en" | "it" | "es") ?? "en"} size={20} />
             </div>
             <span className="text-[10px] font-bold leading-none text-slate-500 uppercase">{lang}</span>
           </button>

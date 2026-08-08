@@ -446,7 +446,7 @@ class OutreachImportView(APIView):
 
         created = skipped = 0
         for row in reader:
-            name  = (row.get("hotel_name") or row.get("Hotel Name") or row.get("name") or row.get("Name") or "").strip()
+            name  = (row.get("hotel_name") or row.get("Hotel Name") or row.get("name") or row.get("Name") or row.get("Business Title") or "").strip()
             email = (row.get("email") or row.get("Email") or "").strip().lower()
             if not name:
                 skipped += 1
@@ -458,7 +458,7 @@ class OutreachImportView(APIView):
                 hotel_name=name,
                 contact_name=(row.get("contact_name") or row.get("Contact Name") or row.get("contact") or "").strip(),
                 email=email,
-                phone=(row.get("phone") or row.get("Phone") or "").strip(),
+                phone=(row.get("phone") or row.get("Phone") or row.get("Phone Unformatted") or "").strip(),
                 city=(row.get("city") or row.get("City") or "").strip(),
                 website=(row.get("website") or row.get("Website") or "").strip(),
             )
@@ -600,29 +600,6 @@ class OutreachBulkInviteView(APIView):
                 failed += 1
 
         return Response({"sent": sent, "failed": failed})
-
-
-# ── Public: Inbound demo request (from /for-hotels page) ─────────────────────            "that handles check-in, reviews, booking requests, and marketing, all in one place.\n\n"
-            f"Get started here: {signup_url}\n\n"
-            "If you have any questions, just reply to this email.\n\n"
-            "Best regards,\nThe GuestFlow Pro Team"
-        )
-        try:
-            send_mail(
-                subject,
-                body,
-                getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@guestflowpro.com"),
-                [o.email],
-                fail_silently=False,
-            )
-        except Exception as exc:
-            return Response({"detail": f"Email failed: {exc}"}, status=500)
-
-        o.invite_sent_at = timezone.now()
-        if o.status == "new":
-            o.status = "contacted"
-        o.save(update_fields=["invite_sent_at", "status", "updated_at"])
-        return Response({"detail": "Invite sent.", "invite_sent_at": o.invite_sent_at.isoformat()})
 
 
 # ── Public: Inbound demo request (from /for-hotels page) ─────────────────────
