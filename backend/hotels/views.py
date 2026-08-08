@@ -602,29 +602,6 @@ class OutreachBulkInviteView(APIView):
         return Response({"sent": sent, "failed": failed})
 
 
-# ── Public: Inbound demo request (from /for-hotels page) ─────────────────────            "that handles check-in, reviews, booking requests, and marketing, all in one place.\n\n"
-            f"Get started here: {signup_url}\n\n"
-            "If you have any questions, just reply to this email.\n\n"
-            "Best regards,\nThe GuestFlow Pro Team"
-        )
-        try:
-            send_mail(
-                subject,
-                body,
-                getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@guestflowpro.com"),
-                [o.email],
-                fail_silently=False,
-            )
-        except Exception as exc:
-            return Response({"detail": f"Email failed: {exc}"}, status=500)
-
-        o.invite_sent_at = timezone.now()
-        if o.status == "new":
-            o.status = "contacted"
-        o.save(update_fields=["invite_sent_at", "status", "updated_at"])
-        return Response({"detail": "Invite sent.", "invite_sent_at": o.invite_sent_at.isoformat()})
-
-
 # ── Public: Inbound demo request (from /for-hotels page) ─────────────────────
 
 class DemoRequestView(APIView):
