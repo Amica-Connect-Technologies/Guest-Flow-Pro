@@ -12,8 +12,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("Contact enquiry:", { name, email, nationality, service, message });
-
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {
     console.error("Contact API error:", err);

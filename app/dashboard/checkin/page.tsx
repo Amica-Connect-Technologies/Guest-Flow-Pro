@@ -26,9 +26,9 @@ export default function CheckinDashboardPage() {
   useEffect(() => {
     auth.me()
       .then(() =>
-        Promise.all([checkinApi.stats(), checkinApi.listBookings({ filter: "today" })])
+        Promise.all([checkinApi.stats(), checkinApi.listBookings()])
       )
-      .then(([s, bookings]) => { setStats(s); setRecent(bookings.slice(0, 6)); })
+      .then(([s, bookings]) => { setStats(s); setRecent(bookings.slice(0, 8)); })
       .catch(err => {
         const msg = err.message ?? "";
         if (msg.includes("401") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("authentication")) {
@@ -132,7 +132,7 @@ export default function CheckinDashboardPage() {
           </div>
         )}
 
-        {/* Today's arrivals */}
+        {/* Recent bookings — all, sorted by API default (newest first) */}
         <div className="bg-white rounded-2xl overflow-hidden" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
           <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
             <h2 className="text-sm font-black text-slate-800">{c.dashboard.recentArrivals}</h2>

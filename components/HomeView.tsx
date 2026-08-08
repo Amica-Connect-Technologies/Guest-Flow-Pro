@@ -186,13 +186,13 @@ export default function HomeView() {
                       className="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center text-[10px] font-black text-white"
                       style={{ background: c, zIndex: 3 - i }}
                     >
-                      {["IT","UK","PK"][i]}
+                      {["IT","UK","ES"][i]}
                     </div>
                   ))}
                 </div>
                 <p className="text-cyan-200/60 text-xs">
                   Trusted by hotels in{" "}
-                  <span className="text-cyan-300 font-semibold">Italy · UK · Pakistan</span>
+                  <span className="text-cyan-300 font-semibold">Italy · UK · Spain</span>
                 </p>
               </div>
             </div>

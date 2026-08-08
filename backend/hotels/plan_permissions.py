@@ -113,7 +113,7 @@ def require_guest_capacity(hotel, count: int = 1) -> Response | None:
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     used = GuestRegistration.objects.filter(
         booking__hotel=hotel,
-        created_at__gte=month_start,
+        completed_at__gte=month_start,
     ).count()
 
     if used + count > limit:

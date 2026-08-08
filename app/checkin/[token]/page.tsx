@@ -48,8 +48,8 @@ type ExtraErrors   = Partial<Record<keyof ExtraGuestForm, string>>;
 export default function GuestCheckinPage() {
   const params = useParams<{ token: string }>();
   const router = useRouter();
-  const { t }  = useLanguage();
-  const c      = t.checkin.guestForm;
+  const { t, setHotelLang } = useLanguage();
+  const c = t.checkin.guestForm;
 
   const [booking, setBooking]   = useState<PublicBookingInfo | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -82,11 +82,13 @@ export default function GuestCheckinPage() {
     checkinApi.verifyToken(params.token)
       .then(b => {
         setBooking(b);
+        if (b.hotel_language) setHotelLang(b.hotel_language as import("@/lib/i18n").Lang);
         const extra = Math.max(0, b.num_guests - 1);
         setExtras(Array.from({ length: extra }, () => EMPTY_EXTRA()));
         setExtraImgPreviews(Array(extra).fill(""));
       })
       .catch(() => setNotFound(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.token]);
 
   // ── Canvas ────────────────────────────────────────────────────────────────
@@ -139,7 +141,7 @@ export default function GuestCheckinPage() {
   }
 
   const inp = (err?: string) =>
-    `w-full bg-white border ${err ? "border-red-400 focus:ring-red-100" : "border-slate-200 focus:ring-cyan-100"} rounded-xl px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:border-transparent transition-all`;
+    `w-full bg-slate-50 border ${err ? "border-red-300 focus:ring-red-100 bg-red-50/20" : "border-slate-200 focus:ring-cyan-100 focus:border-cyan-400"} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 transition-all`;
 
   // ── Validate primary ──────────────────────────────────────────────────────
   function validatePrimary(): boolean {
@@ -245,7 +247,7 @@ export default function GuestCheckinPage() {
 
   // ── Guards ────────────────────────────────────────────────────────────────
   if (notFound) return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#F0F2F7" }}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#F2F1ED" }}>
       <div className="text-center max-w-sm bg-white rounded-3xl p-10 shadow-lg">
         <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-red-50">
           <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -260,7 +262,7 @@ export default function GuestCheckinPage() {
   );
 
   if (!booking) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#F0F2F7" }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#F2F1ED" }}>
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 rounded-full border-[3px] animate-spin"
           style={{ borderColor: "#0E7490", borderTopColor: "transparent" }} />
@@ -270,16 +272,17 @@ export default function GuestCheckinPage() {
   );
 
   if (booking.is_completed || allDone) return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#F0F2F7" }}>
-      <div className="text-center max-w-sm bg-white rounded-3xl p-10 shadow-lg">
-        <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "#F2F1ED" }}>
+      <div className="text-center max-w-sm bg-white rounded-3xl p-10"
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.05)", border: "1px solid rgba(0,0,0,0.05)" }}>
+        <div className="w-16 h-16 rounded-3xl mx-auto mb-5 flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 8px 20px rgba(14,116,144,0.35)" }}>
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
         </div>
         <h1 className="text-xl font-black text-slate-900 mb-2">{c.success.title}</h1>
-        <p className="text-sm text-slate-500">{c.alreadyCompleted}</p>
+        <p className="text-sm text-slate-400 leading-relaxed">{c.alreadyCompleted}</p>
       </div>
     </div>
   );
@@ -291,30 +294,57 @@ export default function GuestCheckinPage() {
   const extra       = extras[extraIdx] ?? EMPTY_EXTRA();
 
   return (
-    <div className="min-h-screen pb-10" style={{ background: "#F0F2F7" }}>
+    <div className="min-h-screen pb-10" style={{ background: "#F2F1ED" }}>
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden"
         style={{ background: booking.hotel_brand_color
-          ? `linear-gradient(135deg, #020B12 0%, ${booking.hotel_brand_color}99 55%, ${booking.hotel_brand_color} 100%)`
-          : "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
-        <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.20) 0%, transparent 65%)" }} />
-        <div className="px-5 pt-10 pb-5 max-w-2xl mx-auto relative z-10">
-          <p className="text-cyan-300/80 text-[10px] font-bold uppercase tracking-widest mb-1">{c.welcomeAt}</p>
-          <h1 className="text-2xl font-black text-white mb-1">{booking.hotel_name}</h1>
-          {booking.hotel_welcome_message && (
-            <p className="text-white/70 text-xs mb-2 leading-relaxed">{booking.hotel_welcome_message}</p>
+          ? `linear-gradient(160deg, #020B12 0%, ${booking.hotel_brand_color}88 60%, ${booking.hotel_brand_color} 100%)`
+          : "linear-gradient(160deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
+        {/* Decorative glows */}
+        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.16) 0%, transparent 65%)" }} />
+        <div className="absolute -bottom-10 -left-10 w-52 h-52 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 65%)" }} />
+
+        <div className="px-5 pt-10 pb-6 max-w-2xl mx-auto relative z-10 text-center">
+          {/* Hotel logo */}
+          {booking.hotel_logo_url ? (
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute -inset-0.5 rounded-2xl opacity-40"
+                  style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.5), rgba(6,182,212,0.5))" }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={booking.hotel_logo_url} alt={booking.hotel_name}
+                  className="relative w-16 h-16 rounded-2xl object-cover" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-black text-xl"
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)" }}>
+                {booking.hotel_name?.slice(0, 2).toUpperCase()}
+              </div>
+            </div>
           )}
-          <div className="flex gap-5 mt-3">
+
+          <p className="text-cyan-300/70 text-[10px] font-bold uppercase tracking-[0.22em] mb-1.5">{c.welcomeAt}</p>
+          <h1 className="text-2xl font-black text-white mb-1 leading-tight">{booking.hotel_name}</h1>
+          {booking.hotel_welcome_message && (
+            <p className="text-white/55 text-xs mb-4 leading-relaxed max-w-xs mx-auto">{booking.hotel_welcome_message}</p>
+          )}
+
+          {/* Booking info chips */}
+          <div className="flex gap-2 mt-4 justify-center">
             {[
               { label: c.checkIn,  val: new Date(booking.check_in_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) },
               { label: c.checkOut, val: new Date(booking.check_out_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) },
               { label: c.guests,   val: String(booking.num_guests) },
             ].map(({ label, val }) => (
-              <div key={label}>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-cyan-400">{label}</p>
-                <p className="text-sm font-black text-white mt-0.5">{val}</p>
+              <div key={label} className="flex-1 text-center rounded-2xl px-3 py-2.5"
+                style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.11)" }}>
+                <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-cyan-300/65 mb-0.5">{label}</p>
+                <p className="text-[13px] font-black text-white leading-tight">{val}</p>
               </div>
             ))}
           </div>
@@ -323,18 +353,21 @@ export default function GuestCheckinPage() {
         {/* Step progress (only when multi-guest) */}
         {totalSteps > 1 && (
           <div className="px-5 pb-5 max-w-2xl mx-auto">
-            <div className="bg-white/10 backdrop-blur rounded-2xl px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
+            <div className="rounded-2xl px-4 py-3"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div className="flex items-center justify-between mb-2.5">
                 <p className="text-white text-xs font-black">
                   {isPrimary ? `Primary Guest (${booking.guest_name})` : `Guest ${step + 1} of ${totalSteps}`}
                 </p>
-                <p className="text-cyan-300/80 text-xs">{step + 1} / {totalSteps}</p>
+                <span className="text-[10px] font-bold text-cyan-300/80 bg-white/10 px-2 py-0.5 rounded-full">
+                  {step + 1} / {totalSteps}
+                </span>
               </div>
               <div className="flex items-center gap-1.5">
                 {Array.from({ length: totalSteps }).map((_, i) => (
-                  <div key={i} className="flex-1 h-1.5 rounded-full transition-all"
+                  <div key={i} className="flex-1 h-1.5 rounded-full transition-all duration-300"
                     style={{
-                      background: i < step ? "#34D399" : i === step ? "white" : "rgba(255,255,255,0.25)"
+                      background: i < step ? "#34D399" : i === step ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.15)"
                     }} />
                 ))}
               </div>
@@ -343,29 +376,29 @@ export default function GuestCheckinPage() {
         )}
       </div>
 
-      <form onSubmit={handleNext} className="px-4 mt-5 space-y-4 max-w-2xl mx-auto">
+      <form onSubmit={handleNext} className="px-4 mt-6 space-y-4 max-w-2xl mx-auto pb-2">
 
         {/* ── STEP 0: Full primary guest form ───────────────────────────── */}
         {isPrimary && (
           <>
             {/* Intro */}
-            <div className="bg-white rounded-2xl px-5 py-4 flex items-start gap-4"
-              style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="rounded-3xl px-5 py-4 flex items-center gap-4"
+              style={{ background: "linear-gradient(135deg, #083344 0%, #0E7490 100%)", boxShadow: "0 6px 24px rgba(14,116,144,0.28)" }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #083344, #0E7490)" }}>
+                style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)" }}>
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-sm font-black text-slate-900">{c.title}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{c.subtitle}</p>
+                <h2 className="text-sm font-black text-white">{c.title}</h2>
+                <p className="text-xs text-white/65 mt-0.5">{c.subtitle}</p>
               </div>
             </div>
 
             {/* Personal Information */}
-            <div className="bg-white rounded-2xl p-5 space-y-4" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="bg-white rounded-3xl p-5 space-y-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
               <SectionHeader icon="👤" title={c.sections.personal} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -382,13 +415,13 @@ export default function GuestCheckinPage() {
                 </div>
               </div>
               <div>
-                <Label>Gender</Label>
+                <Label>{c.fields.gender}</Label>
                 <select className={inp()} value={primary.gender} onChange={e => setP("gender", e.target.value)}>
-                  <option value="">Select gender…</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                  <option value="prefer_not_to_say">Prefer not to say</option>
+                  <option value="">{c.fields.selectGender}</option>
+                  <option value="male">{c.fields.genderMale}</option>
+                  <option value="female">{c.fields.genderFemale}</option>
+                  <option value="other">{c.fields.genderOther}</option>
+                  <option value="prefer_not_to_say">{c.fields.genderPreferNot}</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -413,35 +446,35 @@ export default function GuestCheckinPage() {
             </div>
 
             {/* Address */}
-            <div className="bg-white rounded-2xl p-5 space-y-4" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
-              <SectionHeader icon="📍" title="Residence Address" />
+            <div className="bg-white rounded-3xl p-5 space-y-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
+              <SectionHeader icon="📍" title={c.sections.address} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>House / Apt No.</Label>
+                  <Label>{c.fields.addressHouse}</Label>
                   <input className={inp()} value={primary.address_house}
                     onChange={e => setP("address_house", e.target.value)} placeholder="e.g. 12A" />
                 </div>
                 <div>
-                  <Label>Street / Road</Label>
+                  <Label>{c.fields.addressStreet}</Label>
                   <input className={inp()} value={primary.address_street}
                     onChange={e => setP("address_street", e.target.value)} placeholder="Baker Street" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>City <Required /></Label>
+                  <Label>{c.fields.addressCity} <Required /></Label>
                   <input className={inp(pErrors.address_city)} value={primary.address_city}
                     onChange={e => setP("address_city", e.target.value)} placeholder="London" />
                   <Err msg={pErrors.address_city} />
                 </div>
                 <div>
-                  <Label>Postal / ZIP Code</Label>
+                  <Label>{c.fields.addressPostal}</Label>
                   <input className={inp()} value={primary.address_postal}
                     onChange={e => setP("address_postal", e.target.value)} placeholder="NW1 6XE" />
                 </div>
               </div>
               <div>
-                <Label>Country <Required /></Label>
+                <Label>{c.fields.addressCountry} <Required /></Label>
                 <input className={inp(pErrors.address_country)} value={primary.address_country}
                   onChange={e => setP("address_country", e.target.value)} placeholder="United Kingdom" />
                 <Err msg={pErrors.address_country} />
@@ -449,7 +482,7 @@ export default function GuestCheckinPage() {
             </div>
 
             {/* Document */}
-            <div className="bg-white rounded-2xl p-5 space-y-4" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="bg-white rounded-3xl p-5 space-y-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
               <SectionHeader icon="🪪" title={c.sections.document} />
               <div>
                 <Label>{c.fields.documentType}</Label>
@@ -483,7 +516,7 @@ export default function GuestCheckinPage() {
             </div>
 
             {/* Document upload */}
-            <div className="bg-white rounded-2xl p-5 space-y-3" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="bg-white rounded-3xl p-5 space-y-3" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
               <SectionHeader icon="📷" title={c.sections.upload} />
               <label className="block cursor-pointer">
                 <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-colors ${primary.document_image ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:border-cyan-400 bg-slate-50"}`}>
@@ -492,7 +525,7 @@ export default function GuestCheckinPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={imgPreview} alt="doc" className="h-28 object-contain rounded-xl" />
                       <p className="text-xs text-emerald-600 font-bold">{primary.document_image?.name}</p>
-                      <p className="text-xs text-slate-400">Tap to change</p>
+                      <p className="text-xs text-slate-400">{c.fields.uploadTapChange}</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2">
@@ -502,8 +535,8 @@ export default function GuestCheckinPage() {
                             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
-                      <p className="text-sm font-bold text-slate-700">Tap to upload document photo</p>
-                      <p className="text-xs text-slate-400">Passport, ID card, driving licence · Max 10MB</p>
+                      <p className="text-sm font-bold text-slate-700">{c.fields.uploadTapUpload}</p>
+                      <p className="text-xs text-slate-400">{c.fields.uploadHint}</p>
                     </div>
                   )}
                 </div>
@@ -517,7 +550,7 @@ export default function GuestCheckinPage() {
             </div>
 
             {/* Signature */}
-            <div className="bg-white rounded-2xl p-5 space-y-3" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="bg-white rounded-3xl p-5 space-y-3" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <SectionHeader icon="✍️" title={c.sections.signature} />
                 <button type="button" onClick={clearSig}
@@ -526,7 +559,7 @@ export default function GuestCheckinPage() {
                 </button>
               </div>
               <p className="text-xs text-slate-400">{c.fields.signature}</p>
-              <div className="border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden touch-none bg-white">
+              <div className="border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden touch-none" style={{ background: "#FAFAFA" }}>
                 <canvas ref={canvasRef} width={600} height={160} className="w-full h-36 cursor-crosshair"
                   onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
                   onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw} />
@@ -535,7 +568,7 @@ export default function GuestCheckinPage() {
             </div>
 
             {/* GDPR */}
-            <div className="bg-white rounded-2xl p-5" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="bg-white rounded-3xl p-5" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
               <SectionHeader icon="🛡️" title={c.sections.consent} />
               <label className="flex gap-3 cursor-pointer mt-3">
                 <div className="relative flex-shrink-0 mt-0.5">
@@ -567,7 +600,7 @@ export default function GuestCheckinPage() {
                   </div>
                 </div>
                 <span className="text-sm text-slate-500 leading-snug">
-                  I agree to receive future offers and promotions from this property. <span className="text-xs text-slate-400">(Optional)</span>
+                  {c.fields.marketingOptIn} <span className="text-xs text-slate-400">{c.fields.marketingOptInOptional}</span>
                 </span>
               </label>
             </div>
@@ -585,22 +618,22 @@ export default function GuestCheckinPage() {
                 {step + 1}
               </div>
               <div>
-                <p className="text-sm font-black text-slate-900">Guest {step + 1} Details</p>
-                <p className="text-xs text-slate-400 mt-0.5">Name and document information only</p>
+                <p className="text-sm font-black text-slate-900">{c.extraGuest.title.replace("{n}", String(step + 1))}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{c.extraGuest.subtitle}</p>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 space-y-4" style={{ boxShadow: "0 4px 18px rgba(0,0,0,0.07)" }}>
+            <div className="bg-white rounded-3xl p-5 space-y-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)" }}>
               {/* Name */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>First Name <Required /></Label>
+                  <Label>{c.fields.firstName} <Required /></Label>
                   <input className={inp(eErrors.first_name)} value={extra.first_name}
                     onChange={e => setE(extraIdx, "first_name", e.target.value)} placeholder="First name" />
                   <Err msg={eErrors.first_name} />
                 </div>
                 <div>
-                  <Label>Last Name <Required /></Label>
+                  <Label>{c.fields.lastName} <Required /></Label>
                   <input className={inp(eErrors.last_name)} value={extra.last_name}
                     onChange={e => setE(extraIdx, "last_name", e.target.value)} placeholder="Last name" />
                   <Err msg={eErrors.last_name} />
@@ -609,26 +642,26 @@ export default function GuestCheckinPage() {
 
               {/* Document Type */}
               <div>
-                <Label>Document Type</Label>
+                <Label>{c.fields.documentType}</Label>
                 <select className={inp()} value={extra.document_type}
                   onChange={e => setE(extraIdx, "document_type", e.target.value as DocType)}>
-                  <option value="passport">Passport</option>
-                  <option value="id_card">ID Card</option>
-                  <option value="driving_license">Driving Licence</option>
-                  <option value="residence_permit">Residence Permit</option>
+                  <option value="passport">{c.docTypes.passport}</option>
+                  <option value="id_card">{c.docTypes.id_card}</option>
+                  <option value="driving_license">{c.docTypes.driving_license}</option>
+                  <option value="residence_permit">{c.docTypes.residence_permit}</option>
                 </select>
               </div>
 
               {/* Issue + Expiry */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Issue Date <Required /></Label>
+                  <Label>{c.fields.documentIssueDate} <Required /></Label>
                   <input type="date" className={inp(eErrors.document_issue_date)} value={extra.document_issue_date}
                     onChange={e => setE(extraIdx, "document_issue_date", e.target.value)} />
                   <Err msg={eErrors.document_issue_date} />
                 </div>
                 <div>
-                  <Label>Expiry Date <Required /></Label>
+                  <Label>{c.fields.documentExpiryDate} <Required /></Label>
                   <input type="date" className={inp(eErrors.document_expiry_date)} value={extra.document_expiry_date}
                     onChange={e => setE(extraIdx, "document_expiry_date", e.target.value)} />
                   <Err msg={eErrors.document_expiry_date} />
@@ -637,7 +670,7 @@ export default function GuestCheckinPage() {
 
               {/* Document upload */}
               <div>
-                <Label>Document Photo</Label>
+                <Label>{c.fields.documentImage}</Label>
                 <label className="block cursor-pointer">
                   <div className={`border-2 border-dashed rounded-2xl p-5 text-center transition-colors ${extra.document_image ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:border-cyan-400 bg-slate-50 hover:bg-cyan-50/30"}`}>
                     {extraImgPreviews[extraIdx] ? (
@@ -648,7 +681,7 @@ export default function GuestCheckinPage() {
                         <p className="text-xs text-emerald-600 font-bold truncate max-w-full px-2">
                           {extra.document_image?.name}
                         </p>
-                        <p className="text-[10px] text-slate-400">Tap to change</p>
+                        <p className="text-[10px] text-slate-400">{c.fields.uploadTapChange}</p>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-3">
@@ -660,8 +693,8 @@ export default function GuestCheckinPage() {
                           </svg>
                         </div>
                         <div className="text-left">
-                          <p className="text-sm font-bold text-slate-700">Upload document photo</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Passport · ID · Licence · Permit</p>
+                          <p className="text-sm font-bold text-slate-700">{c.fields.uploadTapUpload}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{c.fields.uploadHint}</p>
                         </div>
                       </div>
                     )}
@@ -691,8 +724,8 @@ export default function GuestCheckinPage() {
 
         {/* ── Submit / Next button ─────────────────────────────────────────── */}
         <button type="submit" disabled={submitting}
-          className="w-full flex items-center justify-center gap-2.5 font-black text-base py-4 rounded-2xl text-white transition-all active:scale-[0.98] disabled:opacity-60"
-          style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 6px 20px rgba(14,116,144,0.35)" }}>
+          className="w-full flex items-center justify-center gap-2.5 font-black text-base py-4 rounded-3xl text-white transition-all active:scale-[0.98] disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #083344, #0E7490)", boxShadow: "0 8px 24px rgba(14,116,144,0.4)" }}>
           {submitting ? (
             <><div className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
             {c.submitting}</>
@@ -722,20 +755,25 @@ export default function GuestCheckinPage() {
 }
 
 // ── Small helpers ──────────────────────────────────────────────────────────────
-function SectionHeader({ icon, title }: { icon: string; title: string }) {
+function SectionHeader({ icon: _icon, title }: { icon: string; title: string }) {
   return (
-    <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-      <span className="text-base leading-none">{icon}</span>
-      <p className="text-sm font-black text-slate-900">{title}</p>
+    <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+      <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: "#0E7490" }} />
+      <p className="text-[11px] font-black text-slate-600 uppercase tracking-[0.1em]">{title}</p>
     </div>
   );
 }
 function Label({ children }: { children: React.ReactNode }) {
-  return <label className="block text-xs font-bold text-slate-600 mb-1.5">{children}</label>;
+  return <label className="block text-[11px] font-bold text-slate-500 mb-1.5">{children}</label>;
 }
 function Required() {
   return <span className="text-red-400"> *</span>;
 }
 function Err({ msg }: { msg?: string }) {
-  return msg ? <p className="text-xs text-red-500 mt-1">{msg}</p> : null;
+  return msg ? (
+    <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1">
+      <span className="inline-block w-1 h-1 rounded-full bg-red-400 flex-shrink-0" />
+      {msg}
+    </p>
+  ) : null;
 }

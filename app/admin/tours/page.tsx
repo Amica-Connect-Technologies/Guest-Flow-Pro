@@ -53,6 +53,8 @@ export default function AdminTours() {
   }
 
   async function handleSave() {
+    if (!form.title.trim()) { showToast("Tour title is required", true); return; }
+    if (!form.city.trim())  { showToast("City is required", true); return; }
     setSaving(true);
     try {
       const fd = new FormData();

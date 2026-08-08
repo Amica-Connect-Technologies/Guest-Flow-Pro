@@ -137,7 +137,11 @@ class HotelOutreach(models.Model):
     website      = models.URLField(blank=True)
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
     notes        = models.TextField(blank=True)
-    invite_sent_at = models.DateTimeField(null=True, blank=True)
+    invite_sent_at   = models.DateTimeField(null=True, blank=True)
+    # Email open tracking
+    trial_token      = models.UUIDField(default=uuid.uuid4, unique=True)
+    email_opened_at  = models.DateTimeField(null=True, blank=True)
+    email_open_count = models.PositiveIntegerField(default=0)
     created_at   = models.DateTimeField(auto_now_add=True)
     updated_at   = models.DateTimeField(auto_now=True)
 

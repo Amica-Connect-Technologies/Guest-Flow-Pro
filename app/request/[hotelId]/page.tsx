@@ -42,7 +42,9 @@ export default function PublicBookingRequestPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.guest_name.trim()) { setError("Please enter your name."); return; }
+    if (!form.guest_name.trim())  { setError("Please enter your name."); return; }
+    if (!form.guest_email.trim()) { setError("Please enter your email address."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.guest_email)) { setError("Please enter a valid email address."); return; }
     if (!form.check_in_date)    { setError("Please select a check-in date."); return; }
     if (!form.check_out_date)   { setError("Please select a check-out date."); return; }
     if (form.check_out_date <= form.check_in_date) { setError("Check-out must be after check-in."); return; }
@@ -52,7 +54,7 @@ export default function PublicBookingRequestPage() {
     try {
       await bookingRequestsApi.submitPublic(hotelId, {
         guest_name:     form.guest_name.trim(),
-        guest_email:    form.guest_email.trim() || undefined,
+        guest_email:    form.guest_email.trim(),
         guest_phone:    form.guest_phone.trim() || undefined,
         check_in_date:  form.check_in_date,
         check_out_date: form.check_out_date,
@@ -159,7 +161,7 @@ export default function PublicBookingRequestPage() {
           {/* Email + Phone */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email</label>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email <span className="text-red-400">*</span></label>
               <input
                 type="email"
                 value={form.guest_email}

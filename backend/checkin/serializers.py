@@ -50,6 +50,7 @@ class BookingSerializer(serializers.ModelSerializer):
     messages = MessageLogSerializer(many=True, read_only=True)
     hotel_name = serializers.CharField(source="hotel.name", read_only=True)
     checkin_link = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -62,13 +63,32 @@ class BookingSerializer(serializers.ModelSerializer):
             "registrations", "messages",
         ]
         read_only_fields = [
-            "id", "hotel", "hotel_name", "status",
+            "id", "hotel", "hotel_name",
             "checkin_token", "link_sent_at", "created_at",
         ]
 
     def get_checkin_link(self, obj):
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
         return f"{frontend_url}/checkin/{obj.checkin_token}"
+
+    def get_status(self, obj):
+        # Use prefetched registrations when available (no extra query)
+        try:
+            reg_count = len(obj.registrations.all())
+        except Exception:
+            reg_count = obj.registrations.count()
+
+        # Auto-correct stale "pending" when all guests have registered
+        if obj.status == Booking.STATUS_PENDING and reg_count >= obj.num_guests:
+            Booking.objects.filter(pk=obj.pk).update(status=Booking.STATUS_COMPLETED)
+            return Booking.STATUS_COMPLETED
+
+        # Auto-correct stale "completed" when registrations were deleted
+        if obj.status == Booking.STATUS_COMPLETED and reg_count < obj.num_guests:
+            Booking.objects.filter(pk=obj.pk).update(status=Booking.STATUS_PENDING)
+            return Booking.STATUS_PENDING
+
+        return obj.status
 
 
 class BookingRequestSerializer(serializers.ModelSerializer):
@@ -151,6 +171,7 @@ class PublicBookingSerializer(serializers.ModelSerializer):
     hotel_logo_url = serializers.SerializerMethodField()
     hotel_brand_color = serializers.CharField(source="hotel.brand_color", read_only=True)
     hotel_welcome_message = serializers.CharField(source="hotel.welcome_message", read_only=True)
+    hotel_language = serializers.CharField(source="hotel.language_default", read_only=True)
     is_completed = serializers.SerializerMethodField()
 
     class Meta:
@@ -158,7 +179,7 @@ class PublicBookingSerializer(serializers.ModelSerializer):
         fields = [
             "guest_name", "check_in_date", "check_out_date",
             "num_guests", "hotel_name", "hotel_logo_url",
-            "hotel_brand_color", "hotel_welcome_message", "is_completed",
+            "hotel_brand_color", "hotel_welcome_message", "hotel_language", "is_completed",
         ]
 
     def get_is_completed(self, obj):

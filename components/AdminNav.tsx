@@ -9,7 +9,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 export default function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const [pendingCount, setPendingCount] = useState(0);
 
   const navItems = [
@@ -137,8 +137,24 @@ export default function AdminNav() {
           })}
         </nav>
 
-        {/* Bottom: view app + sign out */}
+        {/* Bottom: language picker + view app + sign out */}
         <div className="px-3 pb-4 space-y-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 12 }}>
+          {/* Language picker */}
+          <div className="flex gap-1 mb-2">
+            {(["en", "it", "es"] as const).map((code) => {
+              const LANG_LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+              return (
+                <button key={code} onClick={() => setLang(code)}
+                  className="flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all"
+                  style={lang === code
+                    ? { background: "rgba(37,99,235,0.3)", color: "#93C5FD", border: "1px solid rgba(37,99,235,0.4)" }
+                    : { color: "rgba(255,255,255,0.3)", border: "1px solid transparent" }
+                  }>
+                  {LANG_LABELS[code]}
+                </button>
+              );
+            })}
+          </div>
           <Link href="/hotels"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors"
             style={{ color: "rgba(255,255,255,0.45)" }}
@@ -187,6 +203,19 @@ export default function AdminNav() {
               </Link>
             );
           })}
+          {/* Language toggle on mobile */}
+          <button type="button"
+            onClick={() => {
+              const order = ["en", "it", "es"] as const;
+              const next = order[(order.indexOf(lang as "en" | "it" | "es") + 1) % order.length];
+              setLang(next);
+            }}
+            className="relative flex-1 flex flex-col items-center justify-center gap-0.5 h-[58px] active:scale-90">
+            <div className="flex items-center justify-center w-10 h-7 rounded-xl text-slate-400 text-lg">
+              {({ en: "🇬🇧", it: "🇮🇹", es: "🇪🇸" } as Record<string, string>)[lang] ?? "🇬🇧"}
+            </div>
+            <span className="text-[10px] font-bold leading-none text-slate-500 uppercase">{lang}</span>
+          </button>
           <button type="button" onClick={handleLogout}
             className="relative flex-1 flex flex-col items-center justify-center gap-0.5 h-[58px] active:scale-90">
             <div className="flex items-center justify-center w-10 h-7 rounded-xl text-slate-500">

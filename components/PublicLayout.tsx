@@ -27,14 +27,17 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
     pathname.startsWith("/admin") ||
     pathname.startsWith("/dashboard");
 
+  // Check-in is a standalone guest experience — no nav/footer
+  const isCheckin = pathname.startsWith("/checkin");
+
   // Hotel guest pages and auth pages get the branded header but no footer/bottom-nav
   const isHotelPage = pathname.startsWith("/h/");
   const isAuthPage  =
     pathname.startsWith("/login") ||
     pathname.startsWith("/register");
 
-  const showHeader = !isDashAdmin && !isAuthPage;
-  const showFooter = !isDashAdmin && !isHotelPage && !isAuthPage;
+  const showHeader = !isDashAdmin && !isAuthPage && !isCheckin;
+  const showFooter = !isDashAdmin && !isHotelPage && !isAuthPage && !isCheckin;
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const { lang, setLang } = useLanguage();

@@ -26,8 +26,14 @@ export default function ContactForm() {
 
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
-    setStatus("sending");
     setErrorMsg("");
+
+    if (!form.name.trim()) { setStatus("error"); setErrorMsg("Name is required."); return; }
+    if (!form.email.trim()) { setStatus("error"); setErrorMsg("Email is required."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { setStatus("error"); setErrorMsg("Please enter a valid email address."); return; }
+    if (!form.message.trim()) { setStatus("error"); setErrorMsg("Message is required."); return; }
+
+    setStatus("sending");
 
     try {
       const res = await fetch("/api/contact", {

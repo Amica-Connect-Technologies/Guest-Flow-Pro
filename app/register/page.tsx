@@ -451,7 +451,7 @@ function RegisterPageInner() {
     setProofPreview(URL.createObjectURL(file));
   }
 
-  // Step 4 only shows for bank_transfer — hide it from the indicator for other methods
+  // Step 4 only shows for bank_transfer — hide it from the indicator for invoice/stripe
   const visibleSteps = form.payment_method === "bank_transfer" ? steps : steps.slice(0, 3);
   const progress = ((step - 1) / (visibleSteps.length - 1)) * 100;
 
@@ -1055,51 +1055,27 @@ function RegisterPageInner() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {/* Bank Transfer / Invoice / Stripe */}
-                  {(["bank_transfer", "invoice", "stripe"] as const).map((method) => {
-                    const selected = form.payment_method === method;
+                  {/* Bank Transfer — active */}
+                  {(() => {
+                    const selected = form.payment_method === "bank_transfer";
                     return (
                       <button
-                        key={method}
                         type="button"
-                        onClick={() => set("payment_method", method)}
+                        onClick={() => set("payment_method", "bank_transfer")}
                         className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${
                           selected ? "bg-blue-50" : "hover:bg-slate-50"
                         }`}
                       >
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          selected ? "bg-blue-600" : "bg-slate-100"
+                          selected ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"
                         }`}>
-                          {method === "bank_transfer" ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "white" : "currentColor"} strokeWidth={1.8} className={`w-5 h-5 ${!selected && "text-slate-500"}`}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
-                            </svg>
-                          ) : method === "invoice" ? (
-                            <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "white" : "currentColor"} strokeWidth={1.8} className={`w-5 h-5 ${!selected && "text-slate-500"}`}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                            </svg>
-                          ) : (
-                            <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "white" : "currentColor"} strokeWidth={1.8} className={`w-5 h-5 ${!selected && "text-slate-500"}`}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                            </svg>
-                          )}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                          </svg>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>
-                              {method === "bank_transfer" ? t.register.step3.bankTransferName
-                                : method === "invoice" ? t.register.step3.invoiceName
-                                : t.register.step3.cardName}
-                            </p>
-                            {method === "stripe" && (
-                              <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">{t.register.step3.cardComingSoon}</span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-400 mt-0.5">
-                            {method === "bank_transfer" ? t.register.step3.bankTransferDesc
-                              : method === "invoice" ? t.register.step3.invoiceDesc
-                              : t.register.step3.cardDesc}
-                          </p>
+                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{t.register.step3.bankTransferName}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.bankTransferDesc}</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                           selected ? "border-blue-500 bg-blue-500" : "border-slate-300"
@@ -1112,7 +1088,64 @@ function RegisterPageInner() {
                         </div>
                       </button>
                     );
-                  })}
+                  })()}
+
+                  {/* Invoice / Pay Later — active */}
+                  {(() => {
+                    const selected = form.payment_method === "invoice";
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => set("payment_method", "invoice")}
+                        className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${
+                          selected ? "bg-violet-50" : "hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          selected ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500"
+                        }`}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-bold ${selected ? "text-violet-700" : "text-slate-900"}`}>{t.register.step3.invoiceName}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.invoiceDesc}</p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                          selected ? "border-violet-500 bg-violet-500" : "border-slate-300"
+                        }`}>
+                          {selected && (
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} className="w-3 h-3">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Credit / Debit Card — Stripe */}
+                  {(() => {
+                    const selected = form.payment_method === "stripe";
+                    return (
+                      <button type="button" onClick={() => set("payment_method", "stripe")}
+                        className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${selected ? "bg-blue-50" : "hover:bg-slate-50"}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${selected ? "bg-blue-100" : "bg-slate-100"}`}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "#2563EB" : "#94A3B8"} strokeWidth={1.8} className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{t.register.step3.cardName}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.cardDesc}</p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selected ? "border-blue-600 bg-blue-600" : "border-slate-300"}`}>
+                          {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                        </div>
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1132,7 +1165,11 @@ function RegisterPageInner() {
                     {plans.find((p) => p.id === form.plan)?.price}{t.register.step3.perMonth}
                   </p>
                   <p className="text-[11px] text-slate-400 capitalize">
-                    {plans.find((p) => p.id === form.plan)?.name} {t.register.step3.planLabelSuffix} · {form.payment_method === "bank_transfer" ? t.register.step3.bankTransferName : form.payment_method === "invoice" ? t.register.step3.invoiceName : t.register.step3.cardName}
+                    {plans.find((p) => p.id === form.plan)?.name} {t.register.step3.planLabelSuffix} · {
+                      form.payment_method === "stripe" ? t.register.step3.cardName
+                      : form.payment_method === "invoice" ? t.register.step3.invoiceName
+                      : t.register.step3.bankTransferName
+                    }
                   </p>
                 </div>
               </div>
@@ -1320,26 +1357,22 @@ function RegisterPageInner() {
                 </div>
               </div>
 
+              {/* Note: proof required */}
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p className="text-xs text-amber-700">
+                  Please transfer the payment using the bank details above, then upload your transaction screenshot or enter your transaction ID. Your account will be activated once payment is confirmed.
+                </p>
+              </div>
+
               {/* Actions */}
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    const params = new URLSearchParams({
-                      method: "bank_transfer",
-                      business_name: form.business_name,
-                      plan: form.plan,
-                    });
-                    window.location.href = `/register/success?${params}`;
-                  }}
-                  className="flex-none text-xs text-slate-400 hover:text-slate-600 underline self-center transition-colors px-2"
-                >
-                  {t.register.step4.skipForNow}
-                </button>
-                <button
-                  type="button"
                   onClick={handleSubmitProof}
-                  disabled={submittingProof || (!transactionId.trim() && !proofFile)}
+                  disabled={submittingProof}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl text-sm transition-all flex items-center justify-center gap-2"
                 >
                   {submittingProof ? (

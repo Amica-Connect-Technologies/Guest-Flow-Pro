@@ -1,15 +1,19 @@
 import csv
 import io
+import logging
 from datetime import date, timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import DatabaseError
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
 
 from accounts.models import HotelUser
 from hotels.plan_permissions import require_feature, require_guest_capacity
@@ -39,7 +43,7 @@ def _hotel_for(user):
 
 def _booking_qs(user):
     hotel = _hotel_for(user)
-    qs = Booking.objects.prefetch_related("registrations", "messages").select_related("hotel").all()
+    qs = Booking.objects.prefetch_related("registrations", "messages").select_related("hotel").order_by("-created_at")
     if hotel:
         qs = qs.filter(hotel=hotel)
     return qs
@@ -52,22 +56,104 @@ def _send_checkin_invitation(booking):
 
     frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000").rstrip("/")
     link = f"{frontend_url}/checkin/{booking.checkin_token}"
+    hotel_name = booking.hotel.name
+    guest_name = booking.guest_name.split()[0]  # first name only
 
-    message = (
+    plain_message = (
         f"Hello {booking.guest_name},\n\n"
-        f"Thank you for booking with {booking.hotel.name}.\n\n"
-        f"Please complete your secure online check-in before arrival:\n{link}\n\n"
+        f"Thank you for booking with {hotel_name}.\n\n"
+        f"Complete your online check-in here:\n{link}\n\n"
         f"Check-in:  {booking.check_in_date}\n"
         f"Check-out: {booking.check_out_date}\n\n"
-        f"Thank you."
+        f"Thank you,\n{hotel_name}"
     )
+
+    html_message = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Online Check-in – {hotel_name}</title>
+</head>
+<body style="margin:0;padding:0;background:#F0F4F8;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4F8;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#020B12 0%,#083344 55%,#0E7490 100%);padding:36px 40px 32px;">
+            <p style="margin:0 0 6px;color:rgba(103,232,249,0.8);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Online Check-in</p>
+            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:800;line-height:1.2;">{hotel_name}</h1>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;color:#0F172A;font-size:20px;font-weight:700;">Hello {guest_name}! 👋</p>
+            <p style="margin:0 0 24px;color:#475569;font-size:15px;line-height:1.6;">
+              Your booking at <strong style="color:#0F172A;">{hotel_name}</strong> is confirmed.
+              Please complete your secure online check-in before arrival — it only takes 2 minutes.
+            </p>
+
+            <!-- Dates card -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;margin-bottom:28px;">
+              <tr>
+                <td style="padding:16px 20px;border-right:1px solid #E2E8F0;" width="50%">
+                  <p style="margin:0 0 4px;color:#94A3B8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Check-in</p>
+                  <p style="margin:0;color:#0F172A;font-size:15px;font-weight:700;">{booking.check_in_date}</p>
+                </td>
+                <td style="padding:16px 20px;" width="50%">
+                  <p style="margin:0 0 4px;color:#94A3B8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Check-out</p>
+                  <p style="margin:0;color:#0F172A;font-size:15px;font-weight:700;">{booking.check_out_date}</p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- CTA Button -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              <tr>
+                <td align="center">
+                  <a href="{link}"
+                     style="display:inline-block;background:linear-gradient(135deg,#083344,#0E7490);color:#ffffff;text-decoration:none;font-size:16px;font-weight:800;padding:16px 40px;border-radius:12px;letter-spacing:0.3px;box-shadow:0 6px 20px rgba(14,116,144,0.35);">
+                    ✓ &nbsp; Complete Online Check-in
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Link fallback -->
+            <p style="margin:0 0 6px;color:#94A3B8;font-size:12px;text-align:center;">Button not working? Copy and paste this link:</p>
+            <p style="margin:0;text-align:center;">
+              <a href="{link}" style="color:#0E7490;font-size:12px;word-break:break-all;">{link}</a>
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;border-top:1px solid #E2E8F0;padding:20px 40px;">
+            <p style="margin:0;color:#94A3B8;font-size:12px;text-align:center;line-height:1.6;">
+              This email was sent on behalf of <strong style="color:#64748B;">{hotel_name}</strong>.<br/>
+              Powered by <strong style="color:#0E7490;">Guest Flow Pro</strong>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
 
     try:
         send_mail(
-            subject=f"Online Check-in – {booking.hotel.name}",
-            message=message,
+            subject=f"Complete your check-in – {hotel_name}",
+            message=plain_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[booking.guest_email],
+            html_message=html_message,
             fail_silently=False,
         )
         booking.link_sent_at = timezone.now()
@@ -709,7 +795,20 @@ class PublicGuestSubmitView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        instance = serializer.save(booking=booking, guest_number=guest_number)
+        try:
+            instance = serializer.save(booking=booking, guest_number=guest_number)
+        except DatabaseError as exc:
+            logger.error("Guest registration DB error for booking %s: %s", booking.id, exc)
+            return Response(
+                {"detail": "Registration could not be saved — database error. Please run migrations on the server."},
+                status=500,
+            )
+        except Exception as exc:
+            logger.exception("Guest registration failed for booking %s", booking.id)
+            return Response(
+                {"detail": "Registration failed due to a server error. Please try again."},
+                status=500,
+            )
 
         # Fire webhook
         webhook_dispatch(booking.hotel, "guest_registered", {

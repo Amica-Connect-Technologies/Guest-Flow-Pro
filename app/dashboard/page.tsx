@@ -115,7 +115,7 @@ export default function HotelDashboard() {
 
 function HotelDashboardInner() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const searchParams = useSearchParams();
   const [hotel, setHotel]     = useState<Hotel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -287,7 +287,8 @@ function HotelDashboardInner() {
     setEditingId(svc.id); setSvcError(""); setShowSvcForm(true);
   }
   async function saveService() {
-    if (!svcForm.name.trim() || !svcForm.price) { setSvcError(t.dashboard.services.nameRequired); return; }
+    if (!svcForm.name.trim()) { setSvcError(t.dashboard.services.nameRequired); return; }
+    if (!svcForm.price || isNaN(Number(svcForm.price)) || Number(svcForm.price) <= 0) { setSvcError("Price must be a positive number"); return; }
     setSvcSaving(true); setSvcError("");
     const fd = new FormData();
     fd.append("name",         svcForm.name.trim());
@@ -566,6 +567,22 @@ function HotelDashboardInner() {
             {section === "profile"  && <><User            className="w-5 h-5 text-slate-400" /><h1 className="text-base font-bold text-slate-800">Hotel Profile</h1></>}
           </div>
           <div className="flex items-center gap-3">
+            {/* Language picker in header */}
+            <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+              {(["en", "it", "es"] as const).map((code) => {
+                const LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+                return (
+                  <button key={code} onClick={() => setLang(code)}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all"
+                    style={lang === code
+                      ? { background: "white", color: "#0E7490", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
+                      : { color: "#94a3b8" }
+                    }>
+                    {LABELS[code]}
+                  </button>
+                );
+              })}
+            </div>
             <span className="text-sm text-slate-400 font-medium">{userEmail}</span>
           </div>
         </div>
