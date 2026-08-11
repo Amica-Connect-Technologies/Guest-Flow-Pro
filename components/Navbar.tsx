@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { clearSession } from "@/lib/api";
+import Flag from "@/components/Flag";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -87,7 +88,7 @@ export default function Navbar() {
                 lang === "en" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <span className="text-base leading-none">🇬🇧</span>
+              <Flag code="en" />
               <span className="hidden sm:inline">EN</span>
             </button>
             <button
@@ -97,7 +98,7 @@ export default function Navbar() {
                 lang === "it" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <span className="text-base leading-none">🇮🇹</span>
+              <Flag code="it" />
               <span className="hidden sm:inline">IT</span>
             </button>
             <button
@@ -107,7 +108,7 @@ export default function Navbar() {
                 lang === "es" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              <span className="text-base leading-none">🇪🇸</span>
+              <Flag code="es" />
               <span className="hidden sm:inline">ES</span>
             </button>
           </div>

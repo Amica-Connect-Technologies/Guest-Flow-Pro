@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
+import Flag from "@/components/Flag";
 
 const REMEMBER_KEY = "gfp_remembered_email";
 
@@ -69,15 +70,16 @@ export default function LoginPage() {
         {/* Language picker */}
         <div className="flex gap-1">
           {(["en", "it", "es"] as const).map((code) => {
-            const LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+            const LABEL = { en: "EN", it: "IT", es: "ES" } as const;
             return (
               <button key={code} onClick={() => setLang(code)}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all"
+                className="px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
                 style={lang === code
                   ? { background: "rgba(59,130,246,0.35)", color: "#93C5FD", border: "1px solid rgba(59,130,246,0.5)" }
                   : { color: "rgba(255,255,255,0.4)", border: "1px solid transparent" }
                 }>
-                {LABELS[code]}
+                <Flag code={code} />
+                {LABEL[code]}
               </button>
             );
           })}

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { auth, hotelsApi, type Hotel } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
+import Flag from "@/components/Flag";
 
 const NAV_T = {
   en: {
@@ -364,15 +365,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex gap-1 flex-shrink-0 ml-3">
             {(["en", "it", "es"] as const).map((code) => {
-              const flags = { en: "🇬🇧", it: "🇮🇹", es: "🇪🇸" } as const;
               return (
                 <button key={code} onClick={() => setLang(code)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
                   style={lang === code
                     ? { background: "rgba(6,182,212,0.25)", border: "1px solid rgba(6,182,212,0.4)" }
                     : { opacity: 0.45, border: "1px solid transparent" }
                   }>
-                  {flags[code]}
+                  <Flag code={code} size={20} />
                 </button>
               );
             })}
