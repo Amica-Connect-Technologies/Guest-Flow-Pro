@@ -59,6 +59,10 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/*.pyc
 
+# ── User-uploaded media (guest IDs, payment proofs, hotel photos) ──
+# Never belongs in source control — contains guest PII (passports/IDs).
+backend/media/
+
 # ── Misc ──────────────────────────────────────────────────────────
 .vercel
 .turbo

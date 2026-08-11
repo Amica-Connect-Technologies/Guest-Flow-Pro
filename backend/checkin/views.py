@@ -746,6 +746,8 @@ class PublicCheckinVerifyView(APIView):
             booking = Booking.objects.select_related("hotel").get(checkin_token=token)
         except Booking.DoesNotExist:
             return Response({"detail": "Invalid or expired check-in link."}, status=404)
+        if booking.is_expired:
+            return Response({"detail": "This check-in link has expired."}, status=410)
         return Response(PublicBookingSerializer(booking, context={"request": request}).data)
 
 
@@ -764,6 +766,8 @@ class PublicGuestSubmitView(APIView):
             booking = Booking.objects.prefetch_related("registrations").select_related("hotel").get(checkin_token=token)
         except Booking.DoesNotExist:
             return Response({"detail": "Invalid check-in link."}, status=404)
+        if booking.is_expired:
+            return Response({"detail": "This check-in link has expired."}, status=410)
 
         # Check monthly guest capacity before accepting a new registration
         err = require_guest_capacity(booking.hotel)
