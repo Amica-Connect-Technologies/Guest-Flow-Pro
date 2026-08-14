@@ -204,7 +204,7 @@ const empty: Form = {
   owner_name: "", email: "", phone: "", password: "", confirm_password: "",
   business_name: "", city: "", country: "", whatsapp_number: "", website: "",
   plan: "concierge",
-  payment_method: "bank_transfer",
+  payment_method: "stripe",
 };
 
 function getCode(country: string) {
@@ -1055,7 +1055,29 @@ function RegisterPageInner() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {/* Bank Transfer — active */}
+                  {/* Credit / Debit Card — Stripe (default) */}
+                  {(() => {
+                    const selected = form.payment_method === "stripe";
+                    return (
+                      <button type="button" onClick={() => set("payment_method", "stripe")}
+                        className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${selected ? "bg-blue-50" : "hover:bg-slate-50"}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${selected ? "bg-blue-100" : "bg-slate-100"}`}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "#2563EB" : "#94A3B8"} strokeWidth={1.8} className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{t.register.step3.cardName}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.cardDesc}</p>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selected ? "border-blue-600 bg-blue-600" : "border-slate-300"}`}>
+                          {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                        </div>
+                      </button>
+                    );
+                  })()}
+
+                  {/* Bank Transfer */}
                   {(() => {
                     const selected = form.payment_method === "bank_transfer";
                     return (
@@ -1085,28 +1107,6 @@ function RegisterPageInner() {
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                             </svg>
                           )}
-                        </div>
-                      </button>
-                    );
-                  })()}
-
-                  {/* Credit / Debit Card — Stripe */}
-                  {(() => {
-                    const selected = form.payment_method === "stripe";
-                    return (
-                      <button type="button" onClick={() => set("payment_method", "stripe")}
-                        className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${selected ? "bg-blue-50" : "hover:bg-slate-50"}`}>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${selected ? "bg-blue-100" : "bg-slate-100"}`}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke={selected ? "#2563EB" : "#94A3B8"} strokeWidth={1.8} className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                          </svg>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-900"}`}>{t.register.step3.cardName}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{t.register.step3.cardDesc}</p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selected ? "border-blue-600 bg-blue-600" : "border-slate-300"}`}>
-                          {selected && <div className="w-2 h-2 rounded-full bg-white" />}
                         </div>
                       </button>
                     );
