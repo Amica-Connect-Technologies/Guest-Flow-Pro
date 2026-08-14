@@ -178,10 +178,10 @@ const COUNTRY_CONFIG: Record<string, { code: string; flag: string; cities: strin
 
 // ── Plans ────────────────────────────────────────────────────────────────────
 const PLAN_META = [
-  { id: "concierge"         as const, price: "€25", period: "/month", accent: "blue"   },
-  { id: "checkin"           as const, price: "€50", period: "/month", accent: "violet" },
-  { id: "concierge_checkin" as const, price: "€75", period: "/month", popular: true, accent: "cyan" },
-  { id: "full"              as const, price: "€100", period: "/month", accent: "amber" },
+  { id: "concierge"         as const, price: "£25", period: "/month", accent: "blue"   },
+  { id: "checkin"           as const, price: "£50", period: "/month", accent: "violet" },
+  { id: "concierge_checkin" as const, price: "£75", period: "/month", popular: true, accent: "cyan" },
+  { id: "full"              as const, price: "£100", period: "/month", accent: "amber" },
 ];
 
 // ── Form state ───────────────────────────────────────────────────────────────

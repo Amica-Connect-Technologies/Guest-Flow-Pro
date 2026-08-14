@@ -420,18 +420,18 @@ function HotelDashboardInner() {
   const HAS_FULL      = IS_LEGACY || plan === "full";
 
   const PLAN_BADGE: Record<string, string> = {
-    concierge:         "Digital Concierge · €25/mo",
-    checkin:           "Smart Check-in · €50/mo",
-    concierge_checkin: "Guest Experience Pro · €75/mo",
-    full:              "Full Suite · €100/mo",
+    concierge:         "Digital Concierge · £25/mo",
+    checkin:           "Smart Check-in · £50/mo",
+    concierge_checkin: "Guest Experience Pro · £75/mo",
+    full:              "Full Suite · £100/mo",
     starter:           "Starter (Legacy)",
     basic:             "Basic (Legacy) · £29/mo",
     pro:               "Pro (Legacy) · £79/mo",
   };
 
   const PLAN_PRICE: Record<string, string> = {
-    concierge: "€25/mo", checkin: "€50/mo",
-    concierge_checkin: "€75/mo", full: "€100/mo",
+    concierge: "£25/mo", checkin: "£50/mo",
+    concierge_checkin: "£75/mo", full: "£100/mo",
     starter: "Legacy", basic: "£29/mo", pro: "£79/mo",
   };
 

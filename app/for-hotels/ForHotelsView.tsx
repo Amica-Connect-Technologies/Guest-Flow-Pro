@@ -469,7 +469,7 @@ export default function ForHotelsView() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-              {/* €25 — Digital Concierge */}
+              {/* £25 — Digital Concierge */}
               <div className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col hover:shadow-lg transition-shadow">
                 <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-blue-600">
@@ -478,7 +478,7 @@ export default function ForHotelsView() {
                 </div>
                 <p className="text-xs font-black uppercase tracking-widest text-blue-600 mb-1">Starter</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-slate-900">€25</span>
+                  <span className="text-4xl font-black text-slate-900">£25</span>
                   <span className="text-slate-400 text-sm font-semibold mb-1">/mo</span>
                 </div>
                 <p className="text-sm font-bold text-slate-700 mb-4">Digital Concierge</p>
@@ -498,7 +498,7 @@ export default function ForHotelsView() {
                 </Link>
               </div>
 
-              {/* €50 — Smart Check-in */}
+              {/* £50 — Smart Check-in */}
               <div className="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col hover:shadow-lg transition-shadow">
                 <div className="w-10 h-10 rounded-2xl bg-violet-50 flex items-center justify-center mb-4">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-violet-600">
@@ -507,7 +507,7 @@ export default function ForHotelsView() {
                 </div>
                 <p className="text-xs font-black uppercase tracking-widest text-violet-600 mb-1">Essentials</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-slate-900">€50</span>
+                  <span className="text-4xl font-black text-slate-900">£50</span>
                   <span className="text-slate-400 text-sm font-semibold mb-1">/mo</span>
                 </div>
                 <p className="text-sm font-bold text-slate-700 mb-4">Smart Check-in</p>
@@ -527,7 +527,7 @@ export default function ForHotelsView() {
                 </Link>
               </div>
 
-              {/* €75 — Guest Experience Pro (POPULAR) */}
+              {/* £75 — Guest Experience Pro (POPULAR) */}
               <div className="bg-gradient-to-b from-cyan-700 to-cyan-800 rounded-3xl p-6 flex flex-col shadow-xl shadow-cyan-200 relative">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-900 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
                   Most Popular
@@ -539,7 +539,7 @@ export default function ForHotelsView() {
                 </div>
                 <p className="text-xs font-black uppercase tracking-widest text-cyan-200 mb-1">Professional</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-white">€75</span>
+                  <span className="text-4xl font-black text-white">£75</span>
                   <span className="text-cyan-300 text-sm font-semibold mb-1">/mo</span>
                 </div>
                 <p className="text-sm font-bold text-white mb-4">Guest Experience Pro</p>
@@ -559,7 +559,7 @@ export default function ForHotelsView() {
                 </Link>
               </div>
 
-              {/* €100 — Full Suite */}
+              {/* £100 — Full Suite */}
               <div className="bg-slate-900 rounded-3xl p-6 flex flex-col hover:shadow-lg transition-shadow">
                 <div className="w-10 h-10 rounded-2xl bg-amber-400/20 flex items-center justify-center mb-4">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-5 h-5 text-amber-400">
@@ -568,7 +568,7 @@ export default function ForHotelsView() {
                 </div>
                 <p className="text-xs font-black uppercase tracking-widest text-amber-400 mb-1">Enterprise</p>
                 <div className="flex items-end gap-1 mb-1">
-                  <span className="text-4xl font-black text-white">€100</span>
+                  <span className="text-4xl font-black text-white">£100</span>
                   <span className="text-slate-400 text-sm font-semibold mb-1">/mo</span>
                 </div>
                 <p className="text-sm font-bold text-slate-300 mb-4">Full Suite</p>

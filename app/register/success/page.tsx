@@ -12,10 +12,10 @@ function ManualSuccess({ businessName, method, plan }: { businessName: string; m
   const NEXT_STEPS = [t.registerFlow.step1, t.registerFlow.step2, t.registerFlow.step3, t.registerFlow.step4];
   const isBank = method === "bank_transfer";
   const PLAN_LABEL_MAP: Record<string, string> = {
-    concierge:         "Digital Concierge — €25/month",
-    checkin:           "Smart Check-in — €50/month",
-    concierge_checkin: "Guest Experience Pro — €75/month",
-    full:              "Full Suite — €100/month",
+    concierge:         "Digital Concierge — £25/month",
+    checkin:           "Smart Check-in — £50/month",
+    concierge_checkin: "Guest Experience Pro — £75/month",
+    full:              "Full Suite — £100/month",
     basic:             t.registerFlow.planBasic,
     pro:               t.registerFlow.planPro,
   };

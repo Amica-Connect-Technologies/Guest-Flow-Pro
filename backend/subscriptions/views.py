@@ -224,7 +224,60 @@ class StripeWebhookView(APIView):
                         stripe_subscription_id=session.get("subscription", ""),
                     )
 
+        elif event["type"] == "customer.subscription.created":
+            self._track_orphan_subscription(event["data"]["object"])
+
         return Response({"received": True})
+
+    def _track_orphan_subscription(self, sub):
+        """
+        Subscriptions created outside our own /register checkout (e.g. a GHL funnel
+        using the same Stripe account) never get a Registration row, so the payment
+        is invisible in the admin panel and the hotel account never gets provisioned.
+        Back them into a reviewable Registration so nobody pays without being seen.
+        """
+        subscription_id = sub.get("id", "")
+        customer_id = sub.get("customer", "")
+        already_tracked = (
+            Registration.objects.filter(stripe_subscription_id=subscription_id).exists()
+            or Registration.objects.filter(stripe_customer_id=customer_id).exists()
+        )
+        if already_tracked or not customer_id:
+            return
+
+        try:
+            customer = stripe.Customer.retrieve(customer_id).to_dict()
+        except stripe.error.StripeError:
+            customer = {}
+
+        price_id = ""
+        items = sub.get("items", {}).get("data", [])
+        if items:
+            price_id = items[0].get("price", {}).get("id", "")
+        plan = next((k for k, v in STRIPE_PRICES.items() if v and v == price_id), "concierge")
+
+        address = customer.get("address") or {}
+        country_names = {"IT": "Italy", "GB": "United Kingdom"}
+        name = customer.get("name") or customer.get("email") or "Unknown"
+
+        Registration.objects.create(
+            owner_name=name,
+            business_name=name,
+            email=customer.get("email") or "",
+            phone=customer.get("phone") or "",
+            city=address.get("city") or "",
+            country=country_names.get(address.get("country"), address.get("country") or "Italy"),
+            plan=plan,
+            payment_method="stripe",
+            status="pending_review",
+            stripe_customer_id=customer_id,
+            stripe_subscription_id=subscription_id,
+            payment_note=(
+                "Auto-created from an external checkout (e.g. the GHL payment funnel), "
+                "not our own registration form — please verify business details with "
+                "the customer before approving."
+            ),
+        )
 
 
 class RegistrationListView(APIView):

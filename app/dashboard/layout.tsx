@@ -77,10 +77,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const HAS_FULL      = IS_LEGACY || plan === "full";
 
   const PLAN_LABEL: Record<string, string> = {
-    concierge:         "Digital Concierge · €25/mo",
-    checkin:           "Smart Check-in · €50/mo",
-    concierge_checkin: "Guest Experience Pro · €75/mo",
-    full:              "Full Suite · €100/mo",
+    concierge:         "Digital Concierge · £25/mo",
+    checkin:           "Smart Check-in · £50/mo",
+    concierge_checkin: "Guest Experience Pro · £75/mo",
+    full:              "Full Suite · £100/mo",
     starter:           "Starter (Legacy)",
     basic:             "Basic (Legacy) · £29/mo",
     pro:               "Pro (Legacy) · £79/mo",

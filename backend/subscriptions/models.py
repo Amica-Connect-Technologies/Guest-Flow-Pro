@@ -11,10 +11,10 @@ class Registration(models.Model):
         ("rejected", "Rejected"),
     ]
     PLAN_CHOICES = [
-        ("concierge",         "Digital Concierge — €25/mo"),
-        ("checkin",           "Digital Check-In — €50/mo"),
-        ("concierge_checkin", "Concierge + Check-In — €75/mo"),
-        ("full",              "Full Suite — €100/mo"),
+        ("concierge",         "Digital Concierge — £25/mo"),
+        ("checkin",           "Digital Check-In — £50/mo"),
+        ("concierge_checkin", "Concierge + Check-In — £75/mo"),
+        ("full",              "Full Suite — £100/mo"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
