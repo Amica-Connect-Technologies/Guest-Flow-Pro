@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { outreachApi, type HotelOutreach, type OutreachStatus } from "@/lib/api";
+import Flag from "@/components/Flag";
 
 const STATUS_META: Record<OutreachStatus, { label: string; color: string; bg: string }> = {
   new:         { label: "New Lead",    color: "#64748B", bg: "rgba(100,116,139,0.12)" },
@@ -50,11 +51,12 @@ function downloadSampleCSV() {
 
 type FormState = {
   hotel_name: string; contact_name: string; email: string;
-  phone: string; city: string; website: string; status: OutreachStatus; notes: string;
+  phone: string; city: string; website: string; language: "en" | "it";
+  status: OutreachStatus; notes: string;
 };
 const blank = (): FormState => ({
   hotel_name: "", contact_name: "", email: "", phone: "",
-  city: "", website: "", status: "new", notes: "",
+  city: "", website: "", language: "en", status: "new", notes: "",
 });
 
 export default function OutreachPage() {
@@ -100,7 +102,8 @@ export default function OutreachPage() {
     setForm({
       hotel_name: lead.hotel_name, contact_name: lead.contact_name,
       email: lead.email, phone: lead.phone, city: lead.city,
-      website: lead.website, status: lead.status, notes: lead.notes,
+      website: lead.website, language: lead.language,
+      status: lead.status, notes: lead.notes,
     });
     setShowForm(true);
   }
@@ -267,8 +270,8 @@ export default function OutreachPage() {
         {/* CSV format hint */}
         <div className="mb-5 text-[11px] text-slate-500 bg-white rounded-xl px-4 py-2.5 border border-slate-200 flex items-center flex-wrap gap-x-1">
           <span>CSV columns (any order, extra columns are ignored):</span>
-          <span className="font-mono text-slate-700 mx-1">Business Title / hotel_name, Email, City, Phone, contact_name, Website</span>
-          <span>— duplicates by email are skipped automatically.</span>
+          <span className="font-mono text-slate-700 mx-1">Business Title / hotel_name, Email, City, Phone, contact_name, Website, Language</span>
+          <span>— duplicates by email are skipped automatically. Invite email language is auto-detected from the Language column or phone country code (edit per lead if needed).</span>
           <button onClick={downloadSampleCSV} className="ml-2 text-blue-500 hover:text-blue-700 underline underline-offset-2 font-medium">
             Download sample
           </button>
@@ -355,6 +358,7 @@ export default function OutreachPage() {
                   {/* Details */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 flex-wrap">
+                      <Flag code={lead.language} size={15} />
                       <p className="font-black text-slate-900">{lead.hotel_name}</p>
                       {lead.city && <span className="text-xs text-slate-400">{lead.city}</span>}
                     </div>
@@ -433,6 +437,23 @@ export default function OutreachPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                   />
                 ))}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1.5 px-1">Invite email language</label>
+                  <div className="flex gap-2">
+                    {(["en", "it"] as const).map(code => (
+                      <button key={code} type="button"
+                        onClick={() => setForm(prev => ({ ...prev, language: code }))}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-colors"
+                        style={form.language === code
+                          ? { background: "#EFF6FF", borderColor: "#93C5FD", color: "#1D4ED8" }
+                          : { background: "#F8FAFC", borderColor: "#E2E8F0", color: "#64748B" }
+                        }>
+                        <Flag code={code} />
+                        {code === "en" ? "English" : "Italiano"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <select
                   value={form.status}
                   onChange={e => setForm(prev => ({ ...prev, status: e.target.value as OutreachStatus }))}

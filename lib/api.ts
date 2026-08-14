@@ -539,6 +539,7 @@ export type HotelOutreach = {
   id: string; trial_token: string;
   hotel_name: string; contact_name: string;
   email: string; phone: string; city: string; website: string;
+  language: "en" | "it";
   status: OutreachStatus; notes: string;
   invite_sent_at: string | null;
   email_opened_at: string | null;
