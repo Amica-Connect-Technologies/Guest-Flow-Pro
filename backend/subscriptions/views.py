@@ -1,3 +1,4 @@
+from urllib.parse import quote
 import stripe
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -24,6 +25,16 @@ STRIPE_PRICES = {
     # legacy — keep so old sessions don't break
     "basic": getattr(settings, "STRIPE_PRICE_BASIC", ""),
     "pro":   getattr(settings, "STRIPE_PRICE_PRO",   ""),
+}
+
+# Card payment is handled by the client's GoHighLevel funnel (same Stripe
+# account), not our own Stripe Checkout — so "Credit/Debit Card" hands off
+# to the matching GHL payment page instead of creating a Checkout Session.
+GHL_PAYMENT_URLS = {
+    "concierge":         "https://payment.guestflowpro.com/digital-concierge",
+    "checkin":           "https://payment.guestflowpro.com/smart-check-in",
+    "concierge_checkin": "https://payment.guestflowpro.com/guest-experience-pro",
+    "full":              "https://payment.guestflowpro.com/full-suite",
 }
 
 # Hardcoded bank account details — update these for production
@@ -96,38 +107,24 @@ class RegisterView(APIView):
                 "bank_details": {**BANK_DETAILS, "reference": reference},
             })
 
-        # ── Stripe checkout ───────────────────────────────────────────────────
-        price_id = STRIPE_PRICES.get(d["plan"])
-        if not price_id:
+        # ── Card payment — hand off to the GHL funnel ─────────────────────────
+        # Card payments are processed on the client's GoHighLevel funnel, not our
+        # own Stripe Checkout. The Registration row created above already carries
+        # the full business details; the Stripe webhook (customer.subscription.
+        # created) matches the payment back to it by email once GHL charges the
+        # card, moving it into the normal admin review queue.
+        ghl_url = GHL_PAYMENT_URLS.get(d["plan"])
+        if not ghl_url:
             reg.delete()
             user.delete()
             return Response(
-                {"detail": "Stripe card payment is not yet available. Please select Bank Transfer to complete your registration."},
+                {"detail": "Card payment is not available for this plan. Please select Bank Transfer."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        frontend_url = settings.FRONTEND_URL.rstrip("/")
-
-        try:
-            session = stripe.checkout.Session.create(
-                payment_method_types=["card"],
-                mode="subscription",
-                line_items=[{"price": price_id, "quantity": 1}],
-                customer_email=email,
-                client_reference_id=str(reg.id),
-                success_url=f"{frontend_url}/register/success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{frontend_url}/register/cancel",
-                metadata={"registration_id": str(reg.id)},
-            )
-        except stripe.error.StripeError as e:
-            reg.delete()
-            user.delete()
-            return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
-
-        reg.stripe_session_id = session.id
-        reg.save(update_fields=["stripe_session_id"])
         send_welcome_email(reg)  # auto welcome email
-        return Response({"checkout_url": session.url, "registration_id": str(reg.id)})
+        checkout_url = f"{ghl_url}?email={quote(email)}"
+        return Response({"checkout_url": checkout_url, "registration_id": str(reg.id)})
 
 
 class SubmitPaymentProofView(APIView):
@@ -255,15 +252,30 @@ class StripeWebhookView(APIView):
         if items:
             price_id = items[0].get("price", {}).get("id", "")
         plan = next((k for k, v in STRIPE_PRICES.items() if v and v == price_id), "concierge")
+        email = customer.get("email") or ""
+
+        # If they went through our own /register form first (hotel_name, city,
+        # whatsapp, etc. already on file) and were then sent to GHL to pay, just
+        # attach this payment to that existing record instead of creating a
+        # second, thinner one with only what Stripe knows about the customer.
+        existing = Registration.objects.filter(
+            email__iexact=email, status="pending_payment"
+        ).order_by("-created_at").first() if email else None
+        if existing:
+            existing.status = "pending_review"
+            existing.stripe_customer_id = customer_id
+            existing.stripe_subscription_id = subscription_id
+            existing.save(update_fields=["status", "stripe_customer_id", "stripe_subscription_id"])
+            return
 
         address = customer.get("address") or {}
         country_names = {"IT": "Italy", "GB": "United Kingdom"}
-        name = customer.get("name") or customer.get("email") or "Unknown"
+        name = customer.get("name") or email or "Unknown"
 
         Registration.objects.create(
             owner_name=name,
             business_name=name,
-            email=customer.get("email") or "",
+            email=email,
             phone=customer.get("phone") or "",
             city=address.get("city") or "",
             country=country_names.get(address.get("country"), address.get("country") or "Italy"),
