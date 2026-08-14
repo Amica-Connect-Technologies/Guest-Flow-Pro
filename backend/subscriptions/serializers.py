@@ -34,4 +34,4 @@ class RegisterRequestSerializer(serializers.Serializer):
     whatsapp_number = serializers.CharField(max_length=30, allow_blank=True, required=False)
     website = serializers.URLField(allow_blank=True, required=False)
     plan = serializers.ChoiceField(choices=["concierge", "checkin", "concierge_checkin", "full"])
-    payment_method = serializers.ChoiceField(choices=["bank_transfer", "invoice", "stripe"], default="bank_transfer")
+    payment_method = serializers.ChoiceField(choices=["bank_transfer", "stripe"], default="bank_transfer")
