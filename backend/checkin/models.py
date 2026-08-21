@@ -1,5 +1,7 @@
 import uuid
+from datetime import timedelta
 from django.db import models
+from django.utils import timezone
 
 
 class Booking(models.Model):
@@ -7,6 +9,10 @@ class Booking(models.Model):
     STATUS_COMPLETED = "completed"
     STATUS_MISSING = "missing_info"
     STATUS_EXPIRED = "expired"
+
+    # How long the public check-in link stays valid after checkout, so a
+    # link can't be used indefinitely once a guest has left the hotel.
+    LINK_GRACE_DAYS = 2
 
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
@@ -39,6 +45,12 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"{self.guest_name} – {self.check_in_date} ({self.hotel.name})"
+
+    @property
+    def is_expired(self) -> bool:
+        """True once the check-in link has passed its checkout + grace window."""
+        cutoff = self.check_out_date + timedelta(days=self.LINK_GRACE_DAYS)
+        return timezone.localdate() > cutoff
 
 
 class GuestRegistration(models.Model):

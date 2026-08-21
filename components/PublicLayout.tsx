@@ -7,11 +7,12 @@ import Footer from "@/components/Footer";
 import MobileHeader from "@/components/MobileHeader";
 import BottomNav from "@/components/BottomNav";
 import { useLanguage } from "@/lib/LanguageContext";
+import Flag from "@/components/Flag";
 
 const languages = [
-  { code: "EN", label: "English", flag: "🇬🇧" },
-  { code: "IT", label: "Italiano", flag: "🇮🇹" },
-  { code: "ES", label: "Español", flag: "🇪🇸" },
+  { code: "EN", label: "English" },
+  { code: "IT", label: "Italiano" },
+  { code: "ES", label: "Español" },
 ] as const;
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
@@ -121,7 +122,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                         : "bg-slate-50 border border-slate-100"
                     }`}
                   >
-                    <span className="text-3xl leading-none">{opt.flag}</span>
+                    <Flag code={opt.code.toLowerCase() as "en" | "it" | "es"} size={32} />
                     <div className="text-left flex-1">
                       <p
                         className={`font-bold text-base ${

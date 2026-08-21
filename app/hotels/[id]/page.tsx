@@ -34,7 +34,7 @@ const AMENITY_ICONS: Record<string, string> = {
 
 const NEARBY_TABS: { key: "restaurant"|"parking"|"night"|"tours"|"places"; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
   { key: "restaurant", label: "Restaurants",  Icon: UtensilsCrossed, color: "#F97316", bg: "#FFF7ED" },
-  { key: "parking",    label: "Transfers",    Icon: Car,             color: "#0EA5E9", bg: "#F0F9FF" },
+  { key: "parking",    label: "Parking",      Icon: Car,             color: "#0EA5E9", bg: "#F0F9FF" },
   { key: "night",      label: "Nightlife",    Icon: Moon,            color: "#7C3AED", bg: "#F5F3FF" },
   { key: "tours",      label: "Experiences",  Icon: Landmark,        color: "#059669", bg: "#ECFDF5" },
   { key: "places",     label: "Attractions",  Icon: Compass,         color: "#DC2626", bg: "#FEF2F2" },

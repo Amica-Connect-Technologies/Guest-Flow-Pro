@@ -385,7 +385,8 @@ export type PublicBookingInfo = {
 export const checkinApi = {
   // Hotel-authenticated
   listBookings: (params?: { status?: string; filter?: string }) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    const entries = Object.entries(params ?? {}).filter(([, v]) => v != null && v !== "") as [string, string][];
+    const qs = new URLSearchParams(entries).toString();
     return req<CheckinBooking[]>(`/api/checkin/bookings/${qs ? `?${qs}` : ""}`);
   },
 
@@ -439,7 +440,8 @@ export type CRMStats = { total: number; marketing_optins: number; top_countries:
 
 export const guestsApi = {
   list: (params?: { search?: string; marketing_optin?: string; nationality?: string }) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    const entries = Object.entries(params ?? {}).filter(([, v]) => v != null && v !== "") as [string, string][];
+    const qs = new URLSearchParams(entries).toString();
     return req<{ guests: CRMGuest[]; stats: CRMStats }>(`/api/checkin/guests/${qs ? `?${qs}` : ""}`);
   },
 };
@@ -537,6 +539,7 @@ export type HotelOutreach = {
   id: string; trial_token: string;
   hotel_name: string; contact_name: string;
   email: string; phone: string; city: string; website: string;
+  language: "en" | "it";
   status: OutreachStatus; notes: string;
   invite_sent_at: string | null;
   email_opened_at: string | null;
@@ -546,7 +549,8 @@ export type HotelOutreach = {
 
 export const outreachApi = {
   list: (params?: { status?: string; search?: string }) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    const entries = Object.entries(params ?? {}).filter(([, v]) => v != null && v !== "") as [string, string][];
+    const qs = new URLSearchParams(entries).toString();
     return req<HotelOutreach[]>(`/api/hotels/outreach/${qs ? `?${qs}` : ""}`);
   },
   create: (data: Partial<HotelOutreach>) =>
@@ -584,7 +588,8 @@ export type MarketingAnalytics = {
 
 export const marketingApi = {
   guests: (params?: { nationality?: string; since?: string }) => {
-    const qs = new URLSearchParams(params as Record<string, string>).toString();
+    const entries = Object.entries(params ?? {}).filter(([, v]) => v != null && v !== "") as [string, string][];
+    const qs = new URLSearchParams(entries).toString();
     return req<{ count: number; guests: MarketingGuest[] }>(`/api/marketing/guests/${qs ? `?${qs}` : ""}`);
   },
   analytics: () => req<MarketingAnalytics>("/api/marketing/analytics/"),

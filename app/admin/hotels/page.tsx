@@ -6,10 +6,10 @@ import { auth, hotelsApi, galleryApi, type Hotel, type HotelGalleryImage } from 
 import Image from "next/image";
 
 const PLANS = [
-  { value: "concierge",         label: "Digital Concierge",    price: "€25/mo", color: "blue"   },
-  { value: "checkin",           label: "Smart Check-in",       price: "€50/mo", color: "violet" },
-  { value: "concierge_checkin", label: "Guest Experience Pro", price: "€75/mo", color: "amber"  },
-  { value: "full",              label: "Full Suite",           price: "€100/mo", color: "green" },
+  { value: "concierge",         label: "Digital Concierge",    price: "£25/mo", color: "blue"   },
+  { value: "checkin",           label: "Smart Check-in",       price: "£50/mo", color: "violet" },
+  { value: "concierge_checkin", label: "Guest Experience Pro", price: "£75/mo", color: "amber"  },
+  { value: "full",              label: "Full Suite",           price: "£100/mo", color: "green" },
 ];
 const PLAN_COLORS: Record<string, string> = {
   concierge:         "bg-blue-100 text-blue-700",
@@ -18,10 +18,10 @@ const PLAN_COLORS: Record<string, string> = {
   full:              "bg-emerald-100 text-emerald-700",
 };
 const PLAN_LABEL: Record<string, string> = {
-  concierge:         "€25 Concierge",
-  checkin:           "€50 Smart Check-in",
-  concierge_checkin: "€75 Guest Exp. Pro",
-  full:              "€100 Full Suite",
+  concierge:         "£25 Concierge",
+  checkin:           "£50 Smart Check-in",
+  concierge_checkin: "£75 Guest Exp. Pro",
+  full:              "£100 Full Suite",
   starter: "Starter (Legacy)", pro: "Pro (Legacy)", enterprise: "Enterprise (Legacy)",
 };
 

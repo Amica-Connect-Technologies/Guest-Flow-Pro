@@ -1,6 +1,7 @@
 import csv
 import io
 import json as _json
+import re
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
@@ -260,6 +261,7 @@ def _outreach_data(o: HotelOutreach) -> dict:
         "phone":          o.phone,
         "city":           o.city,
         "website":        o.website,
+        "language":       o.language,
         "status":         o.status,
         "notes":          o.notes,
         "invite_sent_at":   o.invite_sent_at.isoformat() if o.invite_sent_at else None,
@@ -268,6 +270,145 @@ def _outreach_data(o: HotelOutreach) -> dict:
         "created_at":       o.created_at.isoformat(),
         "updated_at":       o.updated_at.isoformat(),
     }
+
+
+# Trial invite email copy, per language. Keep this — not the Django i18n
+# system — since these are one-off outbound sales emails, not app UI.
+_TRIAL_EMAIL_COPY = {
+    "en": {
+        "subject":  "Your 14-Day Free Trial — GuestFlow Pro 🏨",
+        "eyebrow":  "GuestFlow Pro",
+        "title":    "Your Free 14-Day Trial",
+        "no_card":  "No credit card required",
+        "greeting_fallback": "there",
+        "intro": lambda hotel_name: (
+            f'We\'d love to give <strong style="color:#0F172A;">{hotel_name}</strong> a full 14-day free trial of GuestFlow Pro — '
+            "the digital guest experience platform built for modern hotels."
+        ),
+        "features": [
+            "Smart digital check-in — guests register online",
+            "Digital concierge — room service, tours & more",
+            "Branded QR code for your hotel",
+            "Guest database & communication tools",
+            "Review management & analytics",
+        ],
+        "cta":        "✓ &nbsp; Activate Free Trial →",
+        "copy_link":  "Or copy this link:",
+        "fine_print": "Your trial is free for 14 days — no payment needed to get started.<br>Questions? Reply to this email and we'll help you get set up.",
+        "footer":     "Powered by",
+        "plain": lambda greeting, hotel_name, trial_url: (
+            f"Hi {greeting},\n\n"
+            f"We'd like to offer {hotel_name} a free 14-day trial of GuestFlow Pro.\n\n"
+            f"Activate your trial here: {trial_url}\n\n"
+            "GuestFlow Pro helps hotels deliver a modern digital guest experience — "
+            "smart check-in, digital concierge, guest communication and more.\n\n"
+            "Best regards,\nThe GuestFlow Pro Team"
+        ),
+    },
+    "it": {
+        "subject":  "La Tua Prova Gratuita di 14 Giorni — GuestFlow Pro 🏨",
+        "eyebrow":  "GuestFlow Pro",
+        "title":    "La Tua Prova Gratuita di 14 Giorni",
+        "no_card":  "Nessuna carta di credito richiesta",
+        "greeting_fallback": "il team",
+        "intro": lambda hotel_name: (
+            f'Vorremmo offrire a <strong style="color:#0F172A;">{hotel_name}</strong> una prova gratuita completa di 14 giorni di GuestFlow Pro — '
+            "la piattaforma di esperienza digitale per gli ospiti pensata per gli hotel moderni."
+        ),
+        "features": [
+            "Check-in digitale smart — gli ospiti si registrano online",
+            "Concierge digitale — servizio in camera, tour e altro",
+            "QR code personalizzato per il tuo hotel",
+            "Database ospiti e strumenti di comunicazione",
+            "Gestione recensioni e analisi",
+        ],
+        "cta":        "✓ &nbsp; Attiva Prova Gratuita →",
+        "copy_link":  "Oppure copia questo link:",
+        "fine_print": "La tua prova è gratuita per 14 giorni — nessun pagamento richiesto per iniziare.<br>Domande? Rispondi a questa email e ti aiuteremo a configurarla.",
+        "footer":     "Offerto da",
+        "plain": lambda greeting, hotel_name, trial_url: (
+            f"Ciao {greeting},\n\n"
+            f"Vorremmo offrire a {hotel_name} una prova gratuita di 14 giorni di GuestFlow Pro.\n\n"
+            f"Attiva la tua prova qui: {trial_url}\n\n"
+            "GuestFlow Pro aiuta gli hotel a offrire un'esperienza digitale moderna per gli ospiti — "
+            "check-in smart, concierge digitale, comunicazione con gli ospiti e molto altro.\n\n"
+            "Cordiali saluti,\nIl Team di GuestFlow Pro"
+        ),
+    },
+}
+
+
+def _build_trial_email(o: HotelOutreach) -> tuple[str, str, str]:
+    """Returns (subject, plain, html) for o's 14-day trial invite, in o.language."""
+    copy = _TRIAL_EMAIL_COPY.get(o.language, _TRIAL_EMAIL_COPY["en"])
+    frontend_url = getattr(settings, "FRONTEND_URL", "https://guestflowpro.com").rstrip("/")
+    trial_url    = f"{frontend_url}/trial/{o.trial_token}"
+    pixel_url    = f"{getattr(settings, 'BACKEND_URL', frontend_url).rstrip('/')}/api/hotels/outreach/track/{o.trial_token}/"
+    greeting     = o.contact_name if o.contact_name else copy["greeting_fallback"]
+
+    subject = copy["subject"]
+    plain   = copy["plain"](greeting, o.hotel_name, trial_url)
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F0F4F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4F8;padding:40px 16px;">
+<tr><td align="center">
+<table width="100%" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+  <!-- Header -->
+  <tr><td style="background:linear-gradient(135deg,#020B12 0%,#083344 55%,#0E7490 100%);padding:36px 40px 32px;text-align:center;">
+    <p style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(103,232,249,0.8);">{copy["eyebrow"]}</p>
+    <h1 style="margin:0;font-size:26px;font-weight:900;color:#ffffff;line-height:1.2;">{copy["title"]}</h1>
+    <p style="margin:10px 0 0;font-size:14px;color:rgba(186,230,253,0.75);">{copy["no_card"]}</p>
+  </td></tr>
+  <!-- Body -->
+  <tr><td style="padding:36px 40px;">
+    <p style="margin:0 0 16px;font-size:16px;color:#0F172A;">Hi <strong>{greeting}</strong>,</p>
+    <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
+      {copy["intro"](o.hotel_name)}
+    </p>
+    <!-- Features -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      {''.join(f'<tr><td style="padding:6px 0;"><span style="color:#0E7490;font-weight:700;">✓</span> <span style="font-size:14px;color:#334155;">{feat}</span></td></tr>' for feat in copy["features"])}
+    </table>
+    <!-- CTA -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      <tr><td align="center">
+        <a href="{trial_url}" style="display:inline-block;background:linear-gradient(135deg,#0891B2,#0E7490);color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:16px 40px;border-radius:14px;box-shadow:0 8px 24px rgba(8,145,178,0.35);">
+          {copy["cta"]}
+        </a>
+      </td></tr>
+    </table>
+    <p style="margin:0 0 8px;font-size:13px;color:#94A3B8;text-align:center;">{copy["copy_link"]}</p>
+    <p style="margin:0 0 24px;font-size:12px;color:#64748B;text-align:center;word-break:break-all;">{trial_url}</p>
+    <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px;">
+    <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+      {copy["fine_print"]}
+    </p>
+  </td></tr>
+  <!-- Footer -->
+  <tr><td style="background:#F8FAFC;padding:20px 40px;text-align:center;border-top:1px solid #E2E8F0;">
+    <p style="margin:0;font-size:11px;color:#CBD5E1;">{copy["footer"]} <strong style="color:#0E7490;">GuestFlow Pro</strong> · guestflowpro.com</p>
+  </td></tr>
+</table>
+</td></tr></table>
+<!-- Tracking pixel -->
+<img src="{pixel_url}" width="1" height="1" style="display:none;" alt="">
+</body></html>"""
+    return subject, plain, html
+
+
+def _infer_language(row: dict, phone: str) -> str:
+    """Best-effort language guess for an imported lead: explicit CSV column first, else phone country code."""
+    explicit = (row.get("Language") or row.get("language") or row.get("Country") or row.get("country") or "").strip().lower()
+    if explicit:
+        if explicit.startswith("it") or "italy" in explicit or "italia" in explicit:
+            return "it"
+        if explicit.startswith("en") or "kingdom" in explicit or "uk" in explicit or "england" in explicit:
+            return "en"
+    digits = re.sub(r"[^\d+]", "", phone or "")
+    if digits.startswith("+39") or (digits.startswith("39") and len(digits) >= 10):
+        return "it"
+    return "en"
 
 
 class OutreachListView(APIView):
@@ -289,6 +430,9 @@ class OutreachListView(APIView):
         hotel_name = (data.get("hotel_name") or "").strip()
         if not hotel_name:
             return Response({"detail": "hotel_name is required."}, status=400)
+        language = data.get("language") or "en"
+        if language not in dict(HotelOutreach.LANGUAGE_CHOICES):
+            language = "en"
         o = HotelOutreach.objects.create(
             hotel_name=hotel_name,
             contact_name=(data.get("contact_name") or "").strip(),
@@ -296,6 +440,7 @@ class OutreachListView(APIView):
             phone=(data.get("phone") or "").strip(),
             city=(data.get("city") or "").strip(),
             website=(data.get("website") or "").strip(),
+            language=language,
             status=data.get("status", "new"),
             notes=(data.get("notes") or "").strip(),
         )
@@ -320,10 +465,13 @@ class OutreachDetailView(APIView):
         o, err = self._get(pk)
         if err:
             return err
-        fields = ["hotel_name", "contact_name", "email", "phone", "city", "website", "status", "notes"]
+        fields = ["hotel_name", "contact_name", "email", "phone", "city", "website", "language", "status", "notes"]
         for f in fields:
             if f in request.data:
-                setattr(o, f, request.data[f])
+                value = request.data[f]
+                if f == "language" and value not in dict(HotelOutreach.LANGUAGE_CHOICES):
+                    continue
+                setattr(o, f, value)
         o.save()
         return Response(_outreach_data(o))
 
@@ -347,73 +495,7 @@ class OutreachSendInviteView(APIView):
         if not o.email:
             return Response({"detail": "No email address on this lead."}, status=400)
 
-        frontend_url = getattr(settings, "FRONTEND_URL", "https://guestflowpro.com").rstrip("/")
-        trial_url    = f"{frontend_url}/trial/{o.trial_token}"
-        pixel_url    = f"{getattr(settings, 'BACKEND_URL', frontend_url).rstrip('/')}/api/hotels/outreach/track/{o.trial_token}/"
-        greeting     = o.contact_name if o.contact_name else "there"
-        subject = f"Your 14-Day Free Trial — GuestFlow Pro 🏨"
-        plain   = (
-            f"Hi {greeting},\n\n"
-            f"We'd like to offer {o.hotel_name} a free 14-day trial of GuestFlow Pro.\n\n"
-            f"Activate your trial here: {trial_url}\n\n"
-            "GuestFlow Pro helps hotels deliver a modern digital guest experience — "
-            "smart check-in, digital concierge, guest communication and more.\n\n"
-            "Best regards,\nThe GuestFlow Pro Team"
-        )
-        html = f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F0F4F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#F0F4F8;padding:40px 16px;">
-<tr><td align="center">
-<table width="100%" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-  <!-- Header -->
-  <tr><td style="background:linear-gradient(135deg,#020B12 0%,#083344 55%,#0E7490 100%);padding:36px 40px 32px;text-align:center;">
-    <p style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(103,232,249,0.8);">GuestFlow Pro</p>
-    <h1 style="margin:0;font-size:26px;font-weight:900;color:#ffffff;line-height:1.2;">Your Free 14-Day Trial</h1>
-    <p style="margin:10px 0 0;font-size:14px;color:rgba(186,230,253,0.75);">No credit card required</p>
-  </td></tr>
-  <!-- Body -->
-  <tr><td style="padding:36px 40px;">
-    <p style="margin:0 0 16px;font-size:16px;color:#0F172A;">Hi <strong>{greeting}</strong>,</p>
-    <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.6;">
-      We'd love to give <strong style="color:#0F172A;">{o.hotel_name}</strong> a full 14-day free trial of GuestFlow Pro —
-      the digital guest experience platform built for modern hotels.
-    </p>
-    <!-- Features -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-      {''.join(f'<tr><td style="padding:6px 0;"><span style="color:#0E7490;font-weight:700;">✓</span> <span style="font-size:14px;color:#334155;">{feat}</span></td></tr>' for feat in [
-        "Smart digital check-in — guests register online",
-        "Digital concierge — room service, tours & more",
-        "Branded QR code for your hotel",
-        "Guest database & communication tools",
-        "Review management & analytics",
-      ])}
-    </table>
-    <!-- CTA -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-      <tr><td align="center">
-        <a href="{trial_url}" style="display:inline-block;background:linear-gradient(135deg,#0891B2,#0E7490);color:#ffffff;font-size:16px;font-weight:800;text-decoration:none;padding:16px 40px;border-radius:14px;box-shadow:0 8px 24px rgba(8,145,178,0.35);">
-          ✓ &nbsp; Activate Free Trial →
-        </a>
-      </td></tr>
-    </table>
-    <p style="margin:0 0 8px;font-size:13px;color:#94A3B8;text-align:center;">Or copy this link:</p>
-    <p style="margin:0 0 24px;font-size:12px;color:#64748B;text-align:center;word-break:break-all;">{trial_url}</p>
-    <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px;">
-    <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
-      Your trial is free for 14 days — no payment needed to get started.<br>
-      Questions? Reply to this email and we'll help you get set up.
-    </p>
-  </td></tr>
-  <!-- Footer -->
-  <tr><td style="background:#F8FAFC;padding:20px 40px;text-align:center;border-top:1px solid #E2E8F0;">
-    <p style="margin:0;font-size:11px;color:#CBD5E1;">Powered by <strong style="color:#0E7490;">GuestFlow Pro</strong> · guestflowpro.com</p>
-  </td></tr>
-</table>
-</td></tr></table>
-<!-- Tracking pixel -->
-<img src="{pixel_url}" width="1" height="1" style="display:none;" alt="">
-</body></html>"""
+        subject, plain, html = _build_trial_email(o)
 
         try:
             send_mail(subject, plain, getattr(settings, "DEFAULT_FROM_EMAIL", "info@guestflowpro.com"), [o.email], html_message=html, fail_silently=False)
@@ -446,7 +528,7 @@ class OutreachImportView(APIView):
 
         created = skipped = 0
         for row in reader:
-            name  = (row.get("hotel_name") or row.get("Hotel Name") or row.get("name") or row.get("Name") or "").strip()
+            name  = (row.get("hotel_name") or row.get("Hotel Name") or row.get("name") or row.get("Name") or row.get("Business Title") or "").strip()
             email = (row.get("email") or row.get("Email") or "").strip().lower()
             if not name:
                 skipped += 1
@@ -454,13 +536,15 @@ class OutreachImportView(APIView):
             if email and HotelOutreach.objects.filter(email__iexact=email).exists():
                 skipped += 1
                 continue
+            phone = (row.get("phone") or row.get("Phone") or row.get("Phone Unformatted") or "").strip()
             HotelOutreach.objects.create(
                 hotel_name=name,
                 contact_name=(row.get("contact_name") or row.get("Contact Name") or row.get("contact") or "").strip(),
                 email=email,
-                phone=(row.get("phone") or row.get("Phone") or "").strip(),
+                phone=phone,
                 city=(row.get("city") or row.get("City") or "").strip(),
                 website=(row.get("website") or row.get("Website") or "").strip(),
+                language=_infer_language(row, phone),
             )
             created += 1
         return Response({"created": created, "skipped": skipped})
@@ -561,34 +645,7 @@ class OutreachBulkInviteView(APIView):
 
         sent = failed = 0
         for o in qs:
-            # reuse single-invite logic inline
-            view = OutreachSendInviteView()
-            # build a minimal mock to reuse the email helper
-            frontend_url = getattr(settings, "FRONTEND_URL", "https://guestflowpro.com").rstrip("/")
-            trial_url    = f"{frontend_url}/trial/{o.trial_token}"
-            pixel_url    = f"{getattr(settings, 'BACKEND_URL', frontend_url).rstrip('/')}/api/hotels/outreach/track/{o.trial_token}/"
-            greeting     = o.contact_name if o.contact_name else "there"
-            subject = "Your 14-Day Free Trial — GuestFlow Pro 🏨"
-            plain   = f"Hi {greeting},\n\nActivate your free trial: {trial_url}"
-            html    = f"""<!DOCTYPE html><html><body style="font-family:sans-serif;background:#F0F4F8;padding:40px 16px;">
-<div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;">
-<div style="background:linear-gradient(135deg,#020B12,#0E7490);padding:32px 36px;text-align:center;">
-<h1 style="margin:0;color:#fff;font-size:24px;font-weight:900;">Your Free 14-Day Trial</h1>
-<p style="margin:8px 0 0;color:rgba(186,230,253,0.8);font-size:13px;">No credit card required</p>
-</div>
-<div style="padding:32px 36px;">
-<p style="font-size:15px;color:#0F172A;">Hi <strong>{greeting}</strong>,</p>
-<p style="font-size:14px;color:#475569;line-height:1.6;">We're offering <strong>{o.hotel_name}</strong> a free 14-day trial of GuestFlow Pro.</p>
-<div style="text-align:center;margin:28px 0;">
-<a href="{trial_url}" style="background:linear-gradient(135deg,#0891B2,#0E7490);color:#fff;font-size:15px;font-weight:800;text-decoration:none;padding:15px 36px;border-radius:12px;display:inline-block;">✓ &nbsp;Activate Free Trial →</a>
-</div>
-<p style="font-size:12px;color:#94A3B8;text-align:center;word-break:break-all;">{trial_url}</p>
-</div>
-<div style="background:#F8FAFC;padding:16px;text-align:center;border-top:1px solid #E2E8F0;">
-<p style="margin:0;font-size:11px;color:#CBD5E1;">Powered by <strong style="color:#0E7490;">GuestFlow Pro</strong></p>
-</div></div>
-<img src="{pixel_url}" width="1" height="1" style="display:none;" alt="">
-</body></html>"""
+            subject, plain, html = _build_trial_email(o)
             try:
                 send_mail(subject, plain, getattr(settings, "DEFAULT_FROM_EMAIL", "info@guestflowpro.com"), [o.email], html_message=html, fail_silently=False)
                 o.invite_sent_at = timezone.now()

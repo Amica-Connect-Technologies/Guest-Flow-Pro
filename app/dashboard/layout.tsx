@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { auth, hotelsApi, type Hotel } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
+import Flag from "@/components/Flag";
 
 const NAV_T = {
   en: {
@@ -76,10 +77,10 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const HAS_FULL      = IS_LEGACY || plan === "full";
 
   const PLAN_LABEL: Record<string, string> = {
-    concierge:         "Digital Concierge · €25/mo",
-    checkin:           "Smart Check-in · €50/mo",
-    concierge_checkin: "Guest Experience Pro · €75/mo",
-    full:              "Full Suite · €100/mo",
+    concierge:         "Digital Concierge · £25/mo",
+    checkin:           "Smart Check-in · £50/mo",
+    concierge_checkin: "Guest Experience Pro · £75/mo",
+    full:              "Full Suite · £100/mo",
     starter:           "Starter (Legacy)",
     basic:             "Basic (Legacy) · £29/mo",
     pro:               "Pro (Legacy) · £79/mo",
@@ -364,15 +365,14 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex gap-1 flex-shrink-0 ml-3">
             {(["en", "it", "es"] as const).map((code) => {
-              const flags = { en: "🇬🇧", it: "🇮🇹", es: "🇪🇸" } as const;
               return (
                 <button key={code} onClick={() => setLang(code)}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-base transition-all"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
                   style={lang === code
                     ? { background: "rgba(6,182,212,0.25)", border: "1px solid rgba(6,182,212,0.4)" }
                     : { opacity: 0.45, border: "1px solid transparent" }
                   }>
-                  {flags[code]}
+                  <Flag code={code} size={20} />
                 </button>
               );
             })}

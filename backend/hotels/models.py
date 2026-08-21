@@ -14,10 +14,10 @@ class Hotel(models.Model):
     PLAN_FULL              = "full"
 
     PLAN_CHOICES = [
-        (PLAN_CONCIERGE,         "Digital Concierge — €25/mo"),
-        (PLAN_CHECKIN,           "Digital Check-In — €50/mo"),
-        (PLAN_CONCIERGE_CHECKIN, "Concierge + Check-In — €75/mo"),
-        (PLAN_FULL,              "Full Suite — €100/mo"),
+        (PLAN_CONCIERGE,         "Digital Concierge — £25/mo"),
+        (PLAN_CHECKIN,           "Digital Check-In — £50/mo"),
+        (PLAN_CONCIERGE_CHECKIN, "Concierge + Check-In — £75/mo"),
+        (PLAN_FULL,              "Full Suite — £100/mo"),
     ]
 
     PLAN_FEATURES = {
@@ -128,6 +128,10 @@ class HotelOutreach(models.Model):
         ("converted",   "Converted"),
         ("lost",        "Lost"),
     ]
+    LANGUAGE_CHOICES = [
+        ("en", "English"),
+        ("it", "Italiano"),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     hotel_name   = models.CharField(max_length=200)
     contact_name = models.CharField(max_length=100, blank=True)
@@ -135,6 +139,7 @@ class HotelOutreach(models.Model):
     phone        = models.CharField(max_length=30, blank=True)
     city         = models.CharField(max_length=100, blank=True)
     website      = models.URLField(blank=True)
+    language     = models.CharField(max_length=5, choices=LANGUAGE_CHOICES, default="en")
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
     notes        = models.TextField(blank=True)
     invite_sent_at   = models.DateTimeField(null=True, blank=True)

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Flag from "@/components/Flag";
 
 interface Lang {
   code: string;
   label: string;
-  flag: string;
 }
 
 interface MobileHeaderProps {
@@ -43,7 +43,7 @@ export default function MobileHeader({ activeLang, onLangClick }: MobileHeaderPr
           style={{ touchAction: "manipulation", cursor: "pointer" }}
           className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 active:bg-slate-100"
         >
-          <span className="text-base leading-none">{activeLang.flag}</span>
+          <Flag code={activeLang.code.toLowerCase() as "en" | "it" | "es"} />
           <span className="text-xs font-bold text-slate-700">{activeLang.code}</span>
           <svg
             viewBox="0 0 24 24"

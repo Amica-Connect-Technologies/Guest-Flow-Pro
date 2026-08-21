@@ -29,17 +29,21 @@ jobs:
             pip install -r requirements.txt --quiet
             python manage.py migrate --no-input
             python manage.py collectstatic --no-input
-            pkill -f gunicorn || true
-            sleep 1
-            gunicorn --workers 3 --bind unix:/run/concierge.sock concierge.wsgi:application --daemon
             deactivate
             cd ..
+            # Managed by systemd (guestflowpro-api.service), not a raw daemonized
+            # process — avoids the pkill/respawn gap that dropped every request
+            # in flight during a deploy. `reload` re-execs gunicorn workers one
+            # at a time (SIGHUP) without ever closing the listening socket; if
+            # the unit doesn't define ExecReload yet, this falls back to a
+            # normal (brief) restart instead of failing the deploy.
+            sudo systemctl reload guestflowpro-api.service || sudo systemctl restart guestflowpro-api.service
 
             echo ">>> Building frontend..."
             npm install --silent
             npm run build
 
             echo ">>> Restarting frontend..."
-            pm2 restart guestflowpro --update-env
+            pm2 reload guestflowpro --update-env
 
             echo ">>> Deploy complete!"

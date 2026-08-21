@@ -15,6 +15,7 @@ import {
 import { useLanguage } from "@/lib/LanguageContext";
 import Image from "next/image";
 import QRCode from "react-qr-code";
+import Flag from "@/components/Flag";
 
 const AMENITY_META = [
   { key: "reservations",    emoji: "📅" },
@@ -419,18 +420,18 @@ function HotelDashboardInner() {
   const HAS_FULL      = IS_LEGACY || plan === "full";
 
   const PLAN_BADGE: Record<string, string> = {
-    concierge:         "Digital Concierge · €25/mo",
-    checkin:           "Smart Check-in · €50/mo",
-    concierge_checkin: "Guest Experience Pro · €75/mo",
-    full:              "Full Suite · €100/mo",
+    concierge:         "Digital Concierge · £25/mo",
+    checkin:           "Smart Check-in · £50/mo",
+    concierge_checkin: "Guest Experience Pro · £75/mo",
+    full:              "Full Suite · £100/mo",
     starter:           "Starter (Legacy)",
     basic:             "Basic (Legacy) · £29/mo",
     pro:               "Pro (Legacy) · £79/mo",
   };
 
   const PLAN_PRICE: Record<string, string> = {
-    concierge: "€25/mo", checkin: "€50/mo",
-    concierge_checkin: "€75/mo", full: "€100/mo",
+    concierge: "£25/mo", checkin: "£50/mo",
+    concierge_checkin: "£75/mo", full: "£100/mo",
     starter: "Legacy", basic: "£29/mo", pro: "£79/mo",
   };
 
@@ -570,15 +571,16 @@ function HotelDashboardInner() {
             {/* Language picker in header */}
             <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
               {(["en", "it", "es"] as const).map((code) => {
-                const LABELS = { en: "🇬🇧 EN", it: "🇮🇹 IT", es: "🇪🇸 ES" } as const;
+                const LABEL = { en: "EN", it: "IT", es: "ES" } as const;
                 return (
                   <button key={code} onClick={() => setLang(code)}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all"
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5"
                     style={lang === code
                       ? { background: "white", color: "#0E7490", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }
                       : { color: "#94a3b8" }
                     }>
-                    {LABELS[code]}
+                    <Flag code={code} />
+                    {LABEL[code]}
                   </button>
                 );
               })}

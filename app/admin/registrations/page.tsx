@@ -27,10 +27,10 @@ export default function AdminRegistrations() {
   };
 
   const PLAN_LABELS: Record<string, string> = {
-    concierge:         "Digital Concierge · €25/mo",
-    checkin:           "Smart Check-in · €50/mo",
-    concierge_checkin: "Guest Experience Pro · €75/mo",
-    full:              "Full Suite · €100/mo",
+    concierge:         "Digital Concierge · £25/mo",
+    checkin:           "Smart Check-in · £50/mo",
+    concierge_checkin: "Guest Experience Pro · £75/mo",
+    full:              "Full Suite · £100/mo",
     // legacy
     basic: "Basic (Legacy) · £29/mo",
     pro:   "Pro (Legacy) · £79/mo",
