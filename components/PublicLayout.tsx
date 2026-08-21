@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MobileHeader from "@/components/MobileHeader";
@@ -46,6 +47,15 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
 
   return (
     <>
+      {!isDashAdmin && (
+        <Script
+          src="https://widgets.leadconnectorhq.com/loader.js"
+          data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
+          data-widget-id="6a86f8eb746cacd0b6653efa"
+          strategy="lazyOnload"
+        />
+      )}
+
       {showHeader && (
         <>
           <div className="hidden md:block">
