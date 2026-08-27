@@ -49,6 +49,42 @@ BANK_DETAILS = {
 }
 
 
+def _approve_registration(reg):
+    """
+    Create the Hotel, activate the owner's login, and mark the Registration
+    approved. Shared by the admin's manual Approve button and the auto-approved
+    card-trial path (a verified Stripe card is treated as trustworthy enough to
+    skip the manual review queue).
+    """
+    if reg.status == "approved":
+        return reg.hotel
+
+    hotel = Hotel.objects.create(
+        name=reg.business_name,
+        city=reg.city,
+        country=getattr(reg, "country", "Italy") or "Italy",
+        whatsapp_number=reg.whatsapp_number,
+        website=getattr(reg, "website", "") or "",
+        plan=reg.plan,
+        language_default="en",
+    )
+
+    if reg.user:
+        reg.user.is_active = True
+        reg.user.save(update_fields=["is_active"])
+        HotelUser.objects.update_or_create(
+            user=reg.user, defaults={"hotel": hotel, "role": "manager"},
+        )
+
+    reg.status = "approved"
+    reg.hotel = hotel
+    reg.reviewed_at = timezone.now()
+    reg.save(update_fields=["status", "hotel", "reviewed_at"])
+
+    send_approved_email(reg)  # notify partner their account is live
+    return hotel
+
+
 class RegisterView(APIView):
     """Public: collect details → create Registration + inactive User."""
     permission_classes = [AllowAny]
@@ -232,7 +268,12 @@ class StripeWebhookView(APIView):
         Subscriptions created outside our own /register checkout (e.g. a GHL funnel
         using the same Stripe account) never get a Registration row, so the payment
         is invisible in the admin panel and the hotel account never gets provisioned.
-        Back them into a reviewable Registration so nobody pays without being seen.
+        If it matches a Registration the owner already filled in on our own /register
+        form (so we have a real password on file), a verified card is trusted enough
+        to skip manual review — the hotel goes live immediately, 14-day trial handled
+        by Stripe on GHL's side before the first real charge. Otherwise (nobody on
+        file at all) it's backed into a reviewable Registration instead, since there's
+        no password to safely auto-activate a login with.
         """
         subscription_id = sub.get("id", "")
         customer_id = sub.get("customer", "")
@@ -259,14 +300,14 @@ class StripeWebhookView(APIView):
         # whatsapp, etc. already on file) and were then sent to GHL to pay, just
         # attach this payment to that existing record instead of creating a
         # second, thinner one with only what Stripe knows about the customer.
-        existing = Registration.objects.filter(
+        existing = Registration.objects.select_related("user").filter(
             email__iexact=email, status="pending_payment"
         ).order_by("-created_at").first() if email else None
         if existing:
-            existing.status = "pending_review"
             existing.stripe_customer_id = customer_id
             existing.stripe_subscription_id = subscription_id
-            existing.save(update_fields=["status", "stripe_customer_id", "stripe_subscription_id"])
+            existing.save(update_fields=["stripe_customer_id", "stripe_subscription_id"])
+            _approve_registration(existing)  # card verified by Stripe — go live immediately
             return
 
         address = customer.get("address") or {}
@@ -328,33 +369,7 @@ class ApproveRegistrationView(APIView):
         except Registration.DoesNotExist:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        if reg.status == "approved":
-            return Response({"status": "approved", "hotel_id": str(reg.hotel_id) if reg.hotel_id else ""})
-
-        hotel = Hotel.objects.create(
-            name=reg.business_name,
-            city=reg.city,
-            country=getattr(reg, "country", "Italy") or "Italy",
-            whatsapp_number=reg.whatsapp_number,
-            website=getattr(reg, "website", "") or "",
-            plan=reg.plan,
-            language_default="en",
-        )
-
-        if reg.user:
-            reg.user.is_active = True
-            reg.user.save(update_fields=["is_active"])
-            HotelUser.objects.update_or_create(
-                user=reg.user, defaults={"hotel": hotel, "role": "manager"},
-            )
-
-        reg.status = "approved"
-        reg.hotel = hotel
-        reg.reviewed_at = timezone.now()
-        reg.save(update_fields=["status", "hotel", "reviewed_at"])
-
-        send_approved_email(reg)  # notify partner their account is live
-
+        hotel = _approve_registration(reg)
         return Response({"status": "approved", "hotel_id": str(hotel.id)})
 
 
