@@ -88,6 +88,7 @@ class Hotel(models.Model):
     # Subscription plan
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default=PLAN_CONCIERGE)
     plan_expires_at = models.DateTimeField(null=True, blank=True)
+    is_trial = models.BooleanField(default=False)  # True while on the card's 14-day free trial
 
     class Meta:
         ordering = ["-created_at"]

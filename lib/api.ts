@@ -22,6 +22,7 @@ export type Hotel = {
   // plan & verification
   plan: string;
   plan_expires_at: string | null;
+  is_trial: boolean;
   is_verified: boolean;
 };
 export type Tour = {

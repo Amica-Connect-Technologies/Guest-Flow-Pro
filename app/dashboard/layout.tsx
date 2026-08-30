@@ -88,7 +88,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
 
   // Plan timeline calculations — use created_at as cycle base when plan_expires_at is null
   const planNow         = new Date();
-  const PLAN_PERIOD     = 30;
+  const PLAN_PERIOD     = hotel?.is_trial ? 14 : 30;
   const planCreatedAt   = hotel?.created_at ? new Date(hotel.created_at) : null;
   const planExplicit    = hotel?.plan_expires_at ? new Date(hotel.plan_expires_at) : null;
 
@@ -277,7 +277,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               {/* Header row */}
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                  Subscription
+                  {hotel?.is_trial ? "Free Trial" : "Subscription"}
                 </span>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded-full"
                   style={{
@@ -317,7 +317,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
               <div className="pt-2 border-t border-white/[0.06]">
                 <p className="text-[9px] font-semibold" style={{ color: "rgba(255,255,255,0.28)" }}>
                   {planExpiresAt ? (
-                    <>{planExpired ? "Expired" : "Renews"}{" "}
+                    <>{planExpired ? "Expired" : hotel?.is_trial ? "Trial ends" : "Renews"}{" "}
                     <span style={{ color: "rgba(255,255,255,0.5)" }}>
                       {planExpiresAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                     </span></>

@@ -621,7 +621,7 @@ function HotelDashboardInner() {
               {/* Plan timeline card — always shown */}
               {(() => {
                 const now       = new Date();
-                const PERIOD    = 30;
+                const PERIOD    = hotel.is_trial ? 14 : 30;
                 const createdAt = hotel.created_at ? new Date(hotel.created_at) : null;
                 const explicitExpiry = hotel.plan_expires_at ? new Date(hotel.plan_expires_at) : null;
 
@@ -658,7 +658,9 @@ function HotelDashboardInner() {
                     <div className="px-5 py-4 flex items-center justify-between"
                       style={{ background: "linear-gradient(135deg, #020B12 0%, #083344 55%, #0E7490 100%)" }}>
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 mb-0.5">Subscription Plan</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-cyan-400/60 mb-0.5">
+                          {hotel.is_trial ? "14-Day Free Trial" : "Subscription Plan"}
+                        </p>
                         <p className="text-white font-black text-sm">{PLAN_BADGE[plan] ?? plan}</p>
                       </div>
                       <div className="text-right">
@@ -710,7 +712,7 @@ function HotelDashboardInner() {
                           <p className="text-sm font-black" style={{ color: "#7C3AED" }}>
                             {periodEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                           </p>
-                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">Renews</p>
+                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{hotel.is_trial ? "Trial Ends" : "Renews"}</p>
                         </div>
                       </div>
 

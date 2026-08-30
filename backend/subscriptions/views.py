@@ -49,6 +49,26 @@ BANK_DETAILS = {
 }
 
 
+def _apply_trial_state(hotel, sub):
+    """
+    Mirror a Stripe subscription's trial window onto the Hotel so the dashboard's
+    existing plan-countdown UI (built around plan_expires_at) shows "N days left"
+    against the real trial end, then against the real billing period once the
+    trial is over — instead of us inventing our own 14-day clock.
+    """
+    from datetime import datetime, timezone as dt_timezone
+
+    trial_end = sub.get("trial_end")
+    is_trial = sub.get("status") == "trialing" and bool(trial_end)
+    expires_ts = trial_end if is_trial else sub.get("current_period_end")
+
+    hotel.is_trial = is_trial
+    hotel.plan_expires_at = (
+        datetime.fromtimestamp(expires_ts, tz=dt_timezone.utc) if expires_ts else None
+    )
+    hotel.save(update_fields=["is_trial", "plan_expires_at"])
+
+
 def _approve_registration(reg):
     """
     Create the Hotel, activate the owner's login, and mark the Registration
@@ -261,7 +281,24 @@ class StripeWebhookView(APIView):
         elif event["type"] == "customer.subscription.created":
             self._track_orphan_subscription(event["data"]["object"])
 
+        elif event["type"] == "customer.subscription.updated":
+            self._sync_trial_state(event["data"]["object"])
+
         return Response({"received": True})
+
+    def _sync_trial_state(self, sub):
+        """
+        Keep Hotel.is_trial / plan_expires_at in step as the trial ends and real
+        billing cycles begin — otherwise the dashboard countdown goes stale the
+        moment Stripe stops sending trial_end (once status leaves 'trialing').
+        """
+        subscription_id = sub.get("id", "")
+        reg = Registration.objects.select_related("hotel").filter(
+            stripe_subscription_id=subscription_id, hotel__isnull=False
+        ).first()
+        if not reg or not reg.hotel:
+            return
+        _apply_trial_state(reg.hotel, sub)
 
     def _track_orphan_subscription(self, sub):
         """
@@ -307,7 +344,8 @@ class StripeWebhookView(APIView):
             existing.stripe_customer_id = customer_id
             existing.stripe_subscription_id = subscription_id
             existing.save(update_fields=["stripe_customer_id", "stripe_subscription_id"])
-            _approve_registration(existing)  # card verified by Stripe — go live immediately
+            hotel = _approve_registration(existing)  # card verified by Stripe — go live immediately
+            _apply_trial_state(hotel, sub)
             return
 
         address = customer.get("address") or {}

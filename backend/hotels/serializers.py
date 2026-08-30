@@ -30,7 +30,7 @@ class HotelSerializer(serializers.ModelSerializer):
             "is_24_7", "open_time", "close_time",
             "brand_color", "welcome_message", "google_review_url", "tripadvisor_url",
             "gallery_images",
-            "plan", "plan_expires_at", "is_verified",
+            "plan", "plan_expires_at", "is_trial", "is_verified",
         ]
         extra_kwargs = {"logo": {"write_only": True, "required": False}}
 
