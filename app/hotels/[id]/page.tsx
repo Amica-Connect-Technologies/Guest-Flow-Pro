@@ -126,17 +126,32 @@ export default function HotelDetailPage() {
       return;
     }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+    const onSuccess = (pos: GeolocationPosition) => {
+      setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setLocating(false);
+    };
+    const onError = (err: GeolocationPositionError) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        setLocationError("Location access is blocked for this site — allow it from your browser's site settings (the icon left of the address bar) and try again.");
         setLocating(false);
-      },
-      () => {
-        setLocationError("Couldn't get your location — check permissions and try again.");
-        setLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+        return;
+      }
+      // POSITION_UNAVAILABLE or TIMEOUT — retry once without high-accuracy GPS,
+      // which desktops without a GPS chip often can't satisfy at all.
+      navigator.geolocation.getCurrentPosition(
+        onSuccess,
+        (err2) => {
+          setLocationError(
+            err2.code === err2.PERMISSION_DENIED
+              ? "Location access is blocked for this site — allow it from your browser's site settings and try again."
+              : "Couldn't determine your location — make sure location is turned on for this device/browser, then try again."
+          );
+          setLocating(false);
+        },
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
+      );
+    };
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: true, timeout: 8000 });
   }
 
   // Booking request form
