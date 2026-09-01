@@ -84,7 +84,7 @@ export default function RestaurantView({ hotel }: Props) {
       let kw = cat.keyword;
       if (f.familyFriendly) kw += " family friendly";
       if (f.takeaway)       kw += " takeaway delivery";
-      const data = await placesApi.nearby(hotel.id, "restaurant", kw, f.distance);
+      const data = await placesApi.nearby(hotel.id, "restaurant", { keyword: kw, radius: f.distance });
       setResults(data.places);
     } catch {
       setError(t.restaurant.couldNotLoad);

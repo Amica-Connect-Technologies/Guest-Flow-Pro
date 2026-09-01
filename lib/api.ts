@@ -217,10 +217,11 @@ export const placesApi = {
       { method: "POST", body: JSON.stringify({ city, type, limit }) }
     ),
 
-  nearby: (hotelId: string, type: string, keyword?: string, radius?: number) => {
+  nearby: (hotelId: string, type: string, opts?: { keyword?: string; radius?: number; lat?: number; lng?: number }) => {
     let url = `/api/places/nearby/?hotel_id=${encodeURIComponent(hotelId)}&type=${type}`;
-    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
-    if (radius)  url += `&radius=${radius}`;
+    if (opts?.keyword) url += `&keyword=${encodeURIComponent(opts.keyword)}`;
+    if (opts?.radius)  url += `&radius=${opts.radius}`;
+    if (opts?.lat != null && opts?.lng != null) url += `&lat=${opts.lat}&lng=${opts.lng}`;
     return req<{ places: NearbyPlace[]; lat: number; lng: number }>(url);
   },
 };

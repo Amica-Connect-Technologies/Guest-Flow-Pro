@@ -256,10 +256,20 @@ class NearbyPlacesView(APIView):
 
         keyword = request.query_params.get("keyword", "").strip()
 
-        try:
-            lat, lng = _geocode_google(location)
-        except Exception as exc:
-            return Response({"detail": f"Geocoding error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
+        # Guest can search around their own current position instead of the
+        # hotel's address (e.g. "use my current location" button).
+        override_lat = request.query_params.get("lat", "").strip()
+        override_lng = request.query_params.get("lng", "").strip()
+        if override_lat and override_lng:
+            try:
+                lat, lng = float(override_lat), float(override_lng)
+            except ValueError:
+                return Response({"detail": "Invalid lat/lng."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                lat, lng = _geocode_google(location)
+            except Exception as exc:
+                return Response({"detail": f"Geocoding error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
 
         google_type_map = {
             "restaurant": "restaurant",
