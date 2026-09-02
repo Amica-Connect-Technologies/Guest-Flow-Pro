@@ -100,53 +100,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [exploreCategory, setExploreCategory] = useState<string | null>(null);
   const [exploreData, setExploreData] = useState<Record<string, NearbyPlace[]>>({});
   const [loadingNearby,     setLoadingNearby]     = useState<Record<string, boolean>>({});
-  const [nearbySearchInput, setNearbySearchInput] = useState("");
-  const [nearbySearch,      setNearbySearch]      = useState(""); // debounced
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locationError, setLocationError] = useState("");
   const sheetRef = useRef<HTMLDivElement>(null);
-
-  // Debounce the free-text search so we don't fire a request per keystroke
-  useEffect(() => {
-    const timer = setTimeout(() => setNearbySearch(nearbySearchInput.trim()), 450);
-    return () => clearTimeout(timer);
-  }, [nearbySearchInput]);
-
-  function useMyLocation() {
-    setLocationError("");
-    if (!navigator.geolocation) {
-      setLocationError("Location isn't supported on this device.");
-      return;
-    }
-    setLocating(true);
-    const onSuccess = (pos: GeolocationPosition) => {
-      setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      setLocating(false);
-    };
-    const onError = (err: GeolocationPositionError) => {
-      if (err.code === err.PERMISSION_DENIED) {
-        setLocationError("Location access is blocked for this site — allow it from your browser's site settings (the icon left of the address bar) and try again.");
-        setLocating(false);
-        return;
-      }
-      // POSITION_UNAVAILABLE or TIMEOUT — retry once without high-accuracy GPS,
-      // which desktops without a GPS chip often can't satisfy at all.
-      navigator.geolocation.getCurrentPosition(
-        onSuccess,
-        (err2) => {
-          setLocationError(
-            err2.code === err2.PERMISSION_DENIED
-              ? "Location access is blocked for this site — allow it from your browser's site settings and try again."
-              : "Couldn't determine your location — make sure location is turned on for this device/browser, then try again."
-          );
-          setLocating(false);
-        },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-      );
-    };
-    navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: true, timeout: 8000 });
-  }
 
   useEffect(() => {
     (async () => {
@@ -175,24 +129,14 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     return () => document.removeEventListener("touchstart", fn);
   }, [sheet]);
 
-  // Search text or location changes invalidate every category's cache so the
-  // fetch effect below re-runs with the new keyword/coordinates.
-  useEffect(() => {
-    setNearbyFood(null); setNearbyParking(null); setNearbyNightlife(null); setNearbyAttractions(null);
-  }, [nearbySearch, userLocation]);
-
-  const exploreCacheKey = `${exploreCategory}|${nearbySearch}|${userLocation ? `${userLocation.lat},${userLocation.lng}` : "hotel"}`;
+  const exploreCacheKey = exploreCategory ?? "";
 
   useEffect(() => {
     if (!hotel) return;
     const fetchNearby = async (type: string, setter: (d: NearbyPlace[]) => void) => {
       setLoadingNearby(l => ({ ...l, [type]: true }));
       try {
-        const data = await placesApi.nearby(hotel.id, type, {
-          keyword: nearbySearch || undefined,
-          lat: userLocation?.lat,
-          lng: userLocation?.lng,
-        });
+        const data = await placesApi.nearby(hotel.id, type);
         setter(data.places);
       } catch {}
       setLoadingNearby(l => ({ ...l, [type]: false }));
@@ -204,7 +148,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     else if (tab === "explore" && exploreCategory && exploreData[exploreCacheKey] === undefined) {
       fetchNearby(exploreCategory, (places) => setExploreData(d => ({ ...d, [exploreCacheKey]: places })));
     }
-  }, [tab, hotel, nearbyFood, nearbyParking, nearbyNightlife, nearbyAttractions, nearbySearch, userLocation, exploreCategory, exploreData, exploreCacheKey]); // eslint-disable-line
+  }, [tab, hotel, nearbyFood, nearbyParking, nearbyNightlife, nearbyAttractions, exploreCategory, exploreData, exploreCacheKey]); // eslint-disable-line
 
   async function confirmBooking() {
     if (!sheet) return;
@@ -837,42 +781,12 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
       <div className="max-w-7xl mx-auto px-4 md:px-12 pt-5 space-y-4 md:space-y-5">
 
-        {/* ══ SEARCH + CURRENT LOCATION (Restaurant / Parking / Night / Places / Explore category) ══ */}
-        {((["restaurant", "parking", "night", "places"] as const).includes(tab as "restaurant"|"parking"|"night"|"places")
-          || (tab === "explore" && !!exploreCategory)) && (
-          <div>
-            <div className="flex flex-col sm:flex-row gap-2.5">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-300 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  value={nearbySearchInput}
-                  onChange={e => setNearbySearchInput(e.target.value)}
-                  placeholder="Search for anything nearby — pharmacy, ATM, pizza…"
-                  className="w-full bg-white rounded-2xl pl-11 pr-4 py-3.5 text-sm font-semibold text-slate-800 placeholder:text-slate-300 border-0 outline-none"
-                  style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}
-                />
-              </div>
-              <button type="button" onClick={useMyLocation} disabled={locating}
-                className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-60"
-                style={{
-                  background: userLocation ? "linear-gradient(135deg,#0891B2e8,#0E7490)" : "white",
-                  color: userLocation ? "white" : "#374151",
-                  boxShadow: userLocation ? "0 4px 14px #0E749040" : "0 2px 12px rgba(0,0,0,0.07)",
-                }}>
-                <Navigation className="w-4 h-4 flex-shrink-0" />
-                {locating ? "Locating…" : userLocation ? "Using your location" : "Use my current location"}
-              </button>
-            </div>
-            {locationError && <p className="text-xs text-red-500 mt-2">{locationError}</p>}
-          </div>
-        )}
-
         {/* ══ RESTAURANT ══════════════════════════════════════════════════ */}
         {tab === "restaurant" && (
           <>
             <SectionBanner icon={Utensils} iconBg="#FFF7ED" iconColor="#F97316"
               title={t.concierge.tabs.restaurant}
-              subtitle={`Best dining spots near ${userLocation ? "you" : hotel.city}`}
+              subtitle={`Best dining spots near ${hotel.city}`}
               count={nearbyFood?.length} />
             {loadingNearby["restaurant"] ? <NearbyLoading /> :
              nearbyFood && nearbyFood.length > 0
@@ -887,7 +801,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <SectionBanner icon={Car} iconBg="#EFF6FF" iconColor="#2563EB"
               title={t.concierge.parkingTitle}
-              subtitle={t.concierge.parkingSubtitle.replace("{city}", userLocation ? "you" : hotel.city)}
+              subtitle={t.concierge.parkingSubtitle.replace("{city}", hotel.city)}
               count={nearbyParking?.length} />
             {loadingNearby["parking"] ? <NearbyLoading /> :
              nearbyParking && nearbyParking.length > 0
@@ -902,7 +816,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <SectionBanner icon={Moon} iconBg="#F5F3FF" iconColor="#7C3AED"
               title={t.concierge.nightlifeTitle}
-              subtitle={t.concierge.nightlifeSubtitle.replace("{city}", userLocation ? "you" : hotel.city)}
+              subtitle={t.concierge.nightlifeSubtitle.replace("{city}", hotel.city)}
               count={nearbyNightlife?.length} />
             {loadingNearby["nightlife"] ? <NearbyLoading /> :
              nearbyNightlife && nearbyNightlife.length > 0
@@ -1044,7 +958,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
           <>
             <SectionBanner icon={MapPin} iconBg="#EEF2FF" iconColor="#4338CA"
               title={t.concierge.placesTitle}
-              subtitle={t.concierge.placesSubtitle.replace("{city}", userLocation ? "you" : hotel.city)}
+              subtitle={t.concierge.placesSubtitle.replace("{city}", hotel.city)}
               count={nearbyAttractions?.length} />
 
             {loadingNearby["places"] ? <NearbyLoading /> :
@@ -1238,7 +1152,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                     <>
                       <SectionBanner icon={Sparkles} iconBg="#FDF2F8" iconColor="#DB2777"
                         title={`${cat.emoji} ${cat.label}`}
-                        subtitle={`Near ${userLocation ? "you" : hotel.city}`}
+                        subtitle={`Near ${hotel.city}`}
                         count={places?.length} />
                       {isLoading ? <NearbyLoading /> :
                        !places || places.length === 0

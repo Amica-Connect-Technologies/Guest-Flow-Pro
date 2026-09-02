@@ -128,52 +128,6 @@ export default function HotelDetailPage() {
   const [exploreCategory, setExploreCategory] = useState<string | null>(null);
   const [nearbyData, setNearbyData] = useState<Record<string, NearbyPlace[]>>({});
   const [loadingNearby, setLoadingNearby] = useState<Record<string, boolean>>({});
-  const [nearbySearchInput, setNearbySearchInput] = useState("");
-  const [nearbySearch, setNearbySearch] = useState(""); // debounced
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locationError, setLocationError] = useState("");
-
-  // Debounce the free-text search so we don't fire a request per keystroke
-  useEffect(() => {
-    const t = setTimeout(() => setNearbySearch(nearbySearchInput.trim()), 450);
-    return () => clearTimeout(t);
-  }, [nearbySearchInput]);
-
-  function useMyLocation() {
-    setLocationError("");
-    if (!navigator.geolocation) {
-      setLocationError("Location isn't supported on this device.");
-      return;
-    }
-    setLocating(true);
-    const onSuccess = (pos: GeolocationPosition) => {
-      setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      setLocating(false);
-    };
-    const onError = (err: GeolocationPositionError) => {
-      if (err.code === err.PERMISSION_DENIED) {
-        setLocationError("Location access is blocked for this site — allow it from your browser's site settings (the icon left of the address bar) and try again.");
-        setLocating(false);
-        return;
-      }
-      // POSITION_UNAVAILABLE or TIMEOUT — retry once without high-accuracy GPS,
-      // which desktops without a GPS chip often can't satisfy at all.
-      navigator.geolocation.getCurrentPosition(
-        onSuccess,
-        (err2) => {
-          setLocationError(
-            err2.code === err2.PERMISSION_DENIED
-              ? "Location access is blocked for this site — allow it from your browser's site settings and try again."
-              : "Couldn't determine your location — make sure location is turned on for this device/browser, then try again."
-          );
-          setLocating(false);
-        },
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
-      );
-    };
-    navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: true, timeout: 8000 });
-  }
 
   // Booking request form
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -198,7 +152,7 @@ export default function HotelDetailPage() {
     })();
   }, [id]);
 
-  const nearbyCacheKey = `${nearbyTab === "explore" ? `explore:${exploreCategory}` : nearbyTab}|${nearbySearch}|${userLocation ? `${userLocation.lat},${userLocation.lng}` : "hotel"}`;
+  const nearbyCacheKey = nearbyTab === "explore" ? `explore:${exploreCategory}` : nearbyTab;
 
   useEffect(() => {
     if (!hotel) return;
@@ -210,11 +164,7 @@ export default function HotelDetailPage() {
     };
     const backendType = nearbyTab === "explore" ? (exploreCategory ?? "") : TYPE_MAP[nearbyTab];
     setLoadingNearby(l => ({ ...l, [nearbyCacheKey]: true }));
-    placesApi.nearby(hotel.id, backendType, {
-      keyword: nearbySearch || undefined,
-      lat: userLocation?.lat,
-      lng: userLocation?.lng,
-    })
+    placesApi.nearby(hotel.id, backendType)
       .then(data => setNearbyData(d => ({ ...d, [nearbyCacheKey]: data.places })))
       .catch(() => setNearbyData(d => ({ ...d, [nearbyCacheKey]: [] })))
       .finally(() => setLoadingNearby(l => ({ ...l, [nearbyCacheKey]: false })));
@@ -439,42 +389,9 @@ export default function HotelDetailPage() {
               Explore Nearby
             </h2>
             <p className="text-xs text-slate-400 mt-1 ml-8">
-              Google-verified places near {userLocation ? "you" : hotel.city}
+              Google-verified places near {hotel.city}
             </p>
           </div>
-
-          {/* Search + current-location row */}
-          <div className="flex flex-col sm:flex-row gap-2.5 mb-4">
-            <div className="relative flex-1">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
-              <input
-                value={nearbySearchInput}
-                onChange={e => setNearbySearchInput(e.target.value)}
-                placeholder="Search for anything nearby — pharmacy, ATM, pizza…"
-                className="w-full bg-white rounded-2xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-                style={{ boxShadow: CARD_SHADOW }}
-              />
-            </div>
-            <button type="button" onClick={useMyLocation} disabled={locating}
-              className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-60"
-              style={{
-                background: userLocation ? "linear-gradient(135deg,#0891B2e8,#0E7490)" : "white",
-                color: userLocation ? "white" : "#374151",
-                boxShadow: userLocation ? "0 4px 14px #0E749040" : CARD_SHADOW,
-              }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4 flex-shrink-0">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-              </svg>
-              {locating ? "Locating…" : userLocation ? "Using your location" : "Use my current location"}
-            </button>
-          </div>
-          {locationError && (
-            <p className="text-xs text-red-500 -mt-2 mb-4">{locationError}</p>
-          )}
 
           {/* Tab bar */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-5" style={{ scrollbarWidth: "none" }}>
@@ -572,10 +489,10 @@ export default function HotelDetailPage() {
                 <div className="bg-white rounded-3xl p-12 text-center" style={{ boxShadow: CARD_SHADOW }}>
                   <tab.Icon className="w-12 h-12 mx-auto mb-4" style={{ color: tab.color, opacity: 0.2 }} />
                   <p className="font-black text-slate-700 text-base">
-                    {nearbySearch ? `No results for "${nearbySearch}"` : `No ${categoryLabel} found nearby`}
+                    No {categoryLabel} found nearby
                   </p>
                   <p className="text-sm text-slate-400 mt-1">
-                    {nearbySearch ? "Try a different search term" : "Ask reception for local recommendations"}
+                    Ask reception for local recommendations
                   </p>
                 </div>
               </>

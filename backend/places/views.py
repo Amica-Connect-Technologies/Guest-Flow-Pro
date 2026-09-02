@@ -364,10 +364,15 @@ class NearbyPlacesView(APIView):
 
         has_address = bool(getattr(hotel, "address", "").strip())
         location = f"{hotel.address}, {hotel.city}" if has_address else hotel.city
-        # Allow caller to override radius; default to 1km with address, 2km without
+        # An explicit radius (e.g. RestaurantView's distance filter) is honored
+        # exactly, with no escalation — the caller asked for that distance on
+        # purpose. No radius param at all means "give me a good list", which
+        # is where the minimum-36 escalation below kicks in instead.
+        radius_param = request.query_params.get("radius")
+        explicit_radius = radius_param is not None
         default_radius = 1000 if has_address else 2000
         try:
-            requested_radius = int(request.query_params.get("radius", default_radius))
+            requested_radius = int(radius_param) if explicit_radius else default_radius
         except (ValueError, TypeError):
             requested_radius = default_radius
         radius = max(200, min(requested_radius, 5000))
@@ -409,7 +414,10 @@ class NearbyPlacesView(APIView):
         }
         google_type = google_type_map.get(ptype, "tourist_attraction")
         try:
-            places = _nearby_google(lat, lng, google_type, radius=radius, keyword=keyword)
+            if explicit_radius:
+                places = _nearby_google(lat, lng, google_type, radius=radius, keyword=keyword)
+            else:
+                places = _nearby_google_min(lat, lng, google_type, keyword=keyword, min_results=36)
         except Exception as exc:
             return Response({"detail": f"Places API error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
 
