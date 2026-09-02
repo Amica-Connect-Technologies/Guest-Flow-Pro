@@ -1208,10 +1208,28 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               </>
             ) : (
               <>
-                <button onClick={() => setExploreCategory(null)}
-                  className="flex items-center gap-1.5 text-[13px] font-black text-slate-500 hover:text-slate-800 mb-1 transition-colors">
-                  <ChevronLeft className="w-4 h-4" /> All categories
-                </button>
+                <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                  <button onClick={() => setExploreCategory(null)}
+                    title="All categories"
+                    className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl"
+                    style={{ background: "white", color: "#374151", boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {EXPLORE_CATEGORIES.map(c => {
+                    const isActive = c.key === exploreCategory;
+                    return (
+                      <button key={c.key} onClick={() => setExploreCategory(c.key)}
+                        className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all"
+                        style={{
+                          background: isActive ? "linear-gradient(135deg,#DB2777e8,#DB2777)" : "white",
+                          color: isActive ? "white" : "#374151",
+                          boxShadow: isActive ? "0 4px 12px #DB277740" : "0 2px 12px rgba(0,0,0,0.07)",
+                        }}>
+                        <span>{c.emoji}</span>{c.label}
+                      </button>
+                    );
+                  })}
+                </div>
                 {(() => {
                   const cat = EXPLORE_CATEGORIES.find(c => c.key === exploreCategory)!;
                   const places = exploreData[exploreCacheKey];

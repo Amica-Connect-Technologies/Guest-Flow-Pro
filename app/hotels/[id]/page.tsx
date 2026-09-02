@@ -521,10 +521,28 @@ export default function HotelDetailPage() {
             const categoryLabel = activeCategory?.label.toLowerCase() ?? tab.label.toLowerCase();
 
             const backButton = nearbyTab === "explore" && (
-              <button onClick={() => setExploreCategory(null)}
-                className="flex items-center gap-1.5 text-[13px] font-black text-slate-500 hover:text-slate-800 mb-4 transition-colors">
-                <ChevronLeft className="w-4 h-4" /> All categories
-              </button>
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-4" style={{ scrollbarWidth: "none" }}>
+                <button onClick={() => setExploreCategory(null)}
+                  title="All categories"
+                  className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                  style={{ background: "white", color: "#374151", boxShadow: CARD_SHADOW }}>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                {EXPLORE_CATEGORIES.map(cat => {
+                  const isActive = cat.key === exploreCategory;
+                  return (
+                    <button key={cat.key} onClick={() => setExploreCategory(cat.key)}
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all"
+                      style={{
+                        background: isActive ? "linear-gradient(135deg,#DB2777e8,#DB2777)" : "white",
+                        color: isActive ? "white" : "#374151",
+                        boxShadow: isActive ? "0 4px 12px #DB277740" : CARD_SHADOW,
+                      }}>
+                      <span>{cat.emoji}</span>{cat.label}
+                    </button>
+                  );
+                })}
+              </div>
             );
 
             if (isLoading) return (
