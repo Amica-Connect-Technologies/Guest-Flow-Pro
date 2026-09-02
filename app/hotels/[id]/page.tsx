@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { UtensilsCrossed, Car, Moon, Landmark, Compass, type LucideIcon } from "lucide-react";
+import { UtensilsCrossed, Car, Moon, Landmark, Compass, Sparkles, ChevronLeft, type LucideIcon } from "lucide-react";
 import { hotelsApi, toursApi, placesApi, bookingRequestsApi, type Hotel, type Tour, type NearbyPlace } from "@/lib/api";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -32,14 +32,34 @@ const AMENITY_ICONS: Record<string, string> = {
   "City View": "🏙️", "Garden": "🌿", "Terrace": "🏡", "Business Center": "💼",
 };
 
-const NEARBY_TABS: { key: "restaurant"|"parking"|"night"|"tours"|"places"; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
+const NEARBY_TABS: { key: "restaurant"|"parking"|"night"|"tours"|"places"|"explore"; label: string; Icon: LucideIcon; color: string; bg: string }[] = [
   { key: "restaurant", label: "Restaurants",  Icon: UtensilsCrossed, color: "#F97316", bg: "#FFF7ED" },
   { key: "parking",    label: "Parking",      Icon: Car,             color: "#0EA5E9", bg: "#F0F9FF" },
   { key: "night",      label: "Nightlife",    Icon: Moon,            color: "#7C3AED", bg: "#F5F3FF" },
   { key: "tours",      label: "Experiences",  Icon: Landmark,        color: "#059669", bg: "#ECFDF5" },
   { key: "places",     label: "Attractions",  Icon: Compass,         color: "#DC2626", bg: "#FEF2F2" },
+  { key: "explore",    label: "Explore More", Icon: Sparkles,        color: "#DB2777", bg: "#FDF2F8" },
 ];
 type NearbyTabKey = (typeof NEARBY_TABS)[number]["key"];
+
+// "Explore More" — a broader browse-by-category grid beyond the 5 fixed tabs.
+// key must match backend EXPLORE_CATEGORIES in backend/places/views.py.
+const EXPLORE_CATEGORIES: { key: string; emoji: string; label: string }[] = [
+  { key: "food_fast",       emoji: "🍕", label: "Food & Fast Food" },
+  { key: "cafes",           emoji: "☕", label: "Cafes & Coffee" },
+  { key: "halal",           emoji: "🥘", label: "Halal Food" },
+  { key: "desserts",        emoji: "🍰", label: "Desserts & Gelato" },
+  { key: "parties",         emoji: "🎉", label: "Parties & Events" },
+  { key: "gaming",          emoji: "🎮", label: "Entertainment & Gaming" },
+  { key: "family_kids",     emoji: "👨‍👩‍👧", label: "Family & Kids" },
+  { key: "parks",           emoji: "🌳", label: "Parks & Outdoor Fun" },
+  { key: "music_nightlife", emoji: "🎵", label: "Music & Nightlife" },
+  { key: "shopping",        emoji: "🛍️", label: "Shopping" },
+  { key: "hotels_stay",     emoji: "🏨", label: "Hotels & Stay" },
+  { key: "beauty",          emoji: "💆", label: "Beauty & Wellness" },
+  { key: "sports",          emoji: "⚽", label: "Sports & Activities" },
+  { key: "cinema",          emoji: "🎬", label: "Cinema & Shows" },
+];
 
 const AMENITY_LABELS: Record<string, string> = {
   events: "Events", day_use: "Day Use", restaurant: "Restaurant",
@@ -105,6 +125,7 @@ export default function HotelDetailPage() {
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [nearbyTab, setNearbyTab] = useState<NearbyTabKey>("restaurant");
+  const [exploreCategory, setExploreCategory] = useState<string | null>(null);
   const [nearbyData, setNearbyData] = useState<Record<string, NearbyPlace[]>>({});
   const [loadingNearby, setLoadingNearby] = useState<Record<string, boolean>>({});
   const [nearbySearchInput, setNearbySearchInput] = useState("");
@@ -177,17 +198,19 @@ export default function HotelDetailPage() {
     })();
   }, [id]);
 
-  const nearbyCacheKey = `${nearbyTab}|${nearbySearch}|${userLocation ? `${userLocation.lat},${userLocation.lng}` : "hotel"}`;
+  const nearbyCacheKey = `${nearbyTab === "explore" ? `explore:${exploreCategory}` : nearbyTab}|${nearbySearch}|${userLocation ? `${userLocation.lat},${userLocation.lng}` : "hotel"}`;
 
   useEffect(() => {
     if (!hotel) return;
+    if (nearbyTab === "explore" && !exploreCategory) return; // waiting on category pick
     if (nearbyData[nearbyCacheKey] !== undefined) return;
     const TYPE_MAP: Record<NearbyTabKey, string> = {
       restaurant: "restaurant", parking: "parking",
-      night: "nightlife", tours: "museum", places: "places",
+      night: "nightlife", tours: "museum", places: "places", explore: "",
     };
+    const backendType = nearbyTab === "explore" ? (exploreCategory ?? "") : TYPE_MAP[nearbyTab];
     setLoadingNearby(l => ({ ...l, [nearbyCacheKey]: true }));
-    placesApi.nearby(hotel.id, TYPE_MAP[nearbyTab], {
+    placesApi.nearby(hotel.id, backendType, {
       keyword: nearbySearch || undefined,
       lat: userLocation?.lat,
       lng: userLocation?.lng,
@@ -195,7 +218,7 @@ export default function HotelDetailPage() {
       .then(data => setNearbyData(d => ({ ...d, [nearbyCacheKey]: data.places })))
       .catch(() => setNearbyData(d => ({ ...d, [nearbyCacheKey]: [] })))
       .finally(() => setLoadingNearby(l => ({ ...l, [nearbyCacheKey]: false })));
-  }, [nearbyCacheKey, hotel]); // eslint-disable-line
+  }, [nearbyCacheKey, hotel, nearbyTab, exploreCategory]); // eslint-disable-line
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
@@ -477,41 +500,73 @@ export default function HotelDetailPage() {
           {/* Content */}
           {(() => {
             const tab = NEARBY_TABS.find(t => t.key === nearbyTab)!;
-            const places = nearbyData[nearbyCacheKey];
-            const isLoading = loadingNearby[nearbyCacheKey];
 
-            if (isLoading) return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1,2,3].map(i => (
-                  <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse" style={{ boxShadow: CARD_SHADOW }}>
-                    <div className="h-44 bg-slate-100" />
-                    <div className="p-5 space-y-3">
-                      <div className="h-4 bg-slate-100 rounded-full w-3/4" />
-                      <div className="h-3 bg-slate-100 rounded-full w-1/2" />
-                      <div className="flex gap-2 pt-2">
-                        <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
-                        <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
-                      </div>
-                    </div>
-                  </div>
+            // "Explore More" shows a category grid until one is picked
+            if (nearbyTab === "explore" && !exploreCategory) return (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {EXPLORE_CATEGORIES.map(cat => (
+                  <button key={cat.key} onClick={() => setExploreCategory(cat.key)}
+                    className="flex flex-col items-center justify-center gap-2 bg-white rounded-2xl py-6 px-3 text-center transition-all hover:-translate-y-1"
+                    style={{ boxShadow: CARD_SHADOW }}>
+                    <span className="text-3xl leading-none">{cat.emoji}</span>
+                    <span className="text-[13px] font-bold text-slate-700 leading-tight">{cat.label}</span>
+                  </button>
                 ))}
               </div>
             );
 
+            const places = nearbyData[nearbyCacheKey];
+            const isLoading = loadingNearby[nearbyCacheKey];
+            const activeCategory = nearbyTab === "explore" ? EXPLORE_CATEGORIES.find(c => c.key === exploreCategory) : null;
+            const categoryLabel = activeCategory?.label.toLowerCase() ?? tab.label.toLowerCase();
+
+            const backButton = nearbyTab === "explore" && (
+              <button onClick={() => setExploreCategory(null)}
+                className="flex items-center gap-1.5 text-[13px] font-black text-slate-500 hover:text-slate-800 mb-4 transition-colors">
+                <ChevronLeft className="w-4 h-4" /> All categories
+              </button>
+            );
+
+            if (isLoading) return (
+              <>
+                {backButton}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse" style={{ boxShadow: CARD_SHADOW }}>
+                      <div className="h-44 bg-slate-100" />
+                      <div className="p-5 space-y-3">
+                        <div className="h-4 bg-slate-100 rounded-full w-3/4" />
+                        <div className="h-3 bg-slate-100 rounded-full w-1/2" />
+                        <div className="flex gap-2 pt-2">
+                          <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                          <div className="flex-1 h-9 bg-slate-100 rounded-xl" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+
             if (!places || places.length === 0) return (
-              <div className="bg-white rounded-3xl p-12 text-center" style={{ boxShadow: CARD_SHADOW }}>
-                <tab.Icon className="w-12 h-12 mx-auto mb-4" style={{ color: tab.color, opacity: 0.2 }} />
-                <p className="font-black text-slate-700 text-base">
-                  {nearbySearch ? `No results for "${nearbySearch}"` : `No ${tab.label.toLowerCase()} found nearby`}
-                </p>
-                <p className="text-sm text-slate-400 mt-1">
-                  {nearbySearch ? "Try a different search term" : "Ask reception for local recommendations"}
-                </p>
-              </div>
+              <>
+                {backButton}
+                <div className="bg-white rounded-3xl p-12 text-center" style={{ boxShadow: CARD_SHADOW }}>
+                  <tab.Icon className="w-12 h-12 mx-auto mb-4" style={{ color: tab.color, opacity: 0.2 }} />
+                  <p className="font-black text-slate-700 text-base">
+                    {nearbySearch ? `No results for "${nearbySearch}"` : `No ${categoryLabel} found nearby`}
+                  </p>
+                  <p className="text-sm text-slate-400 mt-1">
+                    {nearbySearch ? "Try a different search term" : "Ask reception for local recommendations"}
+                  </p>
+                </div>
+              </>
             );
 
             return (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <>
+                {backButton}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {places.map(place => (
                   <div key={place.place_id} className="bg-white rounded-3xl overflow-hidden flex flex-col group transition-all hover:-translate-y-1"
                     style={{ boxShadow: CARD_SHADOW }}>
@@ -581,7 +636,8 @@ export default function HotelDetailPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              </>
             );
           })()}
         </div>

@@ -1,6 +1,8 @@
 import urllib.request
 import urllib.parse
 import json as _json
+import math
+import time
 from rest_framework import viewsets, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -198,6 +200,122 @@ def _nearby_google(lat: float, lng: float, google_type: str, radius: int = 1000,
     return results
 
 
+# ── "Explore" categories — broader browse-by-category grid ──────────────────
+# Not every category maps to a single clean Google Places "type"; some rely
+# purely on a keyword search (type left blank searches across all types).
+EXPLORE_CATEGORIES: dict[str, dict[str, str]] = {
+    "food_fast":       {"type": "meal_takeaway", "keyword": "fast food"},
+    "cafes":           {"type": "cafe",           "keyword": ""},
+    "halal":           {"type": "restaurant",     "keyword": "halal"},
+    "desserts":        {"type": "bakery",         "keyword": "dessert gelato ice cream"},
+    "parties":         {"type": "",               "keyword": "party event venue"},
+    "gaming":          {"type": "",               "keyword": "entertainment gaming arcade"},
+    "family_kids":     {"type": "amusement_park", "keyword": "family kids"},
+    "parks":           {"type": "park",           "keyword": ""},
+    "music_nightlife": {"type": "night_club",     "keyword": "music"},
+    "shopping":        {"type": "shopping_mall",  "keyword": ""},
+    "hotels_stay":     {"type": "lodging",        "keyword": ""},
+    "beauty":          {"type": "spa",            "keyword": "beauty wellness"},
+    "sports":          {"type": "gym",            "keyword": "sports activities"},
+    "cinema":          {"type": "movie_theater",  "keyword": ""},
+}
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def _format_place(place: dict, key: str) -> dict:
+    photo_url = None
+    if place.get("photos"):
+        ref = place["photos"][0]["photo_reference"]
+        photo_url = (
+            f"https://maps.googleapis.com/maps/api/place/photo"
+            f"?maxwidth=400&photo_reference={ref}&key={key}"
+        )
+    loc = place["geometry"]["location"]
+    return {
+        "place_id": place["place_id"],
+        "name": place["name"],
+        "address": place.get("vicinity", ""),
+        "rating": place.get("rating"),
+        "user_ratings_total": place.get("user_ratings_total", 0),
+        "lat": loc["lat"],
+        "lng": loc["lng"],
+        "maps_link": f"https://www.google.com/maps/place/?q=place_id:{place['place_id']}",
+        "open_now": place.get("opening_hours", {}).get("open_now"),
+        "price_level": place.get("price_level"),
+        "photo_url": photo_url,
+        "ai_description": None,
+        "types": list(place.get("types", [])),
+    }
+
+
+def _nearby_google_page(lat, lng, google_type, radius, keyword, key, page_token=None):
+    """One raw Nearby Search API call — either a fresh search or the next page of one."""
+    params: dict = {"key": key}
+    if page_token:
+        params["pagetoken"] = page_token
+    else:
+        params["location"] = f"{lat},{lng}"
+        params["radius"] = radius
+        if google_type:
+            params["type"] = google_type
+        if keyword:
+            params["keyword"] = keyword
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", "GuestFlowPro/1.0")
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = _json.loads(resp.read())
+    if data.get("status") not in ("OK", "ZERO_RESULTS", "INVALID_REQUEST"):
+        raise ValueError(f"Places API: {data.get('status')} – {data.get('error_message', '')}")
+    return data.get("results", []), data.get("next_page_token")
+
+
+def _nearby_google_min(
+    lat: float, lng: float, google_type: str, keyword: str = "",
+    min_results: int = 36, radii: tuple[int, ...] = (3000, 8000, 20000),
+) -> list:
+    """
+    Like _nearby_google, but keeps paging (Google allows up to 3 pages / 60
+    results per search) and widening the radius until at least min_results
+    distinct places are found or every radius step is exhausted. Results are
+    de-duplicated by place_id and sorted nearest-first regardless of which
+    radius pass actually found them.
+    """
+    from django.conf import settings as _s
+    key = _s.GOOGLE_PLACES_API_KEY
+    seen: dict[str, dict] = {}
+
+    for radius in radii:
+        page_token = None
+        for _page in range(3):  # Google's hard cap: 3 pages of ~20 per search
+            raw, page_token = _nearby_google_page(lat, lng, google_type, radius, keyword, key, page_token)
+            for place in raw:
+                pid = place.get("place_id")
+                if pid and pid not in seen:
+                    seen[pid] = _format_place(place, key)
+            if len(seen) >= min_results or not page_token:
+                break
+            time.sleep(2)  # a fresh page token isn't valid until ~2s after it's issued
+        if len(seen) >= min_results:
+            break
+
+    results = list(seen.values())
+    for r in results:
+        r["_distance_km"] = _haversine_km(lat, lng, r["lat"], r["lng"])
+    results.sort(key=lambda r: r["_distance_km"])
+    for r in results:
+        del r["_distance_km"]
+    return results
+
+
 def _ai_describe(places: list, ptype: str, city: str) -> list:
     from django.conf import settings as _s
     key = getattr(_s, "OPENAI_API_KEY", "")
@@ -270,6 +388,17 @@ class NearbyPlacesView(APIView):
                 lat, lng = _geocode_google(location)
             except Exception as exc:
                 return Response({"detail": f"Geocoding error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        # ── "Explore" category grid — guarantees a minimum result count by
+        # paging + widening the search radius instead of a single fixed call.
+        if ptype in EXPLORE_CATEGORIES:
+            cat = EXPLORE_CATEGORIES[ptype]
+            combined_keyword = " ".join(w for w in (cat["keyword"], keyword) if w).strip()
+            try:
+                places = _nearby_google_min(lat, lng, cat["type"], keyword=combined_keyword, min_results=36)
+            except Exception as exc:
+                return Response({"detail": f"Places API error: {exc}"}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response({"places": places, "lat": lat, "lng": lng})
 
         google_type_map = {
             "restaurant": "restaurant",

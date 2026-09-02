@@ -9,7 +9,7 @@ import {
   Dumbbell, Car, Shirt, Home, Briefcase, Sparkles,
   Bell, MapPin, Info, SearchX, Clock, Wifi, Globe,
   Banknote, Landmark, CreditCard, Search,
-  Map, Target, Navigation,
+  Map, Target, Navigation, ChevronLeft,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -38,6 +38,25 @@ const CAT_ICONS: Record<string, { Icon: LucideIcon; color: string; light: string
   activity:     { Icon: Target,        color: "#10B981", light: "#ECFDF5" },
   other:        { Icon: Sparkles,      color: "#6B7280", light: "#F9FAFB" },
 };
+
+// "Explore More" — a broader browse-by-category grid beyond the 5 fixed tabs.
+// key must match backend EXPLORE_CATEGORIES in backend/places/views.py.
+const EXPLORE_CATEGORIES: { key: string; emoji: string; label: string }[] = [
+  { key: "food_fast",       emoji: "🍕", label: "Food & Fast Food" },
+  { key: "cafes",           emoji: "☕", label: "Cafes & Coffee" },
+  { key: "halal",           emoji: "🥘", label: "Halal Food" },
+  { key: "desserts",        emoji: "🍰", label: "Desserts & Gelato" },
+  { key: "parties",         emoji: "🎉", label: "Parties & Events" },
+  { key: "gaming",          emoji: "🎮", label: "Entertainment & Gaming" },
+  { key: "family_kids",     emoji: "👨‍👩‍👧", label: "Family & Kids" },
+  { key: "parks",           emoji: "🌳", label: "Parks & Outdoor Fun" },
+  { key: "music_nightlife", emoji: "🎵", label: "Music & Nightlife" },
+  { key: "shopping",        emoji: "🛍️", label: "Shopping" },
+  { key: "hotels_stay",     emoji: "🏨", label: "Hotels & Stay" },
+  { key: "beauty",          emoji: "💆", label: "Beauty & Wellness" },
+  { key: "sports",          emoji: "⚽", label: "Sports & Activities" },
+  { key: "cinema",          emoji: "🎬", label: "Cinema & Shows" },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 type Sheet = {
@@ -68,7 +87,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [hotel,    setHotel]    = useState<Hotel | null>(null);
   const [tours,    setTours]    = useState<Tour[]>([]);
   const [services, setServices] = useState<HotelService[]>([]);
-  const [tab,      setTab]      = useState<"restaurant"|"parking"|"night"|"tours"|"places"|"info">("restaurant");
+  const [tab,      setTab]      = useState<"restaurant"|"parking"|"night"|"tours"|"places"|"explore"|"info">("restaurant");
   const [tourQ,    setTourQ]    = useState("");
   const [loading,  setLoading]  = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -78,6 +97,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
   const [nearbyParking,     setNearbyParking]     = useState<NearbyPlace[] | null>(null);
   const [nearbyNightlife,   setNearbyNightlife]   = useState<NearbyPlace[] | null>(null);
   const [nearbyAttractions, setNearbyAttractions] = useState<NearbyPlace[] | null>(null);
+  const [exploreCategory, setExploreCategory] = useState<string | null>(null);
+  const [exploreData, setExploreData] = useState<Record<string, NearbyPlace[]>>({});
   const [loadingNearby,     setLoadingNearby]     = useState<Record<string, boolean>>({});
   const [nearbySearchInput, setNearbySearchInput] = useState("");
   const [nearbySearch,      setNearbySearch]      = useState(""); // debounced
@@ -160,6 +181,8 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     setNearbyFood(null); setNearbyParking(null); setNearbyNightlife(null); setNearbyAttractions(null);
   }, [nearbySearch, userLocation]);
 
+  const exploreCacheKey = `${exploreCategory}|${nearbySearch}|${userLocation ? `${userLocation.lat},${userLocation.lng}` : "hotel"}`;
+
   useEffect(() => {
     if (!hotel) return;
     const fetchNearby = async (type: string, setter: (d: NearbyPlace[]) => void) => {
@@ -178,7 +201,10 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
     else if (tab === "parking"  && nearbyParking    === null) fetchNearby("parking",    setNearbyParking);
     else if (tab === "night"    && nearbyNightlife   === null) fetchNearby("nightlife",  setNearbyNightlife);
     else if (tab === "places"   && nearbyAttractions === null) fetchNearby("places",     setNearbyAttractions);
-  }, [tab, hotel, nearbyFood, nearbyParking, nearbyNightlife, nearbyAttractions, nearbySearch, userLocation]); // eslint-disable-line
+    else if (tab === "explore" && exploreCategory && exploreData[exploreCacheKey] === undefined) {
+      fetchNearby(exploreCategory, (places) => setExploreData(d => ({ ...d, [exploreCacheKey]: places })));
+    }
+  }, [tab, hotel, nearbyFood, nearbyParking, nearbyNightlife, nearbyAttractions, nearbySearch, userLocation, exploreCategory, exploreData, exploreCacheKey]); // eslint-disable-line
 
   async function confirmBooking() {
     if (!sheet) return;
@@ -781,6 +807,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
               { key: "night"      as const, label: t.concierge.tabs.nightLife,  Icon: Moon     },
               { key: "tours"      as const, label: t.concierge.tabs.tours,      Icon: Map      },
               { key: "places"     as const, label: t.concierge.tabs.places,     Icon: MapPin   },
+              { key: "explore"    as const, label: "Explore More",              Icon: Sparkles },
               { key: "info"       as const, label: t.concierge.tabs.hotelInfo,  Icon: Info     },
             ]).map(({ key, label, Icon }) => {
               const active = tab === key;
@@ -810,8 +837,9 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
 
       <div className="max-w-7xl mx-auto px-4 md:px-12 pt-5 space-y-4 md:space-y-5">
 
-        {/* ══ SEARCH + CURRENT LOCATION (Restaurant / Parking / Night / Places) ══ */}
-        {(["restaurant", "parking", "night", "places"] as const).includes(tab as "restaurant"|"parking"|"night"|"places") && (
+        {/* ══ SEARCH + CURRENT LOCATION (Restaurant / Parking / Night / Places / Explore category) ══ */}
+        {((["restaurant", "parking", "night", "places"] as const).includes(tab as "restaurant"|"parking"|"night"|"places")
+          || (tab === "explore" && !!exploreCategory)) && (
           <div>
             <div className="flex flex-col sm:flex-row gap-2.5">
               <div className="relative flex-1">
@@ -1154,6 +1182,58 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                  </>
                )
             }
+          </>
+        )}
+
+        {/* ══ EXPLORE MORE ════════════════════════════════════════════════ */}
+        {tab === "explore" && (
+          <>
+            {!exploreCategory ? (
+              <>
+                <SectionBanner icon={Sparkles} iconBg="#FDF2F8" iconColor="#DB2777"
+                  title="Explore More"
+                  subtitle="Anything else nearby, organized by category" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {EXPLORE_CATEGORIES.map(cat => (
+                    <button key={cat.key} onClick={() => setExploreCategory(cat.key)}
+                      className="flex flex-col items-center justify-center gap-2 bg-white rounded-3xl py-6 px-3 text-center"
+                      style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.08)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; }}>
+                      <span className="text-3xl leading-none">{cat.emoji}</span>
+                      <span className="text-[13px] font-bold text-slate-700 leading-tight">{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <button onClick={() => setExploreCategory(null)}
+                  className="flex items-center gap-1.5 text-[13px] font-black text-slate-500 hover:text-slate-800 mb-1 transition-colors">
+                  <ChevronLeft className="w-4 h-4" /> All categories
+                </button>
+                {(() => {
+                  const cat = EXPLORE_CATEGORIES.find(c => c.key === exploreCategory)!;
+                  const places = exploreData[exploreCacheKey];
+                  const isLoading = loadingNearby[exploreCategory];
+                  return (
+                    <>
+                      <SectionBanner icon={Sparkles} iconBg="#FDF2F8" iconColor="#DB2777"
+                        title={`${cat.emoji} ${cat.label}`}
+                        subtitle={`Near ${userLocation ? "you" : hotel.city}`}
+                        count={places?.length} />
+                      {isLoading ? <NearbyLoading /> :
+                       !places || places.length === 0
+                         ? <EmptyState Icon={Sparkles} title={`No ${cat.label.toLowerCase()} found nearby`} subtitle="Ask reception for local recommendations" />
+                         : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                             {places.map(p => <NearbyCard key={p.place_id} place={p} accentColor="#DB2777" accentBg="#FDF2F8" />)}
+                           </div>
+                      }
+                    </>
+                  );
+                })()}
+              </>
+            )}
           </>
         )}
 
