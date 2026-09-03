@@ -671,7 +671,9 @@ export default function HotelDetailPage() {
                   <span className="w-6 h-[3px] rounded-full inline-block" style={{ background: "linear-gradient(90deg,#0891B2,#0E7490)" }} />
                   About this property
                 </h2>
-                <p className="text-[15px] text-slate-600 leading-relaxed">{hotel.description}</p>
+                <p className="text-[15px] text-slate-600 leading-relaxed">
+                  {(lang === "it" ? hotel.description_it : lang === "es" ? hotel.description_es : "") || hotel.description}
+                </p>
               </div>
             )}
 

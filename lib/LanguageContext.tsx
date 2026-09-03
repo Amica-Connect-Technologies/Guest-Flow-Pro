@@ -1,47 +1,11 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { translations, type Lang, type Translations } from "./i18n";
 
 const SUPPORTED: Lang[] = ["en", "it", "es"];
 const STORAGE_KEY = "gfp_lang";
-
-/**
- * Programmatically switches Google Translate to the given language.
- *
- * - IT / ES → polls for the widget's combo select then fires it (no reload)
- * - EN       → clears the googtrans cookie and reloads the page
- */
-function triggerGoogleTranslate(langCode: string): void {
-  if (typeof window === "undefined") return;
-
-  if (langCode === "en") {
-    const isTranslated = document.cookie.split(";").some(c => c.trim().startsWith("googtrans="));
-    if (!isTranslated) return;
-    const exp = new Date(0).toUTCString();
-    document.cookie = `googtrans=; expires=${exp}; path=/`;
-    document.cookie = `googtrans=; expires=${exp}; path=/; domain=${window.location.hostname}`;
-    document.cookie = `googtrans=; expires=${exp}; path=/; domain=.${window.location.hostname}`;
-    window.location.reload();
-    return;
-  }
-
-  // Poll every 300 ms until the Google Translate widget combo is ready (max ~7.5 s)
-  let tries = 0;
-  const timer = setInterval(() => {
-    const combo = document.querySelector(".goog-te-combo") as HTMLSelectElement | null;
-    if (combo) {
-      clearInterval(timer);
-      if (combo.value !== langCode) {
-        combo.value = langCode;
-        combo.dispatchEvent(new Event("change"));
-      }
-    } else if (++tries > 25) {
-      clearInterval(timer); // give up
-    }
-  }, 300);
-}
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 function getUrlLang(): Lang | null {
   if (typeof window === "undefined") return null;
@@ -62,12 +26,15 @@ function getBrowserLang(): Lang | null {
   return SUPPORTED.includes(b) ? b : null;
 }
 
-function detectInitialLang(): Lang {
-  return getUrlLang() || getStoredLang() || getBrowserLang() || "en";
-}
-
-function hasExplicitSource(): boolean {
-  return !!(getUrlLang() || getStoredLang());
+/** Visitor's country -> default language (Italy -> it, Spain -> es, else -> en). */
+async function detectGeoLang(): Promise<Lang | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/geo-lang/`);
+    const data: { lang?: string } = await res.json();
+    return SUPPORTED.includes(data.lang as Lang) ? (data.lang as Lang) : null;
+  } catch {
+    return null;
+  }
 }
 
 interface LanguageContextType {
@@ -85,29 +52,38 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
   // Start with "en" on both server and client — avoids hydration mismatch.
   // After hydration, useEffect corrects to the user's actual language preference.
   const [lang, setLangState] = useState<Lang>("en");
   const [explicit, setExplicit] = useState<boolean>(false);
+  // Refs so the async geo-IP callback below can see the LATEST values (not
+  // the ones captured when the effect first ran) before deciding to apply.
+  const explicitRef = useRef(false);
+  const hotelDefaultAppliedRef = useRef(false);
 
-  // Detect stored/browser language once on mount
+  // Resolve the initial language once on mount: URL/localStorage win outright;
+  // otherwise ask geo-IP (Italy -> it, Spain -> es, else -> en), falling back
+  // to the browser's own language if that lookup fails or times out. If a
+  // hotel page sets its own default (setHotelLang) before geo-IP resolves,
+  // that takes precedence and the geo-IP result is discarded.
   useEffect(() => {
-    const detected = detectInitialLang();
-    setLangState(detected);
-    setExplicit(hasExplicitSource());
+    const urlLang = getUrlLang();
+    const storedLang = getStoredLang();
+    if (urlLang || storedLang) {
+      setLangState((urlLang ?? storedLang) as Lang);
+      setExplicit(true);
+      explicitRef.current = true;
+      return;
+    }
+
+    let cancelled = false;
+    detectGeoLang().then((geoLang) => {
+      if (cancelled || explicitRef.current || hotelDefaultAppliedRef.current) return;
+      setLangState(geoLang ?? getBrowserLang() ?? "en");
+    });
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Re-trigger Google Translate on EVERY route change or language change.
-  // This covers: initial load, user clicking IT/ES, and Next.js client navigation.
-  useEffect(() => {
-    if (lang !== "en") {
-      triggerGoogleTranslate(lang);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, pathname]);
 
   // Update browser URL ?lang= without full navigation
   function pushLangToUrl(newLang: Lang) {
@@ -118,10 +94,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   // User-triggered switch — persists to localStorage and URL
-  // Google Translate is re-triggered via the [lang, pathname] useEffect above
   const setLang = (newLang: Lang) => {
     setLangState(newLang);
     setExplicit(true);
+    explicitRef.current = true;
     try { localStorage.setItem(STORAGE_KEY, newLang); } catch {}
     pushLangToUrl(newLang);
   };
@@ -132,6 +108,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (!explicit) {
       const resolved = SUPPORTED.includes(hotelLang) ? hotelLang : "it";
       setLangState(resolved);
+      hotelDefaultAppliedRef.current = true;
       // Only set URL if it doesn't already have a ?lang= param
       if (typeof window !== "undefined" && !getUrlLang()) {
         pushLangToUrl(resolved);

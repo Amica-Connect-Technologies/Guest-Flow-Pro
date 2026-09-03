@@ -25,7 +25,7 @@ class HotelSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "city", "country", "whatsapp_number", "language_default",
             "logo", "logo_url", "created_at",
-            "description", "address", "phone", "email", "website",
+            "description", "description_it", "description_es", "address", "phone", "email", "website",
             "check_in_time", "check_out_time", "wifi_info", "amenities",
             "is_24_7", "open_time", "close_time",
             "brand_color", "welcome_message", "google_review_url", "tripadvisor_url",

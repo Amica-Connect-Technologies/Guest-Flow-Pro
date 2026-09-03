@@ -591,7 +591,7 @@ export default function ConciergeView({ hotelId }: { hotelId: string }) {
                 <p className="text-sm leading-relaxed"
                   style={{ color: "rgba(255,255,255,0.5)" }}>
                   {hotel.description?.trim()
-                    ? hotel.description
+                    ? (lang === "it" ? hotel.description_it : lang === "es" ? hotel.description_es : "") || hotel.description
                     : `Welcome to ${hotel.name}. Our dedicated concierge team is here to make your stay in ${hotel.city} as comfortable and memorable as possible. Explore local dining, attractions, and services — all at your fingertips.`
                   }
                 </p>

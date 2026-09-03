@@ -67,6 +67,10 @@ class Hotel(models.Model):
 
     # Extended profile fields
     description   = models.TextField(blank=True)
+    # Cached OpenAI translations of `description`, refreshed on save() when
+    # the English text changes — guests read these instantly, no live API call.
+    description_it = models.TextField(blank=True, editable=False)
+    description_es = models.TextField(blank=True, editable=False)
     address       = models.CharField(max_length=300, blank=True)
     phone         = models.CharField(max_length=30, blank=True)
     email         = models.EmailField(blank=True)
@@ -95,6 +99,25 @@ class Hotel(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.city})"
+
+    def save(self, *args, **kwargs):
+        description_changed = True
+        if self.pk:
+            try:
+                old = Hotel.objects.get(pk=self.pk)
+                description_changed = old.description != self.description
+            except Hotel.DoesNotExist:
+                pass
+        if description_changed and self.description.strip():
+            from concierge.ai_translate import translate_to_it_es
+            self.description_it, self.description_es = translate_to_it_es(self.description)
+        elif not self.description.strip():
+            self.description_it, self.description_es = "", ""
+        super().save(*args, **kwargs)
+
+    def description_for(self, lang: str) -> str:
+        """Guest-facing description in `lang`, falling back to English if untranslated."""
+        return {"it": self.description_it, "es": self.description_es}.get(lang, "") or self.description
 
     def can(self, feature: str) -> bool:
         """Check if this hotel's plan includes the given feature."""

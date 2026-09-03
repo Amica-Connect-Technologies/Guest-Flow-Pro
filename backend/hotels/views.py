@@ -2,6 +2,7 @@ import csv
 import io
 import json as _json
 import re
+import urllib.request
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
@@ -712,3 +713,34 @@ class DemoRequestView(APIView):
                 pass
 
         return Response({"detail": "Demo request received.", "id": str(o.id)}, status=201)
+
+
+# ── Geo-IP default language ───────────────────────────────────────────────────
+
+_PRIVATE_IP_PREFIXES = ("127.", "10.", "192.168.", "::1")
+
+
+class GeoLangView(APIView):
+    """
+    Public: best-effort visitor country -> default UI language.
+    Italy -> it, Spain -> es, everything else (including lookup failures
+    or local/dev IPs) -> en. Never blocks the page — short timeout, and
+    any error just falls back to English.
+    """
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def get(self, request):
+        ip = (request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+              or request.META.get("REMOTE_ADDR", ""))
+        country = ""
+        if ip and not ip.startswith(_PRIVATE_IP_PREFIXES):
+            try:
+                req = urllib.request.Request(f"http://ip-api.com/json/{ip}?fields=countryCode")
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    country = _json.loads(resp.read()).get("countryCode", "")
+            except Exception:
+                pass
+
+        lang = {"IT": "it", "ES": "es"}.get(country, "en")
+        return Response({"country": country, "lang": lang})

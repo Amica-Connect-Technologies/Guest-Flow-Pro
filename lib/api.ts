@@ -11,7 +11,8 @@ export type Hotel = {
   id: string; name: string; city: string; country: string; whatsapp_number: string;
   language_default: string; logo_url: string; created_at: string;
   // extended profile fields
-  description: string; address: string; phone: string; email: string; website: string;
+  description: string; description_it: string; description_es: string;
+  address: string; phone: string; email: string; website: string;
   check_in_time: string; check_out_time: string; wifi_info: string;
   amenities: string[]; is_24_7: boolean; open_time: string; close_time: string;
   // white-label / branding
